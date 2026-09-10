@@ -63,9 +63,31 @@ Start Recap opening the recording screen.
 
 ---
 
-## Path B — iOS on your iPhone (needs Apple Developer Program, ~20 min)
+## Path B — iOS on your iPhone (needs Apple Developer Program)
 
-Prerequisite: an **Apple Developer Program** membership (~€99/yr) and your iPhone.
+### B0. Enroll in the Apple Developer Program (one-time, do this first)
+
+EAS cloud iOS builds need a **paid** Apple Developer account to generate signing credentials and
+register your device (a free Apple ID isn't enough for the EAS on-device flow).
+
+1. Have an **Apple ID with two-factor authentication** enabled (create/upgrade at appleid.apple.com).
+2. Go to **developer.apple.com/programs/enroll** and sign in with that Apple ID.
+3. Choose the entity type:
+   - **Individual / Sole trader** — fastest. Your legal name shows as the "seller." Recommended to get
+     moving now; you can move to an organization account later.
+   - **Organization** — shows your company name (e.g. a Latvian SIA) as seller, but requires a
+     **D-U-N-S number** and legal-entity verification, which takes longer. Choose this only if you need
+     the company name on the App Store from day one.
+4. Pay the **~€99/year** fee (Apple takes the card on their site — do this yourself; never share card
+   details). *Purchasing is your action to complete, not something to automate.*
+5. Approval: individual accounts are often approved within minutes–48h. You'll get an email.
+6. Once approved, open **App Store Connect** once and accept the latest **Program License Agreement**
+   (pending agreements block credential generation).
+
+> While Apple approves, you're not blocked from seeing the app run — you can do **Path A (Android)**
+> today with no Apple account, since the JS shell is identical.
+
+### B1. Build & install (after enrollment is approved)
 
 1. Register your iPhone with EAS (so the build's provisioning profile includes it):
    ```bash
