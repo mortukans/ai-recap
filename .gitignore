@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+*.tsbuildinfo
+
+# native
+ios/
+android/
+!modules/*/ios/
+!modules/*/android/
+
+# metro
+.metro-health-check*
+
+# env & secrets — NEVER commit
+.env
+.env.*
+!.env.example
+*.keystore
+*.p8
+*.p12
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+
+# drizzle
+apps/mobile/src/db/migrations/meta/_journal.json.bak
+
+# misc
+.DS_Store
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+coverage/

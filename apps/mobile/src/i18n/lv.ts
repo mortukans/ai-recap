@@ -1,0 +1,54 @@
+import type { TranslationKeys } from './en';
+
+export const lv: TranslationKeys = {
+  app: { name: 'AI Recap' },
+  tabs: { recaps: 'Ieraksti', contexts: 'Konteksti', settings: 'Iestatījumi' },
+  home: {
+    startRecap: 'Sākt ierakstu',
+    recent: 'Nesenie',
+    empty: 'Vēl nav ierakstu. Pieskaries “Sākt ierakstu”, lai ierakstītu pirmo sanāksmi.',
+    searchPlaceholder: 'Meklēt ierakstus',
+  },
+  recording: {
+    recording: 'Ieraksta',
+    paused: 'Pauzēts',
+    pause: 'Pauzēt',
+    resume: 'Turpināt',
+    finish: 'Pabeigt',
+    savedContinuously: 'Audio tiek saglabāts nepārtraukti',
+    permissionNeeded: 'Ierakstīšanai nepieciešama piekļuve mikrofonam.',
+    grantPermission: 'Atļaut piekļuvi mikrofonam',
+  },
+  contexts: {
+    title: 'Konteksti',
+    empty: 'Vēl nav pielāgotu kontekstu.',
+    builtIn: 'Iebūvēts',
+    newContext: 'Jauns konteksts',
+  },
+  settings: {
+    title: 'Iestatījumi',
+    language: 'Valoda',
+    languageAuto: 'Automātiski (LV + EN)',
+    plan: 'Plāns',
+    planFree: 'Bezmaksas',
+    recording: 'Ierakstīšana',
+    chunkDuration: 'Fragmenta ilgums',
+    audioQuality: 'Audio kvalitāte',
+    privacy: 'Privātums',
+    about: 'Par lietotni',
+  },
+  status: {
+    recording: 'Ieraksta',
+    recorded: 'Ierakstīts',
+    waitingForNetwork: 'Gaida internetu',
+    transcribing: 'Transkribē…',
+    transcribed: 'Transkribēts',
+    summarizing: 'Apkopo…',
+    ready: 'Gatavs',
+    transcriptionFailed: 'Transkripcija neizdevās',
+    summaryFailed: 'Apkopošana neizdevās',
+    uploadFailed: 'Augšupielāde neizdevās',
+  },
+};
+
+export default lv;

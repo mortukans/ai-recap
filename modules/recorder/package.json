@@ -1,0 +1,16 @@
+{
+  "name": "@ai-recap/recorder",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Custom Expo native module: chunked, background, crash-resilient audio recorder (iOS Swift / Android Kotlin).",
+  "main": "index.ts",
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*"
+  },
+  "devDependencies": {
+    "expo-modules-core": "~57.0.17",
+    "typescript": "~6.0.3"
+  }
+}

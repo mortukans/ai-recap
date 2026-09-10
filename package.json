@@ -1,0 +1,21 @@
+{
+  "name": "ai-recap",
+  "version": "0.0.1",
+  "private": true,
+  "description": "AI Recap — record once, understand a meeting in as many ways as you need. iOS-first, cross-platform (Expo/React Native).",
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "mobile": "pnpm --filter mobile",
+    "start": "pnpm --filter mobile start",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm -r --if-present lint",
+    "db:generate": "pnpm --filter mobile db:generate",
+    "clean": "pnpm -r exec rimraf node_modules && rimraf node_modules"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}
