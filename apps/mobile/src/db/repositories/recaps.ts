@@ -3,7 +3,7 @@
  * engine stays swappable (AI_RECAP_TECHNICAL_ARCHITECTURE.md §5.1).
  */
 import type { Recap, RecapStatus } from '@ai-recap/core';
-import { desc, eq, like } from 'drizzle-orm';
+import { desc, eq, inArray, like } from 'drizzle-orm';
 import { getDatabase } from '../client';
 import { recaps } from '../schema';
 
@@ -53,6 +53,16 @@ export async function pageRecaps({ offset = 0, limit = 50, query }: RecapPagePar
         .limit(limit)
         .offset(offset)
     : await base;
+  return rows.map(toDomain);
+}
+
+export async function listByStatuses(statuses: RecapStatus[]): Promise<Recap[]> {
+  if (statuses.length === 0) return [];
+  const rows = await getDatabase()
+    .select()
+    .from(recaps)
+    .where(inArray(recaps.status, statuses))
+    .orderBy(desc(recaps.startedAt));
   return rows.map(toDomain);
 }
 

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { useRecording } from '../features/recording/useRecording';
+import { processingCoordinator } from '../processing/coordinator';
 
 export default function RecordingScreen() {
   const { t } = useTranslation();
@@ -26,8 +27,12 @@ export default function RecordingScreen() {
 
   const onFinish = async () => {
     const id = await finish();
-    if (id) router.replace({ pathname: '/recap/[id]', params: { id } });
-    else router.back();
+    if (id) {
+      void processingCoordinator.enqueue(id); // auto transcribe → recap (respects offline + BYOK key)
+      router.replace({ pathname: '/recap/[id]', params: { id } });
+    } else {
+      router.back();
+    }
   };
 
   return (

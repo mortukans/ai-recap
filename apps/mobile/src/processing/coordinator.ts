@@ -1,0 +1,214 @@
+/**
+ * ProcessingCoordinator — drives recaps through the pipeline
+ *   recorded → [waitingForNetwork] → transcribing → transcribed → summarizing → ready
+ * with an ordered offline queue, connectivity-aware resumption, and bounded retries.
+ * (AI_RECAP_TECHNICAL_ARCHITECTURE.md §6/§9, MVP task M2-3.)
+ *
+ * INVARIANT: a failure never deletes source audio; failed recaps rest until retry().
+ * Transcription uses an injected TranscriptionProvider (MockTranscriber today; HostedTranscriber in M2).
+ * Summarization reuses generateRecap (BYOK); if no key is set, the recap rests at `transcribed`.
+ */
+import { type Recap, type TranscriptSegment, isAiRecapError, retryTarget } from '@ai-recap/core';
+import { presetContextId } from '@ai-recap/prompts';
+import NetInfo from '@react-native-community/netinfo';
+
+import {
+  DEFAULT_SUMMARY_MODEL,
+  type TranscriptionProvider,
+  MockTranscriber,
+  generateRecap,
+  getByokLLMProvider,
+} from '../ai';
+import { chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../db';
+import { newId } from '../lib/ids';
+import { getSummaryModel } from '../lib/prefs';
+import { getOpenRouterKey } from '../security/byok-store';
+import { withRetry } from './backoff';
+
+export class ProcessingCoordinator {
+  private queue: string[] = [];
+  private processing = false;
+  private online = true;
+  private netUnsub: (() => void) | null = null;
+  private listeners = new Set<() => void>();
+
+  constructor(private readonly transcriber: TranscriptionProvider) {}
+
+  start(): void {
+    void NetInfo.fetch().then((s) => {
+      this.online = s.isConnected !== false;
+    });
+    this.netUnsub = NetInfo.addEventListener((s) => {
+      const wasOnline = this.online;
+      this.online = s.isConnected !== false;
+      if (!wasOnline && this.online) void this.pump(); // reconnected → drain queue
+    });
+  }
+
+  stop(): void {
+    this.netUnsub?.();
+    this.netUnsub = null;
+  }
+
+  /** Subscribe to status changes (UI can refresh). Returns an unsubscribe function. */
+  onChange(cb: () => void): () => void {
+    this.listeners.add(cb);
+    return () => this.listeners.delete(cb);
+  }
+
+  private notify(): void {
+    for (const l of this.listeners) l();
+  }
+
+  async enqueue(recapId: string): Promise<void> {
+    if (!this.queue.includes(recapId)) this.queue.push(recapId);
+    await this.pump();
+  }
+
+  async retry(recapId: string): Promise<void> {
+    const recap = await recapsRepo.getRecap(recapId);
+    if (!recap) return;
+    const target = retryTarget(recap.status);
+    if (target) {
+      await recapsRepo.updateRecapStatus(recapId, target);
+      this.notify();
+    }
+    await this.enqueue(recapId);
+  }
+
+  /** On launch: reset recaps orphaned mid-processing by a crash, then enqueue anything resumable. */
+  async recover(): Promise<void> {
+    for (const r of await recapsRepo.listByStatuses(['transcribing'])) {
+      await recapsRepo.updateRecapStatus(r.id, 'recorded');
+    }
+    for (const r of await recapsRepo.listByStatuses(['summarizing'])) {
+      await recapsRepo.updateRecapStatus(r.id, 'transcribed');
+    }
+    const resumable = await recapsRepo.listByStatuses(['recorded', 'waitingForNetwork', 'transcribed']);
+    for (const r of resumable) {
+      if (!this.queue.includes(r.id)) this.queue.push(r.id);
+    }
+    this.notify();
+    await this.pump();
+  }
+
+  private async pump(): Promise<void> {
+    if (this.processing) return;
+    this.processing = true;
+    try {
+      while (this.queue.length > 0) {
+        const id = this.queue[0];
+        if (!id) break;
+        await this.processRecap(id).catch(() => undefined);
+        this.queue.shift();
+      }
+    } finally {
+      this.processing = false;
+    }
+  }
+
+  private async setStatus(id: string, status: Recap['status']): Promise<void> {
+    await recapsRepo.updateRecapStatus(id, status);
+    this.notify();
+  }
+
+  private async processRecap(id: string): Promise<void> {
+    // Advance one recap as far as it can go this pass. `guard` prevents any accidental infinite loop.
+    for (let guard = 0; guard < 12; guard++) {
+      const recap = await recapsRepo.getRecap(id);
+      if (!recap) return;
+
+      switch (recap.status) {
+        case 'recorded':
+        case 'waitingForNetwork': {
+          if (!this.online) {
+            await this.setStatus(id, 'waitingForNetwork');
+            return;
+          }
+          await this.setStatus(id, 'transcribing');
+          break;
+        }
+        case 'transcribing': {
+          try {
+            await this.doTranscription(recap);
+            await this.setStatus(id, 'transcribed');
+          } catch {
+            await this.setStatus(id, 'transcriptionFailed');
+            return;
+          }
+          break;
+        }
+        case 'transcribed': {
+          if ((await getOpenRouterKey()) === null) return; // rest until a key is available
+          await this.setStatus(id, 'summarizing');
+          break;
+        }
+        case 'summarizing': {
+          try {
+            await this.doSummary(recap);
+            await this.setStatus(id, 'ready');
+          } catch (e) {
+            if (isAiRecapError(e) && e.code === 'llm/missing-key') {
+              await this.setStatus(id, 'transcribed');
+              return;
+            }
+            await this.setStatus(id, 'summaryFailed');
+            return;
+          }
+          break;
+        }
+        default:
+          return; // ready, or a failed state awaiting retry()
+      }
+    }
+  }
+
+  private async doTranscription(recap: Recap): Promise<void> {
+    const chunks = await chunksRepo.listChunks(recap.id);
+    const result = await withRetry(
+      () => this.transcriber.transcribe({ recapId: recap.id, audioUris: chunks.map((ch) => ch.relativePath) }),
+      { attempts: 3, baseMs: 10_000 },
+    );
+    const segments = result.segments.map<TranscriptSegment>((s) => ({
+      id: newId(),
+      recapId: recap.id,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      speakerLabel: s.speakerLabel,
+      language: s.language,
+      text: s.text,
+    }));
+    await segmentsRepo.replaceSegments(recap.id, segments);
+    await recapsRepo.updateRecap(recap.id, { detectedLanguages: result.detectedLanguages });
+  }
+
+  private async doSummary(recap: Recap): Promise<void> {
+    const segments = await segmentsRepo.listSegments(recap.id);
+    const context =
+      (await contextsRepo.getContext(recap.contextId ?? presetContextId('workMeeting'))) ?? null;
+    const model = (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL;
+    await withRetry(
+      () =>
+        generateRecap({
+          recapId: recap.id,
+          meta: {
+            title: recap.title || undefined,
+            detectedLanguages: recap.detectedLanguages,
+            durationSeconds: recap.durationSeconds,
+          },
+          context,
+          transcript: segments,
+          provider: getByokLLMProvider(),
+          model,
+        }),
+      {
+        attempts: 2,
+        baseMs: 5_000,
+        shouldRetry: (e) => !(isAiRecapError(e) && e.code === 'llm/missing-key'),
+      },
+    );
+  }
+}
+
+/** App-wide singleton. Swap MockTranscriber for HostedTranscriber when M2 transcription lands. */
+export const processingCoordinator = new ProcessingCoordinator(new MockTranscriber());

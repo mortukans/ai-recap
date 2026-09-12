@@ -1,13 +1,14 @@
 import { type Recap, formatDuration } from '@ai-recap/core';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { recapsRepo } from '../../db';
+import { processingCoordinator } from '../../processing/coordinator';
 
 export default function RecapsScreen() {
   const { t } = useTranslation();
@@ -31,6 +32,9 @@ export default function RecapsScreen() {
       void load(query);
     }, [load, query]),
   );
+
+  // Live-refresh the library as the processing coordinator advances recap statuses.
+  useEffect(() => processingCoordinator.onChange(() => void load(query)), [load, query]);
 
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['top']}>

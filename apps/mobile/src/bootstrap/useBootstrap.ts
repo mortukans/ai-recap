@@ -2,6 +2,7 @@ import { builtInContexts } from '@ai-recap/prompts';
 import { useEffect, useState } from 'react';
 import { ensureSession } from '../api/supabase';
 import { contextsRepo, initDatabase } from '../db';
+import { processingCoordinator } from '../processing/coordinator';
 
 /**
  * App bootstrap: open the encrypted DB, seed built-in preset contexts, and (best-effort) establish a
@@ -18,6 +19,8 @@ export function useBootstrap() {
       try {
         await initDatabase();
         await contextsRepo.ensureBuiltInContexts(builtInContexts(Date.now()));
+        processingCoordinator.start();
+        await processingCoordinator.recover();
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e : new Error(String(e)));
       } finally {
