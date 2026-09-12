@@ -1,50 +1,170 @@
-import { type AudioChunk, type Recap, formatDuration } from '@ai-recap/core';
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import {
+  type RecapDocument,
+  type TranscriptSegment,
+  formatDuration,
+  isAiRecapError,
+  parseRecapDocument,
+} from '@ai-recap/core';
+import { presetContextId } from '@ai-recap/prompts';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
-import { chunksRepo, recapsRepo } from '../../db';
+import { DEFAULT_SUMMARY_MODEL, MockTranscriber, generateRecap, getByokLLMProvider } from '../../ai';
+import { artifactsRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
+import { RecapDocumentView } from '../../features/recap/RecapDocumentView';
+import { newId } from '../../lib/ids';
+import { getSummaryModel } from '../../lib/prefs';
+
+function parseArtifactContent(content: string): RecapDocument | null {
+  try {
+    return parseRecapDocument(JSON.parse(content));
+  } catch {
+    return null;
+  }
+}
 
 export default function RecapDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
+  const router = useRouter();
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
-  const [recap, setRecap] = useState<Recap | null>(null);
-  const [chunks, setChunks] = useState<AudioChunk[]>([]);
+  const [title, setTitle] = useState('');
+  const [durationSeconds, setDurationSeconds] = useState(0);
+  const [status, setStatus] = useState('recorded');
+  const [segmentCount, setSegmentCount] = useState(0);
+  const [doc, setDoc] = useState<RecapDocument | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!id) return;
+    try {
+      const recap = await recapsRepo.getRecap(id);
+      if (recap) {
+        setTitle(recap.title);
+        setDurationSeconds(recap.durationSeconds);
+        setStatus(recap.status);
+      }
+      setSegmentCount((await segmentsRepo.listSegments(id)).length);
+      const latest = await artifactsRepo.latestArtifactOfType(id, 'summary');
+      setDoc(latest ? parseArtifactContent(latest.content) : null);
+    } catch {
+      /* db not ready */
+    }
+  }, [id]);
 
   useEffect(() => {
+    void load();
+  }, [load]);
+
+  const onGenerate = useCallback(async () => {
     if (!id) return;
-    (async () => {
-      try {
-        setRecap(await recapsRepo.getRecap(id));
-        setChunks(await chunksRepo.listChunks(id));
-      } catch {
-        /* db not ready */
+    setError(null);
+    setGenerating(true);
+    try {
+      // Ensure we have a transcript. DEMO: synthesize one with the mock transcriber if none exists yet.
+      let segments = await segmentsRepo.listSegments(id);
+      if (segments.length === 0) {
+        const mock = await new MockTranscriber().transcribe({ recapId: id, audioUris: [] });
+        segments = mock.segments.map<TranscriptSegment>((s) => ({
+          id: newId(),
+          recapId: id,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          speakerLabel: s.speakerLabel,
+          language: s.language,
+          text: s.text,
+        }));
+        await segmentsRepo.replaceSegments(id, segments);
+        await recapsRepo.updateRecap(id, { detectedLanguages: mock.detectedLanguages });
       }
-    })();
-  }, [id]);
+
+      const context =
+        (await contextsRepo.getContext(presetContextId('workMeeting'))) ?? null;
+      const model = (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL;
+
+      await recapsRepo.updateRecapStatus(id, 'summarizing');
+      const { doc: generated } = await generateRecap({
+        recapId: id,
+        meta: {
+          title: title || undefined,
+          detectedLanguages: ['lv', 'en'],
+          durationSeconds,
+          speakers: [...new Set(segments.map((s) => s.speakerLabel).filter(Boolean))] as string[],
+        },
+        context,
+        transcript: segments,
+        provider: getByokLLMProvider(),
+        model,
+      });
+
+      if (!title && generated.title) {
+        await recapsRepo.updateRecap(id, { title: generated.title });
+        setTitle(generated.title);
+      }
+      await recapsRepo.updateRecapStatus(id, 'ready');
+      await load();
+    } catch (e) {
+      if (isAiRecapError(e) && e.code === 'llm/missing-key') {
+        setError('Set your OpenRouter key in Settings first, then try again.');
+      } else {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+      await recapsRepo.updateRecapStatus(id, 'transcribed').catch(() => undefined);
+    } finally {
+      setGenerating(false);
+    }
+  }, [id, title, durationSeconds, load]);
 
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.h1, { color: c.text }]}>{recap?.title || t('app.name')}</Text>
-        {recap && (
-          <Text style={[styles.meta, { color: c.textSecondary }]}>
-            {formatDuration(recap.durationSeconds)} · {t(`status.${recap.status}`)} · {chunks.length} chunks
-          </Text>
+        <Text style={[styles.h1, { color: c.text }]}>{title || t('app.name')}</Text>
+        <Text style={[styles.meta, { color: c.textSecondary }]}>
+          {formatDuration(durationSeconds)} · {t(`status.${status}`)} · {segmentCount} segments
+        </Text>
+
+        {doc ? (
+          <RecapDocumentView doc={doc} palette={c} />
+        ) : (
+          <View style={[styles.card, { backgroundColor: c.backgroundElement }]}>
+            <Text style={[styles.cardText, { color: c.textSecondary }]}>
+              Generate a structured recap from this meeting. (Demo: uses a sample Latvian+English
+              transcript until on-device transcription lands in M2.)
+            </Text>
+          </View>
         )}
 
-        <View style={[styles.card, { backgroundColor: c.backgroundElement }]}>
-          <Text style={[styles.cardText, { color: c.textSecondary }]}>
-            Transcript, structured recap, and Ask-AI arrive with MVP milestones M2–M4. Audio is recorded
-            and stored locally in chunks now.
-          </Text>
-        </View>
+        {error ? <Text style={[styles.err, { color: '#E5484D' }]}>{error}</Text> : null}
+
+        <Pressable
+          disabled={generating}
+          onPress={onGenerate}
+          style={[styles.button, { backgroundColor: '#208AEF', opacity: generating ? 0.6 : 1 }]}>
+          {generating ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>{doc ? 'Regenerate recap' : 'Generate recap'}</Text>
+          )}
+        </Pressable>
+
+        <Pressable onPress={() => router.push('/settings')} style={styles.link}>
+          <Text style={[styles.linkText, { color: c.textSecondary }]}>Set OpenRouter key in Settings →</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
@@ -55,6 +175,11 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.four, gap: Spacing.three },
   h1: { fontSize: 24, fontWeight: '700' },
   meta: { fontSize: 14 },
-  card: { borderRadius: 16, padding: Spacing.four, marginTop: Spacing.three },
+  card: { borderRadius: 16, padding: Spacing.four },
   cardText: { fontSize: 15, lineHeight: 22 },
+  err: { fontSize: 13 },
+  button: { height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.two },
+  buttonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
+  link: { alignItems: 'center', paddingVertical: Spacing.two },
+  linkText: { fontSize: 14 },
 });
