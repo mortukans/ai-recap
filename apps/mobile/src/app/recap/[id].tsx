@@ -2,11 +2,13 @@ import {
   type Context,
   type RecapDocument,
   formatDuration,
+  formatRecapMarkdown,
   isAiRecapError,
   parseRecapDocument,
 } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -25,6 +27,7 @@ import { DEFAULT_SUMMARY_MODEL, generateRecap, getByokLLMProvider } from '../../
 import { artifactsRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
 import { RecapDocumentView } from '../../features/recap/RecapDocumentView';
 import { ensureTranscript } from '../../features/recap/ensureTranscript';
+import { MARKDOWN, exportTextFile, safeFilename, shareText } from '../../features/share/shareService';
 import { getSummaryModel } from '../../lib/prefs';
 
 function parseArtifactContent(content: string): RecapDocument | null {
@@ -86,6 +89,16 @@ export default function RecapDetailScreen() {
     [id],
   );
 
+  const onShare = useCallback(async () => {
+    if (doc) await shareText(formatRecapMarkdown(doc, { title }), title || undefined);
+  }, [doc, title]);
+
+  const onExportMd = useCallback(async () => {
+    if (doc) {
+      await exportTextFile(`${safeFilename(title)}.md`, formatRecapMarkdown(doc, { title }), MARKDOWN.mime, MARKDOWN.uti);
+    }
+  }, [doc, title]);
+
   const onGenerate = useCallback(async () => {
     if (!id) return;
     setError(null);
@@ -133,6 +146,18 @@ export default function RecapDetailScreen() {
 
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['bottom']}>
+      <Stack.Screen
+        options={{
+          headerShown: true,
+          title: '',
+          headerRight: () =>
+            doc ? (
+              <Pressable onPress={onShare} hitSlop={8}>
+                <Ionicons name="share-outline" size={22} color={c.text} />
+              </Pressable>
+            ) : null,
+        }}
+      />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[styles.h1, { color: c.text }]}>{title || t('app.name')}</Text>
         <Text style={[styles.meta, { color: c.textSecondary }]}>
@@ -199,6 +224,12 @@ export default function RecapDetailScreen() {
             <Text style={[styles.buttonThirdText, { color: c.text }]}>{t('speakers.open')}</Text>
           </Pressable>
         </View>
+
+        {doc ? (
+          <Pressable onPress={onExportMd} style={styles.link}>
+            <Text style={[styles.linkText, { color: c.textSecondary }]}>{t('share.exportMd')}</Text>
+          </Pressable>
+        ) : null}
 
         <Pressable onPress={() => router.push('/settings')} style={styles.link}>
           <Text style={[styles.linkText, { color: c.textSecondary }]}>Set OpenRouter key in Settings →</Text>

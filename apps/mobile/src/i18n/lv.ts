@@ -71,6 +71,11 @@ export const lv: TranslationKeys = {
     empty: 'Transkripta vēl nav.',
     noAudio: 'Audio atskaņošana pieejama pēc ieraksta ierīcē.',
   },
+  share: {
+    shareRecap: 'Kopīgot kopsavilkumu',
+    exportMd: 'Eksportēt (.md)',
+    exportTranscript: 'Eksportēt transkriptu',
+  },
   status: {
     recording: 'Ieraksta',
     recorded: 'Ierakstīts',

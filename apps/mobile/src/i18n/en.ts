@@ -69,6 +69,11 @@ export const en = {
     empty: 'No transcript yet.',
     noAudio: 'Audio plays here after you record on device.',
   },
+  share: {
+    shareRecap: 'Share recap',
+    exportMd: 'Export recap (.md)',
+    exportTranscript: 'Export transcript',
+  },
   status: {
     recording: 'Recording',
     recorded: 'Recorded',

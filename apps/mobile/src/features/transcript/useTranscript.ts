@@ -1,5 +1,6 @@
 import {
   type SpeakerGroup,
+  type TranscriptSegment,
   distinctSpeakerLabels,
   groupSegmentsBySpeaker,
   resolveSpeakerName,
@@ -11,19 +12,21 @@ import { ensureTranscript } from '../recap/ensureTranscript';
 
 export function useTranscript(recapId: string) {
   const [groups, setGroups] = useState<SpeakerGroup[]>([]);
+  const [segments, setSegments] = useState<TranscriptSegment[]>([]);
   const [nameByLabel, setNameByLabel] = useState<Record<string, string>>({});
   const [detectedLanguages, setDetectedLanguages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
-      const segments = await ensureTranscript(recapId);
-      setGroups(groupSegmentsBySpeaker(segments));
+      const segs = await ensureTranscript(recapId);
+      setSegments(segs);
+      setGroups(groupSegmentsBySpeaker(segs));
 
       const recap = await recapsRepo.getRecap(recapId);
       setDetectedLanguages(recap?.detectedLanguages ?? []);
 
-      await recapSpeakersRepo.ensureForLabels(recapId, distinctSpeakerLabels(segments));
+      await recapSpeakersRepo.ensureForLabels(recapId, distinctSpeakerLabels(segs));
       const speakers = await recapSpeakersRepo.listByRecap(recapId);
       const profiles = await speakerProfilesRepo.listProfiles();
       const profileName = (id: string | null) => profiles.find((p) => p.id === id)?.displayName ?? null;
@@ -49,5 +52,5 @@ export function useTranscript(recapId: string) {
     [nameByLabel],
   );
 
-  return { groups, nameFor, detectedLanguages, loading, reload: load };
+  return { groups, segments, nameFor, detectedLanguages, loading, reload: load };
 }
