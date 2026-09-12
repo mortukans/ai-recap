@@ -1,8 +1,9 @@
 import type { Context } from '@ai-recap/core';
-import { useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
@@ -10,6 +11,7 @@ import { contextsRepo } from '../../db';
 
 export default function ContextsScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const [contexts, setContexts] = useState<Context[]>([]);
@@ -28,14 +30,24 @@ export default function ContextsScreen() {
 
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['top']}>
-      <Text style={[styles.h1, { color: c.text }]}>{t('contexts.title')}</Text>
+      <View style={styles.header}>
+        <Text style={[styles.h1, { color: c.text }]}>{t('contexts.title')}</Text>
+        <Pressable
+          onPress={() => router.push({ pathname: '/context/[id]', params: { id: 'new' } })}
+          style={[styles.newBtn, { backgroundColor: c.backgroundElement }]}>
+          <Ionicons name="add" size={18} color={c.text} />
+          <Text style={[styles.newBtnText, { color: c.text }]}>{t('contexts.newContext')}</Text>
+        </Pressable>
+      </View>
       <FlatList
         data={contexts}
         keyExtractor={(x) => x.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={<Text style={[styles.empty, { color: c.textSecondary }]}>{t('contexts.empty')}</Text>}
         renderItem={({ item }) => (
-          <View style={[styles.row, { borderBottomColor: c.backgroundElement }]}>
+          <Pressable
+            onPress={() => router.push({ pathname: '/context/[id]', params: { id: item.id } })}
+            style={[styles.row, { borderBottomColor: c.backgroundElement }]}>
             <View style={styles.rowHead}>
               <Text style={[styles.rowTitle, { color: c.text }]}>{item.name}</Text>
               {item.isBuiltIn && (
@@ -49,7 +61,7 @@ export default function ContextsScreen() {
                 {item.summary}
               </Text>
             ) : null}
-          </View>
+          </Pressable>
         )}
       />
     </SafeAreaView>
@@ -58,7 +70,16 @@ export default function ContextsScreen() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  h1: { fontSize: 28, fontWeight: '700', paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+  },
+  h1: { fontSize: 28, fontWeight: '700' },
+  newBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 10, paddingHorizontal: Spacing.two, paddingVertical: 6 },
+  newBtnText: { fontSize: 14, fontWeight: '600' },
   listContent: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
   empty: { fontSize: 15, lineHeight: 22 },
   row: { paddingVertical: Spacing.three, borderBottomWidth: StyleSheet.hairlineWidth },

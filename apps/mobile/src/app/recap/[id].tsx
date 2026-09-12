@@ -1,7 +1,13 @@
-import { type RecapDocument, formatDuration, isAiRecapError, parseRecapDocument } from '@ai-recap/core';
+import {
+  type Context,
+  type RecapDocument,
+  formatDuration,
+  isAiRecapError,
+  parseRecapDocument,
+} from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -43,6 +49,8 @@ export default function RecapDetailScreen() {
   const [doc, setDoc] = useState<RecapDocument | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contexts, setContexts] = useState<Context[]>([]);
+  const [contextId, setContextId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -53,6 +61,8 @@ export default function RecapDetailScreen() {
         setDurationSeconds(recap.durationSeconds);
         setStatus(recap.status);
       }
+      setContextId(recap?.contextId ?? null);
+      setContexts(await contextsRepo.listContexts());
       setSegmentCount((await segmentsRepo.listSegments(id)).length);
       const latest = await artifactsRepo.latestArtifactOfType(id, 'summary');
       setDoc(latest ? parseArtifactContent(latest.content) : null);
@@ -61,9 +71,20 @@ export default function RecapDetailScreen() {
     }
   }, [id]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  const selectContext = useCallback(
+    async (ctxId: string) => {
+      if (!id) return;
+      setContextId(ctxId);
+      await recapsRepo.updateRecap(id, { contextId: ctxId });
+    },
+    [id],
+  );
 
   const onGenerate = useCallback(async () => {
     if (!id) return;
@@ -74,7 +95,7 @@ export default function RecapDetailScreen() {
       const segments = await ensureTranscript(id);
 
       const context =
-        (await contextsRepo.getContext(presetContextId('workMeeting'))) ?? null;
+        (await contextsRepo.getContext(contextId ?? presetContextId('workMeeting'))) ?? null;
       const model = (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL;
 
       await recapsRepo.updateRecapStatus(id, 'summarizing');
@@ -108,7 +129,7 @@ export default function RecapDetailScreen() {
     } finally {
       setGenerating(false);
     }
-  }, [id, title, durationSeconds, load]);
+  }, [id, title, durationSeconds, contextId, load]);
 
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['bottom']}>
@@ -117,6 +138,25 @@ export default function RecapDetailScreen() {
         <Text style={[styles.meta, { color: c.textSecondary }]}>
           {formatDuration(durationSeconds)} · {t(`status.${status}`)} · {segmentCount} segments
         </Text>
+
+        {contexts.length > 0 ? (
+          <View>
+            <Text style={[styles.ctxLabel, { color: c.textSecondary }]}>{t('contexts.selectLabel')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.ctxRow}>
+              {contexts.map((ctx) => {
+                const selected = (contextId ?? presetContextId('workMeeting')) === ctx.id;
+                return (
+                  <Pressable
+                    key={ctx.id}
+                    onPress={() => selectContext(ctx.id)}
+                    style={[styles.ctxChip, { backgroundColor: selected ? '#208AEF' : c.backgroundElement }]}>
+                    <Text style={[styles.ctxChipText, { color: selected ? '#fff' : c.text }]}>{ctx.name}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
 
         {doc ? (
           <RecapDocumentView doc={doc} palette={c} />
@@ -173,6 +213,10 @@ const styles = StyleSheet.create({
   content: { padding: Spacing.four, gap: Spacing.three },
   h1: { fontSize: 24, fontWeight: '700' },
   meta: { fontSize: 14 },
+  ctxLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.one },
+  ctxRow: { gap: Spacing.two, paddingRight: Spacing.four },
+  ctxChip: { borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: 8 },
+  ctxChipText: { fontSize: 14, fontWeight: '500' },
   card: { borderRadius: 16, padding: Spacing.four },
   cardText: { fontSize: 15, lineHeight: 22 },
   err: { fontSize: 13 },
