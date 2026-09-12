@@ -144,14 +144,19 @@ export default function RecapDetailScreen() {
 
         <View style={styles.secondaryRow}>
           <Pressable
+            onPress={() => router.push({ pathname: '/transcript/[id]', params: { id: id ?? '' } })}
+            style={[styles.buttonThird, { backgroundColor: c.backgroundSelected }]}>
+            <Text style={[styles.buttonThirdText, { color: c.text }]}>{t('transcript.open')}</Text>
+          </Pressable>
+          <Pressable
             onPress={() => router.push({ pathname: '/chat/[id]', params: { id: id ?? '' } })}
-            style={[styles.buttonHalf, { backgroundColor: c.backgroundSelected }]}>
-            <Text style={[styles.buttonText, { color: c.text }]}>{t('chat.open')}</Text>
+            style={[styles.buttonThird, { backgroundColor: c.backgroundSelected }]}>
+            <Text style={[styles.buttonThirdText, { color: c.text }]}>{t('chat.open')}</Text>
           </Pressable>
           <Pressable
             onPress={() => router.push({ pathname: '/speakers/[id]', params: { id: id ?? '' } })}
-            style={[styles.buttonHalf, { backgroundColor: c.backgroundSelected }]}>
-            <Text style={[styles.buttonText, { color: c.text }]}>{t('speakers.open')}</Text>
+            style={[styles.buttonThird, { backgroundColor: c.backgroundSelected }]}>
+            <Text style={[styles.buttonThirdText, { color: c.text }]}>{t('speakers.open')}</Text>
           </Pressable>
         </View>
 
@@ -173,7 +178,8 @@ const styles = StyleSheet.create({
   err: { fontSize: 13 },
   button: { height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.two },
   secondaryRow: { flexDirection: 'row', gap: Spacing.two },
-  buttonHalf: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  buttonThird: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  buttonThirdText: { fontSize: 14, fontWeight: '600' },
   buttonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
   link: { alignItems: 'center', paddingVertical: Spacing.two },
   linkText: { fontSize: 14 },

@@ -52,6 +52,12 @@ export const en = {
     savedPeople: 'Saved people',
     empty: 'No speakers detected yet.',
   },
+  transcript: {
+    title: 'Transcript',
+    open: 'Transcript',
+    empty: 'No transcript yet.',
+    noAudio: 'Audio plays here after you record on device.',
+  },
   status: {
     recording: 'Recording',
     recorded: 'Recorded',

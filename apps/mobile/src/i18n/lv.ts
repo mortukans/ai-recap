@@ -54,6 +54,12 @@ export const lv: TranslationKeys = {
     savedPeople: 'Saglabātās personas',
     empty: 'Runātāji vēl nav atpazīti.',
   },
+  transcript: {
+    title: 'Transkripts',
+    open: 'Transkripts',
+    empty: 'Transkripta vēl nav.',
+    noAudio: 'Audio atskaņošana pieejama pēc ieraksta ierīcē.',
+  },
   status: {
     recording: 'Ieraksta',
     recorded: 'Ierakstīts',
