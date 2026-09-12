@@ -1,6 +1,6 @@
-import { formatTimestamp } from '@ai-recap/core';
+import { formatTimestamp, recordingLimitState } from '@ai-recap/core';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing } from '@/constants/theme';
 import { useRecording } from '../features/recording/useRecording';
 import { processingCoordinator } from '../processing/coordinator';
+import { useCapabilities } from '../purchases/useCapabilities';
 
 export default function RecordingScreen() {
   const { t } = useTranslation();
@@ -15,6 +16,9 @@ export default function RecordingScreen() {
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const { status, seconds, error, start, pause, resume, finish } = useRecording();
+  const caps = useCapabilities();
+  const limit = recordingLimitState(seconds, caps.maxRecordingMinutes);
+  const autoStopped = useRef(false);
 
   // Auto-start when the screen opens.
   useEffect(() => {
@@ -35,6 +39,15 @@ export default function RecordingScreen() {
     }
   };
 
+  // Free-plan cap: auto-stop at the limit (the recording is still saved + processed).
+  useEffect(() => {
+    if (limit.shouldStop && !autoStopped.current && isActive) {
+      autoStopped.current = true;
+      void onFinish();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [limit.shouldStop, isActive]);
+
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]}>
       <View style={styles.center}>
@@ -46,6 +59,12 @@ export default function RecordingScreen() {
         </View>
 
         <Text style={[styles.timer, { color: c.text }]}>{formatTimestamp(seconds)}</Text>
+
+        {(limit.warn || limit.strongWarn) && !isPaused ? (
+          <Text style={[styles.warn, { color: limit.strongWarn ? '#E5484D' : '#F5A623' }]}>
+            {t('free.limitIn', { time: formatTimestamp(limit.remainingSeconds) })}
+          </Text>
+        ) : null}
 
         {error === 'permission' ? (
           <Text style={[styles.note, { color: '#E5484D' }]}>{t('recording.permissionNeeded')}</Text>
@@ -80,6 +99,7 @@ const styles = StyleSheet.create({
   statusText: { fontSize: 15, textTransform: 'uppercase', letterSpacing: 1 },
   timer: { fontSize: 64, fontWeight: '200', fontVariant: ['tabular-nums'] },
   note: { fontSize: 14 },
+  warn: { fontSize: 14, fontWeight: '600' },
   err: { fontSize: 12, marginTop: Spacing.two, paddingHorizontal: Spacing.four, textAlign: 'center' },
   controls: { flexDirection: 'row', gap: Spacing.three, padding: Spacing.four },
   secondary: { flex: 1, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },

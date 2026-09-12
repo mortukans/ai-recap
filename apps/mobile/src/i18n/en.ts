@@ -74,6 +74,13 @@ export const en = {
     exportMd: 'Export recap (.md)',
     exportTranscript: 'Export transcript',
   },
+  free: {
+    recapsToday: '{{used}} of {{max}} recaps today',
+    limitTitle: 'Daily limit reached',
+    limitMsg: 'You have used all {{max}} free recaps today.',
+    limitIn: 'Free limit in {{time}}',
+    stopped: 'Free plan limit reached — recording saved.',
+  },
   status: {
     recording: 'Recording',
     recorded: 'Recorded',

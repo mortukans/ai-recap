@@ -7,7 +7,7 @@ import { DEFAULT_SETTINGS } from '@ai-recap/core';
 import { Recorder } from '@ai-recap/recorder';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { chunksRepo, recapsRepo } from '../../db';
+import { chunksRepo, recapsRepo, usageRepo } from '../../db';
 import { newId } from '../../lib/ids';
 
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'paused' | 'finishing';
@@ -99,6 +99,19 @@ export function useRecording() {
           endedAt: Date.now(),
           durationSeconds: result.durationSeconds,
           status: 'recorded',
+        });
+        await usageRepo.addUsage({
+          id: newId(),
+          recapId: id,
+          recordingSeconds: result.durationSeconds,
+          transcriptionSeconds: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          model: '',
+          provider: '',
+          estimatedCostMicros: 0,
+          occurredAt: Date.now(),
+          syncedToBackend: false,
         });
       }
       return id;

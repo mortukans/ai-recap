@@ -1,14 +1,15 @@
-import { type Recap, formatDuration } from '@ai-recap/core';
+import { type Recap, dailyQuotaState, formatDuration, startOfDay } from '@ai-recap/core';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Pressable, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
+import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { recapsRepo } from '../../db';
 import { processingCoordinator } from '../../processing/coordinator';
+import { useCapabilities } from '../../purchases/useCapabilities';
 
 export default function RecapsScreen() {
   const { t } = useTranslation();
@@ -18,6 +19,9 @@ export default function RecapsScreen() {
 
   const [recaps, setRecaps] = useState<Recap[]>([]);
   const [query, setQuery] = useState('');
+  const [startedToday, setStartedToday] = useState(0);
+  const caps = useCapabilities();
+  const quota = dailyQuotaState(startedToday, caps.maxRecapsPerDay);
 
   const load = useCallback(async (q: string) => {
     try {
@@ -27,14 +31,31 @@ export default function RecapsScreen() {
     }
   }, []);
 
+  const refreshQuota = useCallback(async () => {
+    try {
+      setStartedToday(await recapsRepo.countStartedSince(startOfDay(Date.now())));
+    } catch {
+      setStartedToday(0);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       void load(query);
-    }, [load, query]),
+      void refreshQuota();
+    }, [load, query, refreshQuota]),
   );
 
   // Live-refresh the library as the processing coordinator advances recap statuses.
   useEffect(() => processingCoordinator.onChange(() => void load(query)), [load, query]);
+
+  const onStart = () => {
+    if (!quota.canStart) {
+      Alert.alert(t('free.limitTitle'), t('free.limitMsg', { max: caps.maxRecapsPerDay ?? 0 }));
+      return;
+    }
+    router.push('/recording');
+  };
 
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['top']}>
@@ -44,11 +65,17 @@ export default function RecapsScreen() {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.push('/recording')}
+        onPress={onStart}
         style={[styles.startButton, { backgroundColor: '#208AEF' }]}>
         <Ionicons name="mic" color="#fff" size={22} />
         <Text style={styles.startButtonText}>{t('home.startRecap')}</Text>
       </Pressable>
+
+      {quota.max !== null ? (
+        <Text style={[styles.quota, { color: c.textSecondary }]}>
+          {t('free.recapsToday', { used: quota.started, max: quota.max })}
+        </Text>
+      ) : null}
 
       <TextInput
         placeholder={t('home.searchPlaceholder')}
@@ -98,6 +125,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   startButtonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  quota: { textAlign: 'center', marginTop: Spacing.two, fontSize: 13 },
   search: {
     marginHorizontal: Spacing.four,
     marginTop: Spacing.three,

@@ -76,6 +76,13 @@ export const lv: TranslationKeys = {
     exportMd: 'Eksportēt (.md)',
     exportTranscript: 'Eksportēt transkriptu',
   },
+  free: {
+    recapsToday: '{{used}} no {{max}} ierakstiem šodien',
+    limitTitle: 'Sasniegts dienas limits',
+    limitMsg: 'Šodien izmantoti visi {{max}} bezmaksas ieraksti.',
+    limitIn: 'Bezmaksas limits pēc {{time}}',
+    stopped: 'Sasniegts bezmaksas plāna limits — ieraksts saglabāts.',
+  },
   status: {
     recording: 'Ieraksta',
     recorded: 'Ierakstīts',

@@ -6,3 +6,4 @@ export * as contextsRepo from './contexts';
 export * as chatRepo from './chat';
 export * as recapSpeakersRepo from './recapSpeakers';
 export * as speakerProfilesRepo from './speakerProfiles';
+export * as usageRepo from './usage';

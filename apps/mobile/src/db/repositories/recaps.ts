@@ -3,7 +3,7 @@
  * engine stays swappable (AI_RECAP_TECHNICAL_ARCHITECTURE.md §5.1).
  */
 import type { Recap, RecapStatus } from '@ai-recap/core';
-import { desc, eq, inArray, like } from 'drizzle-orm';
+import { count, desc, eq, gte, inArray, like } from 'drizzle-orm';
 import { getDatabase } from '../client';
 import { recaps } from '../schema';
 
@@ -54,6 +54,15 @@ export async function pageRecaps({ offset = 0, limit = 50, query }: RecapPagePar
         .offset(offset)
     : await base;
   return rows.map(toDomain);
+}
+
+/** Count recaps started at or after `since` (for Free daily-quota enforcement). */
+export async function countStartedSince(since: number): Promise<number> {
+  const rows = await getDatabase()
+    .select({ n: count() })
+    .from(recaps)
+    .where(gte(recaps.startedAt, since));
+  return rows.at(0)?.n ?? 0;
 }
 
 export async function listByStatuses(statuses: RecapStatus[]): Promise<Recap[]> {
