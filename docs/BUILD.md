@@ -23,6 +23,7 @@ cp apps/mobile/.env.example apps/mobile/.env   # fill in Supabase + RevenueCat p
 
 ```bash
 pnpm -r typecheck                    # core, prompts, and the app
+pnpm test                            # vitest unit tests (state machine, coordinator, parsing, …)
 pnpm --filter mobile db:generate     # regenerate SQLite migrations after schema changes
 ```
 

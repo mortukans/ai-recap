@@ -13,9 +13,12 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "pnpm -r --if-present lint",
     "db:generate": "pnpm --filter mobile db:generate",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "pnpm -r exec rimraf node_modules && rimraf node_modules"
   },
   "devDependencies": {
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.0"
   }
 }
