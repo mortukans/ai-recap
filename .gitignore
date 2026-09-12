@@ -32,6 +32,13 @@ GoogleService-Info.plist
 # drizzle
 apps/mobile/src/db/migrations/meta/_journal.json.bak
 
+# transcription benchmark local data
+tools/transcription-benchmark/audio/
+tools/transcription-benchmark/dataset/audio/
+tools/transcription-benchmark/dataset/reference/*.txt
+!tools/transcription-benchmark/dataset/reference/*.example.txt
+tools/transcription-benchmark/results/
+
 # misc
 .DS_Store
 *.log

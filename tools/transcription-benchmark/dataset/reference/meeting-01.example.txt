@@ -1,0 +1,1 @@
+Labrīt visiem, sāksim ar Sales7 integrāciju. Jā, mums vēl jāsakārto product information management jeb PIM datu plūsma. Right, the database should initially be read-only until we validate the sync. Es sagatavošu API specifikāciju līdz piektdienai. Labi, tad nolemts — Jānis pārbauda Magento pusi, es sagatavoju vidi.

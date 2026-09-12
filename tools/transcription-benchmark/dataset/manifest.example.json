@@ -1,0 +1,13 @@
+{
+  "$comment": "Copy to manifest.json, drop audio into audio/, and write matching reference transcripts. Add as many entries as you can — 10–20 real LV/EN meetings gives a trustworthy signal.",
+  "entries": [
+    {
+      "id": "meeting-01",
+      "audio": "audio/meeting-01.m4a",
+      "reference": "reference/meeting-01.example.txt",
+      "durationSeconds": 312,
+      "language": "lv-en",
+      "speakers": 2
+    }
+  ]
+}

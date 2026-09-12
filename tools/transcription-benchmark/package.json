@@ -1,0 +1,11 @@
+{
+  "name": "airecap-transcription-benchmark",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Zero-dependency LV/EN transcription benchmark for AI Recap (MVP task M2-2). Runs on plain Node 20+, no install needed.",
+  "scripts": {
+    "bench": "node run.mjs",
+    "selftest": "node run.mjs --selftest"
+  }
+}
