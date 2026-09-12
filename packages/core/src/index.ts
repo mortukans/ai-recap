@@ -5,6 +5,7 @@
 export * from './enums';
 export * from './models';
 export * from './recap-document';
+export * from './speakers';
 export * from './state-machine';
 export * from './capabilities';
 export * from './settings';

@@ -43,6 +43,15 @@ export const en = {
     empty: 'Ask anything about this meeting.',
     needKey: 'Set your OpenRouter key in Settings first.',
   },
+  speakers: {
+    title: 'Speakers',
+    open: 'Speakers',
+    namePlaceholder: 'Name (e.g. Jānis)',
+    save: 'Save',
+    saveAsPerson: 'Save as person',
+    savedPeople: 'Saved people',
+    empty: 'No speakers detected yet.',
+  },
   status: {
     recording: 'Recording',
     recorded: 'Recorded',

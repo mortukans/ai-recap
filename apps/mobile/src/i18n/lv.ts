@@ -45,6 +45,15 @@ export const lv: TranslationKeys = {
     empty: 'Jautā jebko par šo sanāksmi.',
     needKey: 'Vispirms iestatījumos norādi savu OpenRouter atslēgu.',
   },
+  speakers: {
+    title: 'Runātāji',
+    open: 'Runātāji',
+    namePlaceholder: 'Vārds (piem., Jānis)',
+    save: 'Saglabāt',
+    saveAsPerson: 'Saglabāt kā personu',
+    savedPeople: 'Saglabātās personas',
+    empty: 'Runātāji vēl nav atpazīti.',
+  },
   status: {
     recording: 'Ieraksta',
     recorded: 'Ierakstīts',
