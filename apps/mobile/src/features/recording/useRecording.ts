@@ -5,7 +5,6 @@
  */
 import { DEFAULT_SETTINGS } from '@ai-recap/core';
 import { Recorder } from '@ai-recap/recorder';
-import type { EventSubscription } from 'expo-modules-core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { chunksRepo, recapsRepo } from '../../db';
@@ -18,7 +17,7 @@ export function useRecording() {
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const recapIdRef = useRef<string | null>(null);
-  const subsRef = useRef<EventSubscription[]>([]);
+  const subsRef = useRef<{ remove: () => void }[]>([]);
 
   const cleanup = useCallback(() => {
     for (const s of subsRef.current) s.remove();
