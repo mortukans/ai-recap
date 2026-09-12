@@ -35,6 +35,14 @@ export const en = {
     privacy: 'Privacy',
     about: 'About',
   },
+  chat: {
+    title: 'Ask AI Recap',
+    open: 'Ask AI',
+    placeholder: 'Ask about this meeting…',
+    send: 'Send',
+    empty: 'Ask anything about this meeting.',
+    needKey: 'Set your OpenRouter key in Settings first.',
+  },
   status: {
     recording: 'Recording',
     recorded: 'Recorded',

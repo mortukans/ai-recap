@@ -5,3 +5,4 @@ export { HostedTranscriber } from './transcription/hosted';
 export { MockTranscriber } from './transcription/mock';
 export { getByokLLMProvider, DEFAULT_SUMMARY_MODEL } from './providers';
 export { generateRecap, type GenerateRecapInput } from './recap/generateRecap';
+export { askChat, type AskChatInput } from './chat/askChat';

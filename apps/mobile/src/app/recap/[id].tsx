@@ -1,10 +1,4 @@
-import {
-  type RecapDocument,
-  type TranscriptSegment,
-  formatDuration,
-  isAiRecapError,
-  parseRecapDocument,
-} from '@ai-recap/core';
+import { type RecapDocument, formatDuration, isAiRecapError, parseRecapDocument } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -21,10 +15,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
-import { DEFAULT_SUMMARY_MODEL, MockTranscriber, generateRecap, getByokLLMProvider } from '../../ai';
+import { DEFAULT_SUMMARY_MODEL, generateRecap, getByokLLMProvider } from '../../ai';
 import { artifactsRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
 import { RecapDocumentView } from '../../features/recap/RecapDocumentView';
-import { newId } from '../../lib/ids';
+import { ensureTranscript } from '../../features/recap/ensureTranscript';
 import { getSummaryModel } from '../../lib/prefs';
 
 function parseArtifactContent(content: string): RecapDocument | null {
@@ -76,22 +70,8 @@ export default function RecapDetailScreen() {
     setError(null);
     setGenerating(true);
     try {
-      // Ensure we have a transcript. DEMO: synthesize one with the mock transcriber if none exists yet.
-      let segments = await segmentsRepo.listSegments(id);
-      if (segments.length === 0) {
-        const mock = await new MockTranscriber().transcribe({ recapId: id, audioUris: [] });
-        segments = mock.segments.map<TranscriptSegment>((s) => ({
-          id: newId(),
-          recapId: id,
-          startTime: s.startTime,
-          endTime: s.endTime,
-          speakerLabel: s.speakerLabel,
-          language: s.language,
-          text: s.text,
-        }));
-        await segmentsRepo.replaceSegments(id, segments);
-        await recapsRepo.updateRecap(id, { detectedLanguages: mock.detectedLanguages });
-      }
+      // DEMO: synthesize a transcript if none exists yet (real transcription lands in M2).
+      const segments = await ensureTranscript(id);
 
       const context =
         (await contextsRepo.getContext(presetContextId('workMeeting'))) ?? null;
@@ -160,6 +140,12 @@ export default function RecapDetailScreen() {
           ) : (
             <Text style={styles.buttonText}>{doc ? 'Regenerate recap' : 'Generate recap'}</Text>
           )}
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push({ pathname: '/chat/[id]', params: { id: id ?? '' } })}
+          style={[styles.button, { backgroundColor: c.backgroundSelected }]}>
+          <Text style={[styles.buttonText, { color: c.text }]}>{t('chat.open')}</Text>
         </Pressable>
 
         <Pressable onPress={() => router.push('/settings')} style={styles.link}>

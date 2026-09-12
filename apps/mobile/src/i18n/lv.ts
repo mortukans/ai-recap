@@ -37,6 +37,14 @@ export const lv: TranslationKeys = {
     privacy: 'Privātums',
     about: 'Par lietotni',
   },
+  chat: {
+    title: 'Jautāt AI Recap',
+    open: 'Jautāt AI',
+    placeholder: 'Jautā par šo sanāksmi…',
+    send: 'Sūtīt',
+    empty: 'Jautā jebko par šo sanāksmi.',
+    needKey: 'Vispirms iestatījumos norādi savu OpenRouter atslēgu.',
+  },
   status: {
     recording: 'Ieraksta',
     recorded: 'Ierakstīts',
