@@ -10,8 +10,10 @@ enum RecapStorage {
   private static let manifestQueue = DispatchQueue(label: "lv.airecap.recorder.manifest")
 
   static func recapsRoot() throws -> URL {
+    // Documents directory so the JS layer (expo-file-system Paths.document) can resolve chunk URIs
+    // for playback. Encrypted at rest via the protection key below.
     let base = try FileManager.default.url(
-      for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+      for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
     let root = base.appendingPathComponent("Recaps", isDirectory: true)
     try FileManager.default.createDirectory(
       at: root,

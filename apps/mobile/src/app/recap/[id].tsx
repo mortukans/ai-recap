@@ -24,8 +24,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { DEFAULT_SUMMARY_MODEL, generateRecap, getByokLLMProvider } from '../../ai';
-import { artifactsRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
+import { artifactsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
 import { RecapDocumentView } from '../../features/recap/RecapDocumentView';
+import { RecordingPlayer } from '../../features/recap/RecordingPlayer';
+import { chunkUri } from '../../features/recap/audioUri';
 import { ensureTranscript } from '../../features/recap/ensureTranscript';
 import { MARKDOWN, exportTextFile, safeFilename, shareText } from '../../features/share/shareService';
 import { getSummaryModel } from '../../lib/prefs';
@@ -54,6 +56,7 @@ export default function RecapDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [contexts, setContexts] = useState<Context[]>([]);
   const [contextId, setContextId] = useState<string | null>(null);
+  const [firstChunkUri, setFirstChunkUri] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -67,6 +70,8 @@ export default function RecapDetailScreen() {
       setContextId(recap?.contextId ?? null);
       setContexts(await contextsRepo.listContexts());
       setSegmentCount((await segmentsRepo.listSegments(id)).length);
+      const chunks = await chunksRepo.listChunks(id);
+      setFirstChunkUri(chunks[0] ? chunkUri(id, chunks[0].relativePath) : null);
       const latest = await artifactsRepo.latestArtifactOfType(id, 'summary');
       setDoc(latest ? parseArtifactContent(latest.content) : null);
     } catch {
@@ -163,6 +168,8 @@ export default function RecapDetailScreen() {
         <Text style={[styles.meta, { color: c.textSecondary }]}>
           {formatDuration(durationSeconds)} · {t(`status.${status}`)} · {segmentCount} segments
         </Text>
+
+        {firstChunkUri ? <RecordingPlayer uri={firstChunkUri} palette={c} /> : null}
 
         {contexts.length > 0 ? (
           <View>
