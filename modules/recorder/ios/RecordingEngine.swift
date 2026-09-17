@@ -31,6 +31,9 @@ final class RecordingEngine {
   private var framesInChunk: AVAudioFrameCount = 0
   private var accumulatedSeconds: Double = 0
   private var lastEmittedSecond: Int = -1
+  private var observersRegistered = false
+  /// Set while the system (call/Siri) paused us, so `.ended` only auto-resumes what it interrupted.
+  private var pausedBySystem = false
 
   // MARK: - Permission
 
@@ -60,7 +63,23 @@ final class RecordingEngine {
       options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
     )
     try session.setActive(true)
-    registerInterruptionObservers()
+    if !observersRegistered {
+      registerInterruptionObservers()
+      observersRegistered = true
+    }
+  }
+
+  /// (Re)install the input tap using the input node's *current* format. Called on start and after any
+  /// route change / media-services reset, since the hardware format can change underneath us.
+  private func installTap() {
+    let input = audioEngine.inputNode
+    let format = input.outputFormat(forBus: 0)
+    self.tapFormat = format
+    self.fileSampleRate = format.sampleRate > 0 ? format.sampleRate : 48000
+    self.fileChannels = max(1, format.channelCount)
+    input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
+      self?.writeQueue.async { self?.appendBuffer(buffer) }
+    }
   }
 
   // MARK: - Lifecycle
@@ -76,18 +95,10 @@ final class RecordingEngine {
     try configureSession()
     self.recapDir = try RecapStorage.chunkDirectory(for: recapId)
 
-    // Read the input format only after the session is active.
-    let input = audioEngine.inputNode
-    let format = input.outputFormat(forBus: 0)
-    self.tapFormat = format
-    self.fileSampleRate = format.sampleRate > 0 ? format.sampleRate : 48000
-    self.fileChannels = max(1, format.channelCount)
-
+    // Read the input format only after the session is active; each chunk file is opened in that
+    // format, so the tap must be installed before the first chunk is opened.
+    installTap()
     try openNextChunk()
-
-    input.installTap(onBus: 0, bufferSize: 4096, format: format) { [weak self] buffer, _ in
-      self?.writeQueue.async { self?.appendBuffer(buffer) }
-    }
 
     audioEngine.prepare()
     try audioEngine.start()
@@ -96,6 +107,7 @@ final class RecordingEngine {
 
   func pause() throws {
     guard state == .recording else { return }
+    pausedBySystem = false
     audioEngine.pause()
     writeQueue.sync { closeCurrentChunk() }
     state = .paused
@@ -103,10 +115,35 @@ final class RecordingEngine {
 
   func resume() throws {
     guard state == .paused else { return }
+    // After a phone call the session may have been deactivated by the system.
+    try AVAudioSession.sharedInstance().setActive(true)
     try writeQueue.sync { try openNextChunk() }
     try audioEngine.start()
     state = .recording
+    pausedBySystem = false
     onEvent?("resumed", [:])
+  }
+
+  /// Rebuild the capture path when the input hardware changed (AirPods connected/disconnected,
+  /// media services reset). Closes the current chunk (never losing completed audio), re-reads the
+  /// input format, opens a fresh chunk and restarts the engine.
+  private func restartCapture(reason: String) {
+    guard state == .recording else { return }
+    audioEngine.inputNode.removeTap(onBus: 0)
+    audioEngine.stop()
+    writeQueue.sync { closeCurrentChunk() }
+    do {
+      try AVAudioSession.sharedInstance().setActive(true)
+      installTap()
+      try writeQueue.sync { try openNextChunk() }
+      audioEngine.prepare()
+      try audioEngine.start()
+      onEvent?("resumed", ["reason": reason])
+    } catch {
+      state = .paused
+      onEvent?("interrupted", ["reason": reason])
+      onEvent?("error", ["code": "recorder/route-restart-failed", "message": "\(error)"])
+    }
   }
 
   func finish() throws -> RecordResult {
@@ -215,8 +252,12 @@ final class RecordingEngine {
                    name: AVAudioSession.interruptionNotification, object: nil)
     nc.addObserver(self, selector: #selector(handleRouteChange(_:)),
                    name: AVAudioSession.routeChangeNotification, object: nil)
+    nc.addObserver(self, selector: #selector(handleMediaServicesReset(_:)),
+                   name: AVAudioSession.mediaServicesWereResetNotification, object: nil)
   }
 
+  /// Phone call / Siri / alarm: auto-pause on `.began`; auto-resume on `.ended` only if the system
+  /// says we should and it was the system (not the user) that paused us.
   @objc private func handleInterruption(_ note: Notification) {
     guard
       let info = note.userInfo,
@@ -226,25 +267,56 @@ final class RecordingEngine {
 
     switch type {
     case .began:
+      guard state == .recording else { return }
       try? pause()
+      pausedBySystem = true
       onEvent?("interrupted", ["reason": "interruption"])
     case .ended:
+      guard pausedBySystem, state == .paused else { return }
       let opts = (info[AVAudioSessionInterruptionOptionKey] as? UInt).map(AVAudioSession.InterruptionOptions.init)
-      if opts?.contains(.shouldResume) == true { try? resume() }
+      if opts?.contains(.shouldResume) == true {
+        do { try resume() } catch {
+          onEvent?("error", ["code": "recorder/resume-failed", "message": "\(error)"])
+        }
+      }
     @unknown default:
       break
     }
   }
 
+  /// Headset/AirPods plugged or unplugged, or the category changed under us: the input format may
+  /// differ, so rebuild the capture path. Recording continues on the new input without user action.
   @objc private func handleRouteChange(_ note: Notification) {
     guard
       let info = note.userInfo,
       let raw = info[AVAudioSessionRouteChangeReasonKey] as? UInt,
       let reason = AVAudioSession.RouteChangeReason(rawValue: raw)
     else { return }
-    if reason == .oldDeviceUnavailable {
-      try? pause()
-      onEvent?("interrupted", ["reason": "routeChange"])
+    switch reason {
+    case .oldDeviceUnavailable, .newDeviceAvailable, .categoryChange, .override:
+      // Notifications arrive on an arbitrary thread; engine work is serialized on main.
+      DispatchQueue.main.async { [weak self] in
+        self?.restartCapture(reason: "routeChange")
+      }
+    default:
+      break
+    }
+  }
+
+  /// Media server crashed/reset: every audio object is invalid; rebuild the whole engine path.
+  @objc private func handleMediaServicesReset(_ note: Notification) {
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self, self.state == .recording || self.state == .paused else { return }
+      let wasRecording = self.state == .recording
+      self.state = .recording  // restartCapture requires .recording to do work
+      if wasRecording {
+        self.restartCapture(reason: "mediaServicesReset")
+      } else {
+        // Paused: just make sure the engine is sane for the eventual resume.
+        self.audioEngine.stop()
+        try? self.configureSession()
+        self.state = .paused
+      }
     }
   }
 }

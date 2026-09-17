@@ -84,6 +84,15 @@ export function useRecording() {
           console.warn('[recording] native error:', e.code, e.message);
           setError(e.message);
         }),
+        // System pauses (phone call, Siri, headset unplugged) — keep UI + Live Activity truthful.
+        Recorder.addListener('interrupted', () => {
+          setStatus('paused');
+          void updateRecordingActivity(true, secondsRef.current);
+        }),
+        Recorder.addListener('resumed', () => {
+          setStatus('recording');
+          void updateRecordingActivity(false, secondsRef.current);
+        }),
       );
 
       await Recorder.start(id, { chunkSeconds: DEFAULT_SETTINGS.chunkDurationSeconds });
