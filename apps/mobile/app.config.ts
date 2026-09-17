@@ -71,13 +71,12 @@ const config: ExpoConfig = {
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
     revenueCatIosKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY ?? '',
     revenueCatAndroidKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY ?? '',
-    // Filled by `eas init` — paste the printed id here (or set EAS_PROJECT_ID in .env). Public UUID.
+    // EAS project link (public UUID, set by `eas init`).
     eas: {
-      projectId: process.env.EAS_PROJECT_ID ?? '',
+      projectId: '77676bfa-f0e5-43f7-8f61-a1c7696ccefb',
     },
   },
-  // Set to your Expo username/organization if `eas init` asks for an owner.
-  owner: process.env.EAS_OWNER || undefined,
+  owner: 'martinmort',
 };
 
 export default config;
