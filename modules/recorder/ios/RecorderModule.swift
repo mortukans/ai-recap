@@ -50,5 +50,10 @@ public class RecorderModule: Module {
     AsyncFunction("addMarker") { (label: String?) in
       self.engine.addMarker(label: label)
     }
+
+    AsyncFunction("transcribeFile") { (uri: String, locale: String) -> String in
+      guard let url = URL(string: uri) else { return "" }
+      return try await SpeechTranscription.transcribeFile(url: url, localeId: locale)
+    }
   }
 }

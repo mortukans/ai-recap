@@ -34,8 +34,8 @@ vi.mock('../db', () => ({
 }));
 
 vi.mock('../ai', () => ({
-  MockTranscriber: class {
-    supportsDiarization = true;
+  AppleSpeechTranscriber: class {
+    supportsDiarization = false;
     runsOnDevice = true;
     async transcribe() {
       return { segments: [], detectedLanguages: ['lv'], durationSeconds: 0 };

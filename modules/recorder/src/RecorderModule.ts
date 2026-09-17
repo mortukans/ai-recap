@@ -18,6 +18,7 @@ interface NativeRecorder {
   resume(): Promise<void>;
   finish(): Promise<RecordResult>;
   addMarker(label: string | null): Promise<void>;
+  transcribeFile(uri: string, locale: string): Promise<string>;
   addListener<E extends RecorderEventName>(
     event: E,
     listener: (payload: RecorderEvents[E]) => void,
@@ -37,6 +38,7 @@ function createUnavailableStub(): NativeRecorder {
     resume: unavailable,
     finish: unavailable,
     addMarker: unavailable,
+    transcribeFile: unavailable,
     addListener: () => ({ remove: () => undefined }) as EventSubscription,
   };
 }
@@ -58,6 +60,7 @@ export const Recorder = {
   resume: () => native.resume(),
   finish: () => native.finish(),
   addMarker: (label: string | null = null) => native.addMarker(label),
+  transcribeFile: (uri: string, locale: string) => native.transcribeFile(uri, locale),
   addListener: <E extends RecorderEventName>(
     event: E,
     listener: (payload: RecorderEvents[E]) => void,

@@ -13,9 +13,9 @@ import { presetContextId } from '@ai-recap/prompts';
 import NetInfo from '@react-native-community/netinfo';
 
 import {
+  AppleSpeechTranscriber,
   DEFAULT_SUMMARY_MODEL,
   type TranscriptionProvider,
-  MockTranscriber,
   generateRecap,
   getByokLLMProvider,
 } from '../ai';
@@ -210,5 +210,5 @@ export class ProcessingCoordinator {
   }
 }
 
-/** App-wide singleton. Swap MockTranscriber for HostedTranscriber when M2 transcription lands. */
-export const processingCoordinator = new ProcessingCoordinator(new MockTranscriber());
+/** App-wide singleton. On-device Apple Speech transcription (Product Plan §7 Option C). */
+export const processingCoordinator = new ProcessingCoordinator(new AppleSpeechTranscriber());
