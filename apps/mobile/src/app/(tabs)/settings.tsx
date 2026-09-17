@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
-import { DEFAULT_SUMMARY_MODEL, getByokLLMProvider } from '../../ai';
+import { DEFAULT_SUMMARY_MODEL, DEFAULT_TRANSCRIPTION_MODEL, getByokLLMProvider } from '../../ai';
 import {
   clearOpenAiKey,
   clearOpenRouterKey,
@@ -24,7 +24,7 @@ import {
   setOpenAiKey,
   setOpenRouterKey,
 } from '../../security/byok-store';
-import { getSummaryModel, setSummaryModel } from '../../lib/prefs';
+import { getSummaryModel, getTranscriptionModel, setSummaryModel, setTranscriptionModel } from '../../lib/prefs';
 
 function Row({ label, value, color, secondary }: { label: string; value: string; color: string; secondary: string }) {
   return (
@@ -48,11 +48,13 @@ export default function SettingsScreen() {
   const [testResult, setTestResult] = useState<string | null>(null);
   const [hasOpenAiKey, setHasOpenAiKey] = useState(false);
   const [openAiInput, setOpenAiInput] = useState('');
+  const [transcriptionModel, setTranscriptionModelState] = useState(DEFAULT_TRANSCRIPTION_MODEL);
 
   useEffect(() => {
     (async () => {
       setHasKey((await getOpenRouterKey()) !== null);
       setModel((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
+      setTranscriptionModelState((await getTranscriptionModel()) ?? DEFAULT_TRANSCRIPTION_MODEL);
       setHasOpenAiKey((await getOpenAiKey()) !== null);
     })();
   }, []);
@@ -77,6 +79,7 @@ export default function SettingsScreen() {
       setKeyInput('');
     }
     await setSummaryModel(model);
+    await setTranscriptionModel(transcriptionModel || DEFAULT_TRANSCRIPTION_MODEL);
     setTestResult(null);
   };
 
@@ -137,6 +140,15 @@ export default function SettingsScreen() {
           autoCorrect={false}
           style={[styles.input, { backgroundColor: c.backgroundElement, color: c.text }]}
         />
+        <TextInput
+          placeholder={`Transcription model (audio-capable, e.g. ${DEFAULT_TRANSCRIPTION_MODEL})`}
+          placeholderTextColor={c.textSecondary}
+          value={transcriptionModel}
+          onChangeText={setTranscriptionModelState}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={[styles.input, { backgroundColor: c.backgroundElement, color: c.text }]}
+        />
         <View style={styles.buttonRow}>
           <Pressable onPress={onSave} style={[styles.btn, { backgroundColor: '#208AEF' }]}>
             <Text style={styles.btnText}>Save</Text>
@@ -156,7 +168,9 @@ export default function SettingsScreen() {
         <Text style={[styles.hint, { color: c.textSecondary }]}>
           {hasOpenAiKey
             ? 'An OpenAI key is saved — recordings transcribe with Whisper (handles Latvian + English).'
-            : 'Optional. Add an OpenAI API key for Latvian/English transcription. Without it, recordings use Apple on-device speech.'}
+            : hasKey
+              ? 'Optional. Recordings already transcribe through your OpenRouter key (model above). Add an OpenAI key only if you prefer Whisper.'
+              : 'Optional. With an OpenRouter key above, transcription runs through it too. Without any key, recordings use Apple on-device speech.'}
         </Text>
         <TextInput
           placeholder={hasOpenAiKey ? '•••••••••••• (saved)' : 'sk-...'}
