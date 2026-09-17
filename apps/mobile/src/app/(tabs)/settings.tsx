@@ -16,7 +16,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { DEFAULT_SUMMARY_MODEL, getByokLLMProvider } from '../../ai';
-import { clearOpenRouterKey, getOpenRouterKey, setOpenRouterKey } from '../../security/byok-store';
+import {
+  clearOpenAiKey,
+  clearOpenRouterKey,
+  getOpenAiKey,
+  getOpenRouterKey,
+  setOpenAiKey,
+  setOpenRouterKey,
+} from '../../security/byok-store';
 import { getSummaryModel, setSummaryModel } from '../../lib/prefs';
 
 function Row({ label, value, color, secondary }: { label: string; value: string; color: string; secondary: string }) {
@@ -39,13 +46,29 @@ export default function SettingsScreen() {
   const [model, setModel] = useState(DEFAULT_SUMMARY_MODEL);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [hasOpenAiKey, setHasOpenAiKey] = useState(false);
+  const [openAiInput, setOpenAiInput] = useState('');
 
   useEffect(() => {
     (async () => {
       setHasKey((await getOpenRouterKey()) !== null);
       setModel((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
+      setHasOpenAiKey((await getOpenAiKey()) !== null);
     })();
   }, []);
+
+  const onSaveOpenAi = async () => {
+    if (openAiInput.trim()) {
+      await setOpenAiKey(openAiInput.trim());
+      setHasOpenAiKey(true);
+      setOpenAiInput('');
+    }
+  };
+
+  const onClearOpenAi = async () => {
+    await clearOpenAiKey();
+    setHasOpenAiKey(false);
+  };
 
   const onSave = async () => {
     if (keyInput.trim()) {
@@ -128,6 +151,33 @@ export default function SettingsScreen() {
           </Pressable>
         ) : null}
         {testResult ? <Text style={[styles.hint, { color: c.textSecondary }]}>{testResult}</Text> : null}
+
+        <Text style={[styles.section, { color: c.textSecondary }]}>Transcription (OpenAI Whisper)</Text>
+        <Text style={[styles.hint, { color: c.textSecondary }]}>
+          {hasOpenAiKey
+            ? 'An OpenAI key is saved — recordings transcribe with Whisper (handles Latvian + English).'
+            : 'Optional. Add an OpenAI API key for Latvian/English transcription. Without it, recordings use Apple on-device speech.'}
+        </Text>
+        <TextInput
+          placeholder={hasOpenAiKey ? '•••••••••••• (saved)' : 'sk-...'}
+          placeholderTextColor={c.textSecondary}
+          value={openAiInput}
+          onChangeText={setOpenAiInput}
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry
+          style={[styles.input, { backgroundColor: c.backgroundElement, color: c.text }]}
+        />
+        <View style={styles.buttonRow}>
+          <Pressable onPress={onSaveOpenAi} style={[styles.btn, { backgroundColor: '#208AEF' }]}>
+            <Text style={styles.btnText}>Save</Text>
+          </Pressable>
+          {hasOpenAiKey ? (
+            <Pressable onPress={onClearOpenAi} style={[styles.btn, { backgroundColor: c.backgroundSelected }]}>
+              <Text style={[styles.btnText, { color: c.text }]}>Remove</Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         <Text style={[styles.section, { color: c.textSecondary }]}>{t('settings.recording')}</Text>
         <Row label={t('settings.language')} value={t('settings.languageAuto')} color={c.text} secondary={c.backgroundElement} />

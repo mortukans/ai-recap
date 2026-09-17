@@ -13,8 +13,8 @@ import { presetContextId } from '@ai-recap/prompts';
 import NetInfo from '@react-native-community/netinfo';
 
 import {
-  AppleSpeechTranscriber,
   DEFAULT_SUMMARY_MODEL,
+  SmartTranscriber,
   type TranscriptionProvider,
   generateRecap,
   getByokLLMProvider,
@@ -218,5 +218,5 @@ export class ProcessingCoordinator {
   }
 }
 
-/** App-wide singleton. On-device Apple Speech transcription (Product Plan §7 Option C). */
-export const processingCoordinator = new ProcessingCoordinator(new AppleSpeechTranscriber());
+/** App-wide singleton. OpenAI Whisper if an OpenAI key is set, else Apple on-device (Product Plan §7). */
+export const processingCoordinator = new ProcessingCoordinator(new SmartTranscriber());

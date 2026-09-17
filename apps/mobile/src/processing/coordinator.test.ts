@@ -39,7 +39,7 @@ vi.mock('../db', () => ({
 }));
 
 vi.mock('../ai', () => ({
-  AppleSpeechTranscriber: class {
+  SmartTranscriber: class {
     supportsDiarization = false;
     runsOnDevice = true;
     async transcribe() {
