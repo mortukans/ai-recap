@@ -15,7 +15,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
-import { DEFAULT_SUMMARY_MODEL, DEFAULT_TRANSCRIPTION_MODEL, getByokLLMProvider } from '../../ai';
+import { DEFAULT_SUMMARY_MODEL, DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '../../ai';
+import { ModelPicker } from '../../features/settings/ModelPicker';
 import {
   clearOpenAiKey,
   clearOpenRouterKey,
@@ -49,13 +50,26 @@ export default function SettingsScreen() {
   const [hasOpenAiKey, setHasOpenAiKey] = useState(false);
   const [openAiInput, setOpenAiInput] = useState('');
   const [transcriptionModel, setTranscriptionModelState] = useState(DEFAULT_TRANSCRIPTION_MODEL);
+  const [models, setModels] = useState<LlmModel[]>([]);
+  const [picker, setPicker] = useState<'summary' | 'transcription' | null>(null);
+
+  // Live model list from OpenRouter (only when a key exists); feeds the pickers.
+  const loadModels = async () => {
+    try {
+      setModels(await getByokLLMProvider().availableModels());
+    } catch {
+      setModels([]);
+    }
+  };
 
   useEffect(() => {
     (async () => {
-      setHasKey((await getOpenRouterKey()) !== null);
+      const keyPresent = (await getOpenRouterKey()) !== null;
+      setHasKey(keyPresent);
       setModel((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
       setTranscriptionModelState((await getTranscriptionModel()) ?? DEFAULT_TRANSCRIPTION_MODEL);
       setHasOpenAiKey((await getOpenAiKey()) !== null);
+      if (keyPresent) void loadModels();
     })();
   }, []);
 
@@ -87,8 +101,9 @@ export default function SettingsScreen() {
     setTesting(true);
     setTestResult(null);
     try {
-      const models = await getByokLLMProvider().availableModels();
-      setTestResult(models.length > 0 ? `OK — ${models.length} models available` : 'No models returned');
+      const list = await getByokLLMProvider().availableModels();
+      setModels(list);
+      setTestResult(list.length > 0 ? `OK — ${list.length} models available` : 'No models returned');
     } catch (e) {
       setTestResult(e instanceof Error ? e.message : 'Connection failed');
     } finally {
@@ -131,23 +146,51 @@ export default function SettingsScreen() {
           secureTextEntry
           style={[styles.input, { backgroundColor: c.backgroundElement, color: c.text }]}
         />
-        <TextInput
-          placeholder="Summary model (e.g. openai/gpt-4o-mini)"
-          placeholderTextColor={c.textSecondary}
-          value={model}
-          onChangeText={setModel}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={[styles.input, { backgroundColor: c.backgroundElement, color: c.text }]}
-        />
-        <TextInput
-          placeholder={`Transcription model (audio-capable, e.g. ${DEFAULT_TRANSCRIPTION_MODEL})`}
-          placeholderTextColor={c.textSecondary}
-          value={transcriptionModel}
-          onChangeText={setTranscriptionModelState}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={[styles.input, { backgroundColor: c.backgroundElement, color: c.text }]}
+        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Summary model</Text>
+        <View style={styles.fieldRow}>
+          <TextInput
+            placeholder="e.g. openai/gpt-4o-mini"
+            placeholderTextColor={c.textSecondary}
+            value={model}
+            onChangeText={setModel}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[styles.input, styles.fieldInput, { backgroundColor: c.backgroundElement, color: c.text }]}
+          />
+          <Pressable
+            onPress={() => setPicker('summary')}
+            disabled={models.length === 0}
+            style={[styles.choose, { backgroundColor: c.backgroundSelected, opacity: models.length === 0 ? 0.4 : 1 }]}>
+            <Text style={[styles.chooseText, { color: c.text }]}>Choose</Text>
+          </Pressable>
+        </View>
+        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Transcription model (audio-capable)</Text>
+        <View style={styles.fieldRow}>
+          <TextInput
+            placeholder={`e.g. ${DEFAULT_TRANSCRIPTION_MODEL}`}
+            placeholderTextColor={c.textSecondary}
+            value={transcriptionModel}
+            onChangeText={setTranscriptionModelState}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={[styles.input, styles.fieldInput, { backgroundColor: c.backgroundElement, color: c.text }]}
+          />
+          <Pressable
+            onPress={() => setPicker('transcription')}
+            disabled={models.length === 0}
+            style={[styles.choose, { backgroundColor: c.backgroundSelected, opacity: models.length === 0 ? 0.4 : 1 }]}>
+            <Text style={[styles.chooseText, { color: c.text }]}>Choose</Text>
+          </Pressable>
+        </View>
+        <ModelPicker
+          visible={picker !== null}
+          title={picker === 'transcription' ? 'Transcription model' : 'Summary model'}
+          models={models}
+          selectedId={picker === 'transcription' ? transcriptionModel : model}
+          requireModality={picker === 'transcription' ? 'audio' : undefined}
+          palette={c}
+          onSelect={(id) => (picker === 'transcription' ? setTranscriptionModelState(id) : setModel(id))}
+          onClose={() => setPicker(null)}
         />
         <View style={styles.buttonRow}>
           <Pressable onPress={onSave} style={[styles.btn, { backgroundColor: '#208AEF' }]}>
@@ -218,6 +261,11 @@ const styles = StyleSheet.create({
   },
   hint: { fontSize: 13, lineHeight: 19, marginBottom: Spacing.two },
   input: { height: 44, borderRadius: 12, paddingHorizontal: Spacing.three, marginBottom: Spacing.two },
+  fieldLabel: { fontSize: 12, marginBottom: 4 },
+  fieldRow: { flexDirection: 'row', gap: Spacing.two },
+  fieldInput: { flex: 1 },
+  choose: { height: 44, borderRadius: 12, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center' },
+  chooseText: { fontSize: 14, fontWeight: '600' },
   buttonRow: { flexDirection: 'row', gap: Spacing.two },
   btn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   btnText: { color: '#fff', fontSize: 15, fontWeight: '600' },

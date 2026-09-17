@@ -26,7 +26,12 @@ interface ChatCompletionResponse {
 }
 
 interface ModelsResponse {
-  data?: { id: string; name?: string; context_length?: number }[];
+  data?: {
+    id: string;
+    name?: string;
+    context_length?: number;
+    architecture?: { input_modalities?: string[] };
+  }[];
 }
 
 export class OpenRouterLLMProvider implements LLMProvider {
@@ -73,6 +78,7 @@ export class OpenRouterLLMProvider implements LLMProvider {
       id: m.id,
       name: m.name ?? m.id,
       contextLength: m.context_length,
+      inputModalities: m.architecture?.input_modalities,
     }));
   }
 

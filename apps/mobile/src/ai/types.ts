@@ -38,6 +38,8 @@ export interface LlmModel {
   id: string;
   name: string;
   contextLength?: number;
+  /** Accepted input kinds, e.g. ['text', 'image', 'audio'] — used to pick transcription-capable models. */
+  inputModalities?: string[];
 }
 
 export interface LlmMessage {
