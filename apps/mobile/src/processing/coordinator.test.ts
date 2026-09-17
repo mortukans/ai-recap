@@ -29,7 +29,12 @@ vi.mock('../db', () => ({
       [...h.store.values()].filter((r) => statuses.includes(r.status)),
   },
   chunksRepo: { listChunks: async () => [] },
-  segmentsRepo: { replaceSegments: async () => {}, listSegments: async () => [] },
+  segmentsRepo: {
+    replaceSegments: async () => {},
+    listSegments: async () => [
+      { id: 's', recapId: 'x', startTime: 0, endTime: 1, speakerLabel: null, language: 'lv', text: 'hi' },
+    ],
+  },
   contextsRepo: { getContext: async () => null },
 }));
 
