@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,7 +26,27 @@ import {
   setOpenAiKey,
   setOpenRouterKey,
 } from '../../security/byok-store';
-import { getSummaryModel, getTranscriptionModel, setSummaryModel, setTranscriptionModel } from '../../lib/prefs';
+import {
+  applyAudioRetention,
+  deleteAllRecordings,
+  formatBytes,
+  getAudioStorageBytes,
+} from '../../features/storage/audioStorage';
+import {
+  getAudioRetentionDays,
+  getSummaryModel,
+  getTranscriptionModel,
+  setAudioRetentionDays,
+  setSummaryModel,
+  setTranscriptionModel,
+} from '../../lib/prefs';
+
+const RETENTION_OPTIONS: { label: string; days: number | null }[] = [
+  { label: '7 days', days: 7 },
+  { label: '30 days', days: 30 },
+  { label: '90 days', days: 90 },
+  { label: 'Forever', days: null },
+];
 
 function Row({ label, value, color, secondary }: { label: string; value: string; color: string; secondary: string }) {
   return (
@@ -52,6 +73,34 @@ export default function SettingsScreen() {
   const [transcriptionModel, setTranscriptionModelState] = useState(DEFAULT_TRANSCRIPTION_MODEL);
   const [models, setModels] = useState<LlmModel[]>([]);
   const [picker, setPicker] = useState<'summary' | 'transcription' | null>(null);
+  const [audioBytes, setAudioBytes] = useState<number | null>(null);
+  const [retentionDays, setRetentionDays] = useState<number | null>(null);
+
+  const refreshStorage = async () => setAudioBytes(await getAudioStorageBytes());
+
+  const onRetention = async (days: number | null) => {
+    setRetentionDays(days);
+    await setAudioRetentionDays(days);
+    await applyAudioRetention();
+    await refreshStorage();
+  };
+
+  const onDeleteAll = () => {
+    Alert.alert(
+      'Delete all recordings?',
+      'Every recording, transcript and recap on this device will be permanently removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete all',
+          style: 'destructive',
+          onPress: () => {
+            void deleteAllRecordings().then(refreshStorage);
+          },
+        },
+      ],
+    );
+  };
 
   // Live model list from OpenRouter (only when a key exists); feeds the pickers.
   const loadModels = async () => {
@@ -69,6 +118,8 @@ export default function SettingsScreen() {
       setModel((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
       setTranscriptionModelState((await getTranscriptionModel()) ?? DEFAULT_TRANSCRIPTION_MODEL);
       setHasOpenAiKey((await getOpenAiKey()) !== null);
+      setRetentionDays(await getAudioRetentionDays());
+      void refreshStorage();
       if (keyPresent) void loadModels();
     })();
   }, []);
@@ -241,6 +292,33 @@ export default function SettingsScreen() {
         <Row label={t('settings.chunkDuration')} value={`${DEFAULT_SETTINGS.chunkDurationSeconds}s`} color={c.text} secondary={c.backgroundElement} />
         <Row label={t('settings.audioQuality')} value={DEFAULT_SETTINGS.audioQuality} color={c.text} secondary={c.backgroundElement} />
 
+        <Text style={[styles.section, { color: c.textSecondary }]}>Storage & privacy</Text>
+        <Row
+          label="Audio on this device"
+          value={audioBytes === null ? '…' : formatBytes(audioBytes)}
+          color={c.text}
+          secondary={c.backgroundElement}
+        />
+        <Text style={[styles.hint, { color: c.textSecondary, marginTop: Spacing.two }]}>
+          Keep audio after processing. Transcripts and recaps are always kept.
+        </Text>
+        <View style={styles.chipRow}>
+          {RETENTION_OPTIONS.map((opt) => {
+            const selected = opt.days === retentionDays;
+            return (
+              <Pressable
+                key={opt.label}
+                onPress={() => void onRetention(opt.days)}
+                style={[styles.chip, { backgroundColor: selected ? '#208AEF' : c.backgroundElement }]}>
+                <Text style={[styles.chipText, { color: selected ? '#fff' : c.text }]}>{opt.label}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Pressable onPress={onDeleteAll} style={styles.clear}>
+          <Text style={[styles.clearText, { color: '#E5484D' }]}>Delete all recordings, transcripts and recaps</Text>
+        </Pressable>
+
         <Text style={[styles.section, { color: c.textSecondary }]}>{t('settings.about')}</Text>
         <Row label="Version" value={Constants.expoConfig?.version ?? '0.0.1'} color={c.text} secondary={c.backgroundElement} />
       </ScrollView>
@@ -266,6 +344,9 @@ const styles = StyleSheet.create({
   fieldInput: { flex: 1 },
   choose: { height: 44, borderRadius: 12, paddingHorizontal: Spacing.three, alignItems: 'center', justifyContent: 'center' },
   chooseText: { fontSize: 14, fontWeight: '600' },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
+  chip: { borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: 8 },
+  chipText: { fontSize: 14, fontWeight: '500' },
   buttonRow: { flexDirection: 'row', gap: Spacing.two },
   btn: { flex: 1, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   btnText: { color: '#fff', fontSize: 15, fontWeight: '600' },

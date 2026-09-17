@@ -32,6 +32,11 @@ export async function listChunks(recapId: string): Promise<AudioChunk[]> {
   return rows.map(toDomain);
 }
 
+/** Remove a recap's chunk rows (audio retention: transcript/recap stay, audio goes). */
+export async function deleteChunks(recapId: string): Promise<void> {
+  await getDatabase().delete(audioChunks).where(eq(audioChunks.recapId, recapId));
+}
+
 export async function setChunkUploadStatus(chunkId: string, status: UploadStatus): Promise<void> {
   await getDatabase().update(audioChunks).set({ uploadStatus: status }).where(eq(audioChunks.id, chunkId));
 }
