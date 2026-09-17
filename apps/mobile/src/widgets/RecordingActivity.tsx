@@ -6,6 +6,10 @@
  * components. Props cross the bridge as JSON, so dates travel as epoch milliseconds. The elapsed timer
  * counts up on its own via SwiftUI `timerInterval`; the app only pushes a snapshot on pause/resume/finish.
  */
+// The widget body is serialized into WidgetKit's isolated JS runtime, which has no React — the React
+// Compiler must not memoize anything here (it would inject `_c` from react/compiler-runtime).
+'use no memo';
+
 import { HStack, Image, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   clipShape,
