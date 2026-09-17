@@ -89,6 +89,11 @@ export const en = {
     limitIn: 'Free limit in {{time}}',
     stopped: 'Free plan limit reached — recording saved.',
   },
+  notes: {
+    label: 'Notes for the AI',
+    placeholder: 'Agenda, participants, project names, anything the recap should know…',
+    saved: 'Saved — used the next time you generate.',
+  },
   processing: {
     transcribing: 'Transcribing your recording…',
     summarizing: 'Writing the recap…',

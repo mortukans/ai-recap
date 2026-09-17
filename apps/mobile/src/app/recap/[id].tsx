@@ -17,6 +17,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   useColorScheme,
 } from 'react-native';
@@ -24,7 +25,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { DEFAULT_SUMMARY_MODEL, generateRecap, getByokLLMProvider } from '../../ai';
-import { artifactsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
+import { artifactsRepo, attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
+import { newId } from '../../lib/ids';
 import { RecapDocumentView } from '../../features/recap/RecapDocumentView';
 import { RecordingPlayer } from '../../features/recap/RecordingPlayer';
 import { chunkUri } from '../../features/recap/audioUri';
@@ -59,6 +61,8 @@ export default function RecapDetailScreen() {
   const [contextId, setContextId] = useState<string | null>(null);
   const [playChunks, setPlayChunks] = useState<{ uri: string; duration: number }[]>([]);
   const [processingError, setProcessingError] = useState<string | null>(null);
+  const [notes, setNotes] = useState('');
+  const [notesSaved, setNotesSaved] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -70,6 +74,7 @@ export default function RecapDetailScreen() {
         setStatus(recap.status);
         setProcessingError(processingCoordinator.getLastError(id));
       }
+      setNotes((await attachmentsRepo.getNotes(id))?.extractedText ?? '');
       setContextId(recap?.contextId ?? null);
       setContexts(await contextsRepo.listContexts());
       setSegmentCount((await segmentsRepo.listSegments(id)).length);
@@ -100,6 +105,13 @@ export default function RecapDetailScreen() {
     [id],
   );
 
+  // Notes (agenda, participants…) are stored as an inline text attachment and fed to generation.
+  const saveNotes = useCallback(async () => {
+    if (!id) return;
+    await attachmentsRepo.setNotes(id, notes, newId);
+    setNotesSaved(notes.trim().length > 0);
+  }, [id, notes]);
+
   const onRetry = useCallback(() => {
     if (id) void processingCoordinator.retry(id);
   }, [id]);
@@ -128,6 +140,8 @@ export default function RecapDetailScreen() {
       const context =
         (await contextsRepo.getContext(contextId ?? presetContextId('workMeeting'))) ?? null;
       const model = (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL;
+      await attachmentsRepo.setNotes(id, notes, newId); // make sure unsaved edits count
+      const extraContext = await attachmentsRepo.collectExtraContext(id);
 
       await recapsRepo.updateRecapStatus(id, 'summarizing');
       const { doc: generated } = await generateRecap({
@@ -142,6 +156,7 @@ export default function RecapDetailScreen() {
         transcript: segments,
         provider: getByokLLMProvider(),
         model,
+        extraContext,
       });
 
       if (!title && generated.title) {
@@ -160,7 +175,7 @@ export default function RecapDetailScreen() {
     } finally {
       setGenerating(false);
     }
-  }, [id, title, durationSeconds, contextId, load]);
+  }, [id, title, durationSeconds, contextId, notes, load]);
 
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['bottom']}>
@@ -225,6 +240,23 @@ export default function RecapDetailScreen() {
             </ScrollView>
           </View>
         ) : null}
+
+        <View>
+          <Text style={[styles.ctxLabel, { color: c.textSecondary }]}>{t('notes.label')}</Text>
+          <TextInput
+            value={notes}
+            onChangeText={(v) => {
+              setNotes(v);
+              setNotesSaved(false);
+            }}
+            onBlur={() => void saveNotes()}
+            placeholder={t('notes.placeholder')}
+            placeholderTextColor={c.textSecondary}
+            multiline
+            style={[styles.notes, { backgroundColor: c.backgroundElement, color: c.text }]}
+          />
+          {notesSaved ? <Text style={[styles.notesHint, { color: c.textSecondary }]}>{t('notes.saved')}</Text> : null}
+        </View>
 
         {doc ? (
           <RecapDocumentView doc={doc} palette={c} />
@@ -292,6 +324,8 @@ const styles = StyleSheet.create({
   ctxChip: { borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: 8 },
   ctxChipText: { fontSize: 14, fontWeight: '500' },
   card: { borderRadius: 16, padding: Spacing.four },
+  notes: { minHeight: 72, borderRadius: 12, padding: Spacing.three, fontSize: 15, lineHeight: 20, textAlignVertical: 'top' },
+  notesHint: { fontSize: 12, marginTop: 4 },
   banner: {
     flexDirection: 'row',
     alignItems: 'center',

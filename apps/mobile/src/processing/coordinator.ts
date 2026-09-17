@@ -19,7 +19,7 @@ import {
   generateRecap,
   getByokLLMProvider,
 } from '../ai';
-import { chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../db';
+import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../db';
 import { newId } from '../lib/ids';
 import { getSummaryModel } from '../lib/prefs';
 import { getOpenRouterKey } from '../security/byok-store';
@@ -211,6 +211,7 @@ export class ProcessingCoordinator {
     const context =
       (await contextsRepo.getContext(recap.contextId ?? presetContextId('workMeeting'))) ?? null;
     const model = (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL;
+    const extraContext = await attachmentsRepo.collectExtraContext(recap.id).catch(() => undefined);
     await withRetry(
       () =>
         generateRecap({
@@ -224,6 +225,7 @@ export class ProcessingCoordinator {
           transcript: segments,
           provider: getByokLLMProvider(),
           model,
+          extraContext,
         }),
       {
         attempts: 2,

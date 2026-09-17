@@ -36,6 +36,7 @@ vi.mock('../db', () => ({
     ],
   },
   contextsRepo: { getContext: async () => null },
+  attachmentsRepo: { collectExtraContext: async () => undefined },
 }));
 
 vi.mock('../ai', () => ({

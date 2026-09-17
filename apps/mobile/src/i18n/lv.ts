@@ -91,6 +91,11 @@ export const lv: TranslationKeys = {
     limitIn: 'Bezmaksas limits pēc {{time}}',
     stopped: 'Sasniegts bezmaksas plāna limits — ieraksts saglabāts.',
   },
+  notes: {
+    label: 'Piezīmes AI',
+    placeholder: 'Darba kārtība, dalībnieki, projektu nosaukumi — viss, ko kopsavilkumam vajadzētu zināt…',
+    saved: 'Saglabāts — tiks izmantots nākamajā ģenerēšanā.',
+  },
   processing: {
     transcribing: 'Transkribē ierakstu…',
     summarizing: 'Raksta kopsavilkumu…',

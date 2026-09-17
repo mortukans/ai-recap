@@ -8,4 +8,5 @@ export * as recapSpeakersRepo from './recapSpeakers';
 export * as speakerProfilesRepo from './speakerProfiles';
 export * as usageRepo from './usage';
 export * as searchRepo from './search';
+export * as attachmentsRepo from './attachments';
 export type { RecapSearchHit, SearchMatchSource } from './search';
