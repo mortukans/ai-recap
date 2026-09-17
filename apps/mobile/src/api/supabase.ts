@@ -7,7 +7,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { config, isBackendConfigured } from '../config';
 
-export const supabase = createClient(config.supabaseUrl, config.supabaseAnonKey, {
+// Fall back to harmless placeholders when the backend isn't configured, so importing this module
+// never throws at startup. When unconfigured, ensureSession() no-ops and no requests are made.
+const SUPABASE_URL = config.supabaseUrl || 'https://placeholder.supabase.co';
+const SUPABASE_ANON_KEY = config.supabaseAnonKey || 'placeholder-anon-key';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,
