@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { useRecording } from '../features/recording/useRecording';
+import { registerRecordingControls } from '../features/recording/watchBridge';
 import { processingCoordinator } from '../processing/coordinator';
 import { useCapabilities } from '../purchases/useCapabilities';
 
@@ -38,6 +39,13 @@ export default function RecordingScreen() {
       router.back();
     }
   };
+
+  // Apple Watch remote control acts on this live session while the screen is mounted.
+  useEffect(() => {
+    registerRecordingControls({ pause, resume, finish: onFinish });
+    return () => registerRecordingControls(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pause, resume, status]);
 
   // Free-plan cap: auto-stop at the limit (the recording is still saved + processed).
   useEffect(() => {

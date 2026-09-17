@@ -15,6 +15,7 @@ import {
   startRecordingActivity,
   updateRecordingActivity,
 } from './liveActivity';
+import { publishWatchState } from './watchBridge';
 
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'paused' | 'finishing';
 
@@ -88,16 +89,19 @@ export function useRecording() {
         Recorder.addListener('interrupted', () => {
           setStatus('paused');
           void updateRecordingActivity(true, secondsRef.current);
+          publishWatchState('paused', secondsRef.current);
         }),
         Recorder.addListener('resumed', () => {
           setStatus('recording');
           void updateRecordingActivity(false, secondsRef.current);
+          publishWatchState('recording', secondsRef.current);
         }),
       );
 
       await Recorder.start(id, { chunkSeconds: DEFAULT_SETTINGS.chunkDurationSeconds });
       setStatus('recording');
       void startRecordingActivity(maxSeconds); // Lock Screen / Dynamic Island timer (iOS, best-effort)
+      publishWatchState('recording', 0);
     } catch (e) {
       setStatus('idle');
       setError(e instanceof Error ? e.message : String(e));
@@ -108,17 +112,20 @@ export function useRecording() {
     await Recorder.pause();
     setStatus('paused');
     void updateRecordingActivity(true, secondsRef.current);
+    publishWatchState('paused', secondsRef.current);
   }, []);
 
   const resume = useCallback(async () => {
     await Recorder.resume();
     setStatus('recording');
     void updateRecordingActivity(false, secondsRef.current);
+    publishWatchState('recording', secondsRef.current);
   }, []);
 
   const finish = useCallback(async (): Promise<string | null> => {
     const id = recapIdRef.current;
     setStatus('finishing');
+    publishWatchState('finishing', secondsRef.current);
     try {
       const result = await Recorder.finish();
       if (id) {
@@ -158,6 +165,7 @@ export function useRecording() {
     } finally {
       cleanup();
       void endRecordingActivity();
+      publishWatchState('idle', 0);
       setStatus('idle');
       setSeconds(0);
       secondsRef.current = 0;

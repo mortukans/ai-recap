@@ -34,12 +34,20 @@ export interface RecorderErrorEvent {
   message: string;
 }
 
+/** Remote-control command from the Apple Watch app. */
+export interface WatchCommandEvent {
+  command: 'start' | 'pause' | 'resume' | 'finish' | (string & {});
+}
+
+export type WatchRecorderState = 'idle' | 'recording' | 'paused' | 'finishing';
+
 export interface RecorderEvents {
   duration: DurationEvent;
   chunkClosed: ChunkClosedEvent;
   interrupted: InterruptedEvent;
   resumed: Record<string, never>;
   error: RecorderErrorEvent;
+  watchCommand: WatchCommandEvent;
 }
 
 export type RecorderEventName = keyof RecorderEvents;

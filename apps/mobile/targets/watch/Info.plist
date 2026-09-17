@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Single-target watchOS app (no WatchKit extension). Companion id is injected by the plugin
+       via INFOPLIST_KEY_WKCompanionAppBundleIdentifier; keep this file to the watch-only keys. -->
+  <key>WKApplication</key>
+  <true/>
+  <key>WKRunsIndependentlyOfCompanionApp</key>
+  <false/>
+  <key>UISupportedInterfaceOrientations</key>
+  <array>
+    <string>UIInterfaceOrientationPortrait</string>
+    <string>UIInterfaceOrientationPortraitUpsideDown</string>
+  </array>
+</dict>
+</plist>

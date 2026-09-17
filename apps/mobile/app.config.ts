@@ -17,6 +17,8 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'automatic',
   ios: {
     bundleIdentifier: 'lv.airecap.app',
+    // Required by @bacons/apple-targets to sign the Apple Watch target (Individual team).
+    appleTeamId: 'QTWDCAAT9P',
     supportsTablet: false,
     icon: './assets/expo.icon',
     infoPlist: {
@@ -56,6 +58,8 @@ const config: ExpoConfig = {
     // Live Activity for in-progress recordings (Lock Screen + Dynamic Island), M6-1. No home-screen
     // widgets yet; the plugin still generates the WidgetKit extension target + NSSupportsLiveActivities.
     ['expo-widgets', { widgets: [] }],
+    // Apple Watch remote-control app (targets/watch) — start/pause/finish + mirrored timer.
+    '@bacons/apple-targets',
     [
       'expo-splash-screen',
       {

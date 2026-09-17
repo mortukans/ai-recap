@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useBootstrap } from '../bootstrap/useBootstrap';
+import { startWatchBridge } from '../features/recording/watchBridge';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -14,7 +15,10 @@ export default function RootLayout() {
   const { ready } = useBootstrap();
 
   useEffect(() => {
-    if (ready) void SplashScreen.hideAsync();
+    if (ready) {
+      void SplashScreen.hideAsync();
+      startWatchBridge(); // Apple Watch remote control (iOS only, no-op elsewhere)
+    }
   }, [ready]);
 
   return (
