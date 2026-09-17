@@ -6,7 +6,6 @@ allowBuilds:
   esbuild: true
   # Pulled in via expo-widgets/@expo/ui; pnpm 11 fails EAS installs on unapproved build scripts.
   unrs-resolver: true
-  unrs-resolver: set this to true or false
 # Force a single expo version across the workspace so the local native module (modules/recorder)
 # doesn't pull a duplicate expo tree (expo-doctor duplicate-native-module check).
 overrides:
