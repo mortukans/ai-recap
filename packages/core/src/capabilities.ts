@@ -26,7 +26,7 @@ export interface Entitlements {
 
 export const FREE_CAPABILITIES: Capabilities = {
   maxRecordingMinutes: 15,
-  maxRecapsPerDay: 5,
+  maxRecapsPerDay: null, // daily cap removed during on-device testing (was 5)
   hostedTranscription: true,
   hostedLLM: true, // standard model, basic summary
   byokEnabled: false,

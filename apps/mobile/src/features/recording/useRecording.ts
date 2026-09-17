@@ -58,18 +58,23 @@ export function useRecording() {
       subsRef.current.push(
         Recorder.addListener('duration', ({ seconds: s }) => setSeconds(s)),
         Recorder.addListener('chunkClosed', (chunk) => {
-          void chunksRepo.addChunk({
-            id: newId(),
-            recapId: id,
-            index: chunk.index,
-            relativePath: chunk.relativePath,
-            startOffset: chunk.startOffset,
-            duration: chunk.duration,
-            byteSize: chunk.byteSize,
-            uploadStatus: 'local',
-          });
+          chunksRepo
+            .addChunk({
+              id: newId(),
+              recapId: id,
+              index: chunk.index,
+              relativePath: chunk.relativePath,
+              startOffset: chunk.startOffset,
+              duration: chunk.duration,
+              byteSize: chunk.byteSize,
+              uploadStatus: 'local',
+            })
+            .catch((e) => console.warn('[recording] live chunk insert failed:', String(e)));
         }),
-        Recorder.addListener('error', (e) => setError(e.message)),
+        Recorder.addListener('error', (e) => {
+          console.warn('[recording] native error:', e.code, e.message);
+          setError(e.message);
+        }),
       );
 
       await Recorder.start(id, { chunkSeconds: DEFAULT_SETTINGS.chunkDurationSeconds });
@@ -96,18 +101,25 @@ export function useRecording() {
     try {
       const result = await Recorder.finish();
       if (id) {
-        // Source of truth: reconcile chunks from the manifest (the final chunk's event can be lost).
-        const manifestDuration = await reconcileChunksFromManifest(id, result.chunkCount || 1);
-        const duration = manifestDuration > 0 ? manifestDuration : result.durationSeconds;
+        // Save the native duration first (reliable) — never blocked by chunk persistence.
         await recapsRepo.updateRecap(id, {
           endedAt: Date.now(),
-          durationSeconds: duration,
+          durationSeconds: result.durationSeconds,
           status: 'recorded',
         });
+        // Best-effort: reconcile chunks from the manifest for playback/transcription.
+        try {
+          const manifestDuration = await reconcileChunksFromManifest(id, result.chunkCount || 1);
+          if (manifestDuration > result.durationSeconds) {
+            await recapsRepo.updateRecap(id, { durationSeconds: manifestDuration });
+          }
+        } catch (e) {
+          console.warn('[recording] chunk reconcile failed:', String(e));
+        }
         await usageRepo.addUsage({
           id: newId(),
           recapId: id,
-          recordingSeconds: duration,
+          recordingSeconds: result.durationSeconds,
           transcriptionSeconds: 0,
           inputTokens: 0,
           outputTokens: 0,

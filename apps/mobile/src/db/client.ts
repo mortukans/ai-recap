@@ -25,7 +25,23 @@ export async function initDatabase() {
   const encryptionKey = await getOrCreateDatabaseKey();
   const connection = open({ name: DB_NAME, encryptionKey });
 
-  dbSingleton = drizzle(connection, { schema });
+  // Concurrency hardening. The recorder inserts the final audio chunk from a background event at the
+  // same moment finish() writes the recap's duration and reads the chunk list. Without a busy_timeout,
+  // that concurrent read/write throws SQLITE_BUSY ("database is locked"), which aborted the finish flow
+  // and left the recap stuck at 0s. This makes any lock contention wait (inserts are sub-ms) instead.
+  connection.executeSync('PRAGMA busy_timeout = 5000;');
+
+  // API adapter: drizzle-orm's op-sqlite driver (0.45) calls `executeRawAsync` and expects a plain
+  // array of value-rows, but op-sqlite >= 8 returns a RawQueryResult object ({ rawRows, columnNames }).
+  // Without this, every typed SELECT throws "undefined is not a function" (rows.map on an object)
+  // while INSERT/UPDATE keep working — the recap screen then silently read nothing and showed 0s.
+  const client = {
+    ...connection,
+    executeRawAsync: async (query: string, params?: Parameters<typeof connection.executeRaw>[1]) =>
+      (await connection.executeRaw(query, params)).rawRows,
+  } as unknown as typeof connection;
+
+  dbSingleton = drizzle(client, { schema });
   await migrate(dbSingleton, migrations);
   return dbSingleton;
 }
