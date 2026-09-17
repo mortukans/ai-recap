@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { chunksRepo, recapsRepo, usageRepo } from '../../db';
 import { newId } from '../../lib/ids';
+import { reconcileChunksFromManifest } from '../recap/manifest';
 
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'paused' | 'finishing';
 
@@ -95,15 +96,18 @@ export function useRecording() {
     try {
       const result = await Recorder.finish();
       if (id) {
+        // Source of truth: reconcile chunks from the manifest (the final chunk's event can be lost).
+        const manifestDuration = await reconcileChunksFromManifest(id, result.chunkCount || 1);
+        const duration = manifestDuration > 0 ? manifestDuration : result.durationSeconds;
         await recapsRepo.updateRecap(id, {
           endedAt: Date.now(),
-          durationSeconds: result.durationSeconds,
+          durationSeconds: duration,
           status: 'recorded',
         });
         await usageRepo.addUsage({
           id: newId(),
           recapId: id,
-          recordingSeconds: result.durationSeconds,
+          recordingSeconds: duration,
           transcriptionSeconds: 0,
           inputTokens: 0,
           outputTokens: 0,
