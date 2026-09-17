@@ -58,6 +58,7 @@ export default function RecapDetailScreen() {
   const [contexts, setContexts] = useState<Context[]>([]);
   const [contextId, setContextId] = useState<string | null>(null);
   const [playChunks, setPlayChunks] = useState<{ uri: string; duration: number }[]>([]);
+  const [processingError, setProcessingError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -67,6 +68,7 @@ export default function RecapDetailScreen() {
         setTitle(recap.title);
         setDurationSeconds(recap.durationSeconds);
         setStatus(recap.status);
+        setProcessingError(processingCoordinator.getLastError(id));
       }
       setContextId(recap?.contextId ?? null);
       setContexts(await contextsRepo.listContexts());
@@ -97,6 +99,13 @@ export default function RecapDetailScreen() {
     },
     [id],
   );
+
+  const onRetry = useCallback(() => {
+    if (id) void processingCoordinator.retry(id);
+  }, [id]);
+
+  const isFailed = status === 'transcriptionFailed' || status === 'summaryFailed';
+  const isBusy = status === 'transcribing' || status === 'summarizing';
 
   const onShare = useCallback(async () => {
     if (doc) await shareText(formatRecapMarkdown(doc, { title }), title || undefined);
@@ -174,6 +183,29 @@ export default function RecapDetailScreen() {
         </Text>
 
         {playChunks.length > 0 ? <RecordingPlayer chunks={playChunks} palette={c} /> : null}
+
+        {/* Pipeline state: progress while the coordinator works, a reason + Retry when it failed. */}
+        {isBusy || status === 'waitingForNetwork' ? (
+          <View style={[styles.banner, { backgroundColor: c.backgroundElement }]}>
+            {isBusy ? <ActivityIndicator color={c.textSecondary} /> : null}
+            <Text style={[styles.bannerText, { color: c.textSecondary }]}>{t(`processing.${status}`)}</Text>
+          </View>
+        ) : null}
+        {isFailed ? (
+          <View style={[styles.banner, styles.bannerFailed]}>
+            <View style={styles.fill}>
+              <Text style={[styles.bannerTitle, { color: '#E5484D' }]}>{t('processing.failed')}</Text>
+              {processingError ? (
+                <Text style={[styles.bannerText, { color: c.textSecondary }]} numberOfLines={3}>
+                  {processingError}
+                </Text>
+              ) : null}
+            </View>
+            <Pressable onPress={onRetry} style={[styles.retry, { backgroundColor: '#E5484D' }]}>
+              <Text style={styles.retryText}>{t('processing.retry')}</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {contexts.length > 0 ? (
           <View>
@@ -260,6 +292,18 @@ const styles = StyleSheet.create({
   ctxChip: { borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: 8 },
   ctxChipText: { fontSize: 14, fontWeight: '500' },
   card: { borderRadius: 16, padding: Spacing.four },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    borderRadius: 14,
+    padding: Spacing.three,
+  },
+  bannerFailed: { backgroundColor: '#E5484D14' },
+  bannerTitle: { fontSize: 15, fontWeight: '600' },
+  bannerText: { fontSize: 13, lineHeight: 18 },
+  retry: { borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: 8 },
+  retryText: { color: '#fff', fontSize: 14, fontWeight: '600' },
   cardText: { fontSize: 15, lineHeight: 22 },
   err: { fontSize: 13 },
   button: { height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.two },

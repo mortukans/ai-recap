@@ -91,6 +91,14 @@ export const lv: TranslationKeys = {
     limitIn: 'Bezmaksas limits pēc {{time}}',
     stopped: 'Sasniegts bezmaksas plāna limits — ieraksts saglabāts.',
   },
+  processing: {
+    transcribing: 'Transkribē ierakstu…',
+    summarizing: 'Raksta kopsavilkumu…',
+    waitingForNetwork: 'Gaida tīkla savienojumu, lai transkribētu.',
+    failed: 'Apstrāde neizdevās',
+    retry: 'Mēģināt vēlreiz',
+    noKey: 'Pievieno OpenRouter atslēgu Iestatījumos, lai izveidotu kopsavilkumu.',
+  },
   status: {
     recording: 'Ieraksta',
     recorded: 'Ierakstīts',

@@ -89,6 +89,14 @@ export const en = {
     limitIn: 'Free limit in {{time}}',
     stopped: 'Free plan limit reached — recording saved.',
   },
+  processing: {
+    transcribing: 'Transcribing your recording…',
+    summarizing: 'Writing the recap…',
+    waitingForNetwork: 'Waiting for a network connection to transcribe.',
+    failed: 'Processing failed',
+    retry: 'Retry',
+    noKey: 'Add an OpenRouter key in Settings to generate the recap.',
+  },
   status: {
     recording: 'Recording',
     recorded: 'Recorded',

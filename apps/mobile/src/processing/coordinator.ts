@@ -31,8 +31,21 @@ export class ProcessingCoordinator {
   private online = true;
   private netUnsub: (() => void) | null = null;
   private listeners = new Set<() => void>();
+  /** Last failure per recap (in-memory) so the UI can explain a *Failed status and offer Retry. */
+  private lastErrors = new Map<string, string>();
 
   constructor(private readonly transcriber: TranscriptionProvider) {}
+
+  /** Human-readable reason for the most recent failure of this recap, if any. */
+  getLastError(recapId: string): string | null {
+    return this.lastErrors.get(recapId) ?? null;
+  }
+
+  private recordFailure(recapId: string, stage: 'transcription' | 'summary', e: unknown): void {
+    const message = e instanceof Error ? e.message : String(e);
+    this.lastErrors.set(recapId, message);
+    console.warn(`[processing] ${stage} failed for ${recapId}:`, message);
+  }
 
   start(): void {
     void NetInfo.fetch().then((s) => {
@@ -70,6 +83,7 @@ export class ProcessingCoordinator {
     if (!recap) return;
     const target = retryTarget(recap.status);
     if (target) {
+      this.lastErrors.delete(recapId);
       await recapsRepo.updateRecapStatus(recapId, target);
       this.notify();
     }
@@ -138,7 +152,8 @@ export class ProcessingCoordinator {
           try {
             await this.doTranscription(recap);
             await this.setStatus(id, 'transcribed');
-          } catch {
+          } catch (e) {
+            this.recordFailure(id, 'transcription', e);
             await this.setStatus(id, 'transcriptionFailed');
             return;
           }
@@ -160,6 +175,7 @@ export class ProcessingCoordinator {
               await this.setStatus(id, 'transcribed');
               return;
             }
+            this.recordFailure(id, 'summary', e);
             await this.setStatus(id, 'summaryFailed');
             return;
           }
