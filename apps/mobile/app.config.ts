@@ -53,6 +53,9 @@ const config: ExpoConfig = {
     'expo-secure-store',
     'expo-localization',
     'expo-audio',
+    // Live Activity for in-progress recordings (Lock Screen + Dynamic Island), M6-1. No home-screen
+    // widgets yet; the plugin still generates the WidgetKit extension target + NSSupportsLiveActivities.
+    ['expo-widgets', { widgets: [] }],
     [
       'expo-splash-screen',
       {

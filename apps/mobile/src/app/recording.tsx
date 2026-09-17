@@ -22,7 +22,7 @@ export default function RecordingScreen() {
 
   // Auto-start when the screen opens.
   useEffect(() => {
-    void start();
+    void start(caps.maxRecordingMinutes * 60);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

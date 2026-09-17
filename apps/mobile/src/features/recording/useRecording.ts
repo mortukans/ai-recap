@@ -3,13 +3,18 @@
  * persists chunks as they close, tracks duration, and finalizes on stop. Tolerant of a missing native
  * module (before a development build) — surfaces an error instead of crashing.
  */
-import { DEFAULT_SETTINGS } from '@ai-recap/core';
+import { DEFAULT_SETTINGS, FREE_CAPABILITIES } from '@ai-recap/core';
 import { Recorder } from '@ai-recap/recorder';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { chunksRepo, recapsRepo, usageRepo } from '../../db';
 import { newId } from '../../lib/ids';
 import { reconcileChunksFromManifest } from '../recap/manifest';
+import {
+  endRecordingActivity,
+  startRecordingActivity,
+  updateRecordingActivity,
+} from './liveActivity';
 
 type RecordingStatus = 'idle' | 'requesting' | 'recording' | 'paused' | 'finishing';
 
@@ -18,6 +23,7 @@ export function useRecording() {
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const recapIdRef = useRef<string | null>(null);
+  const secondsRef = useRef(0); // latest duration for callbacks that must not re-create on every tick
   const subsRef = useRef<{ remove: () => void }[]>([]);
 
   const cleanup = useCallback(() => {
@@ -27,7 +33,7 @@ export function useRecording() {
 
   useEffect(() => cleanup, [cleanup]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (maxSeconds: number = FREE_CAPABILITIES.maxRecordingMinutes * 60) => {
     setError(null);
     setStatus('requesting');
     try {
@@ -56,7 +62,10 @@ export function useRecording() {
       recapIdRef.current = id;
 
       subsRef.current.push(
-        Recorder.addListener('duration', ({ seconds: s }) => setSeconds(s)),
+        Recorder.addListener('duration', ({ seconds: s }) => {
+          secondsRef.current = s;
+          setSeconds(s);
+        }),
         Recorder.addListener('chunkClosed', (chunk) => {
           chunksRepo
             .addChunk({
@@ -79,6 +88,7 @@ export function useRecording() {
 
       await Recorder.start(id, { chunkSeconds: DEFAULT_SETTINGS.chunkDurationSeconds });
       setStatus('recording');
+      void startRecordingActivity(maxSeconds); // Lock Screen / Dynamic Island timer (iOS, best-effort)
     } catch (e) {
       setStatus('idle');
       setError(e instanceof Error ? e.message : String(e));
@@ -88,11 +98,13 @@ export function useRecording() {
   const pause = useCallback(async () => {
     await Recorder.pause();
     setStatus('paused');
+    void updateRecordingActivity(true, secondsRef.current);
   }, []);
 
   const resume = useCallback(async () => {
     await Recorder.resume();
     setStatus('recording');
+    void updateRecordingActivity(false, secondsRef.current);
   }, []);
 
   const finish = useCallback(async (): Promise<string | null> => {
@@ -136,8 +148,10 @@ export function useRecording() {
       return id;
     } finally {
       cleanup();
+      void endRecordingActivity();
       setStatus('idle');
       setSeconds(0);
+      secondsRef.current = 0;
       recapIdRef.current = null;
     }
   }, [cleanup]);
