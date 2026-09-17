@@ -7,9 +7,17 @@ import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View, useColor
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
-import { recapsRepo } from '../../db';
+import { type RecapSearchHit, recapsRepo, searchRepo } from '../../db';
+import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
 import { processingCoordinator } from '../../processing/coordinator';
 import { useCapabilities } from '../../purchases/useCapabilities';
+
+/** Library row: a recap plus, when searching, where it matched and a snippet around the hit. */
+interface Row {
+  recap: Recap;
+  matchedIn?: RecapSearchHit['matchedIn'];
+  snippet?: string;
+}
 
 export default function RecapsScreen() {
   const { t } = useTranslation();
@@ -17,19 +25,40 @@ export default function RecapsScreen() {
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
 
-  const [recaps, setRecaps] = useState<Recap[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
   const [query, setQuery] = useState('');
   const [startedToday, setStartedToday] = useState(0);
   const caps = useCapabilities();
   const quota = dailyQuotaState(startedToday, caps.maxRecapsPerDay);
 
+  // Empty query → recent library; otherwise search titles + transcripts + recap content (M4-4).
   const load = useCallback(async (q: string) => {
     try {
-      setRecaps(await recapsRepo.pageRecaps({ query: q || undefined }));
+      if (q.trim().length > 0) {
+        setRows(await searchRepo.searchRecaps(q));
+      } else {
+        setRows((await recapsRepo.pageRecaps()).map((recap) => ({ recap })));
+      }
     } catch {
-      setRecaps([]);
+      setRows([]);
     }
   }, []);
+
+  const onDelete = useCallback(
+    (recap: Recap) => {
+      Alert.alert(t('home.deleteTitle'), t('home.deleteMessage'), [
+        { text: t('home.cancel'), style: 'cancel' },
+        {
+          text: t('home.delete'),
+          style: 'destructive',
+          onPress: () => {
+            void deleteRecapCompletely(recap.id).then(() => load(query));
+          },
+        },
+      ]);
+    },
+    [t, load, query],
+  );
 
   const refreshQuota = useCallback(async () => {
     try {
@@ -85,24 +114,41 @@ export default function RecapsScreen() {
         style={[styles.search, { backgroundColor: c.backgroundElement, color: c.text }]}
       />
 
-      <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>{t('home.recent')}</Text>
+      {query.trim().length === 0 ? (
+        <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>{t('home.recent')}</Text>
+      ) : null}
 
       <FlatList
-        data={recaps}
-        keyExtractor={(r) => r.id}
+        data={rows}
+        keyExtractor={(r) => r.recap.id}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<Text style={[styles.empty, { color: c.textSecondary }]}>{t('home.empty')}</Text>}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={
+          <Text style={[styles.empty, { color: c.textSecondary }]}>
+            {query.trim().length > 0 ? t('home.noResults', { query: query.trim() }) : t('home.empty')}
+          </Text>
+        }
         renderItem={({ item }) => (
           <Pressable
-            onPress={() => router.push({ pathname: '/recap/[id]', params: { id: item.id } })}
+            onPress={() => router.push({ pathname: '/recap/[id]', params: { id: item.recap.id } })}
+            onLongPress={() => onDelete(item.recap)}
+            delayLongPress={400}
             style={[styles.row, { borderBottomColor: c.backgroundElement }]}>
             <Text style={[styles.rowTitle, { color: c.text }]} numberOfLines={1}>
-              {item.title || t('app.name')}
+              {item.recap.title || t('app.name')}
             </Text>
             <Text style={[styles.rowMeta, { color: c.textSecondary }]}>
-              {formatDuration(item.durationSeconds)} · {new Date(item.startedAt).toLocaleDateString()} ·{' '}
-              {t(`status.${item.status}`)}
+              {formatDuration(item.recap.durationSeconds)} · {new Date(item.recap.startedAt).toLocaleDateString()} ·{' '}
+              {t(`status.${item.recap.status}`)}
             </Text>
+            {item.snippet && item.matchedIn && item.matchedIn !== 'title' ? (
+              <Text style={[styles.rowSnippet, { color: c.textSecondary }]} numberOfLines={2}>
+                <Text style={[styles.rowSnippetLabel, { color: '#208AEF' }]}>
+                  {t(item.matchedIn === 'transcript' ? 'home.matchTranscript' : 'home.matchRecap')} ·{' '}
+                </Text>
+                {item.snippet}
+              </Text>
+            ) : null}
           </Pressable>
         )}
       />
@@ -145,4 +191,6 @@ const styles = StyleSheet.create({
   row: { paddingVertical: Spacing.three, borderBottomWidth: StyleSheet.hairlineWidth },
   rowTitle: { fontSize: 17, fontWeight: '600' },
   rowMeta: { fontSize: 13, marginTop: 2 },
+  rowSnippet: { fontSize: 13, marginTop: 4, lineHeight: 18 },
+  rowSnippetLabel: { fontWeight: '600' },
 });

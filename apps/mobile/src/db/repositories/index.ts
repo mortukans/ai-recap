@@ -7,3 +7,5 @@ export * as chatRepo from './chat';
 export * as recapSpeakersRepo from './recapSpeakers';
 export * as speakerProfilesRepo from './speakerProfiles';
 export * as usageRepo from './usage';
+export * as searchRepo from './search';
+export type { RecapSearchHit, SearchMatchSource } from './search';
