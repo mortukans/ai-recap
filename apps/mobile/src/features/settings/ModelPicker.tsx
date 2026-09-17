@@ -8,7 +8,14 @@ import { useMemo, useState } from 'react';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+
+interface Palette {
+  text: string;
+  textSecondary: string;
+  background: string;
+  backgroundElement: string;
+}
 
 interface Props {
   visible: boolean;
@@ -16,7 +23,7 @@ interface Props {
   models: LlmModel[];
   selectedId: string;
   requireModality?: string;
-  palette: (typeof Colors)['light'];
+  palette: Palette;
   onSelect: (id: string) => void;
   onClose: () => void;
 }
