@@ -57,7 +57,7 @@ export default function RecapDetailScreen() {
   const [error, setError] = useState<string | null>(null);
   const [contexts, setContexts] = useState<Context[]>([]);
   const [contextId, setContextId] = useState<string | null>(null);
-  const [firstChunkUri, setFirstChunkUri] = useState<string | null>(null);
+  const [playChunks, setPlayChunks] = useState<{ uri: string; duration: number }[]>([]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -72,7 +72,7 @@ export default function RecapDetailScreen() {
       setContexts(await contextsRepo.listContexts());
       setSegmentCount((await segmentsRepo.listSegments(id)).length);
       const chunks = await chunksRepo.listChunks(id);
-      setFirstChunkUri(chunks[0] ? chunkUri(id, chunks[0].relativePath) : null);
+      setPlayChunks(chunks.map((ch) => ({ uri: chunkUri(id, ch.relativePath), duration: ch.duration })));
       const latest = await artifactsRepo.latestArtifactOfType(id, 'summary');
       setDoc(latest ? parseArtifactContent(latest.content) : null);
     } catch {
@@ -173,7 +173,7 @@ export default function RecapDetailScreen() {
           {formatDuration(durationSeconds)} · {t(`status.${status}`)} · {segmentCount} segments
         </Text>
 
-        {firstChunkUri ? <RecordingPlayer uri={firstChunkUri} palette={c} /> : null}
+        {playChunks.length > 0 ? <RecordingPlayer chunks={playChunks} palette={c} /> : null}
 
         {contexts.length > 0 ? (
           <View>
