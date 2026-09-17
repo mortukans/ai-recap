@@ -78,6 +78,12 @@ export class ProcessingCoordinator {
 
   /** On launch: reset recaps orphaned mid-processing by a crash, then enqueue anything resumable. */
   async recover(): Promise<void> {
+    // Recording interrupted by a crash: rebuild from the chunks already persisted on disk (§5.5).
+    for (const r of await recapsRepo.listByStatuses(['recording'])) {
+      const chunks = await chunksRepo.listChunks(r.id);
+      const duration = chunks.reduce((sum, c) => sum + c.duration, 0);
+      await recapsRepo.updateRecap(r.id, { status: 'recorded', durationSeconds: duration, endedAt: Date.now() });
+    }
     for (const r of await recapsRepo.listByStatuses(['transcribing'])) {
       await recapsRepo.updateRecapStatus(r.id, 'recorded');
     }
@@ -140,6 +146,8 @@ export class ProcessingCoordinator {
         }
         case 'transcribed': {
           if ((await getOpenRouterKey()) === null) return; // rest until a key is available
+          const segCount = (await segmentsRepo.listSegments(recap.id)).length;
+          if (segCount === 0) return; // nothing to summarize (unsupported language / silence)
           await this.setStatus(id, 'summarizing');
           break;
         }

@@ -9,7 +9,7 @@ import {
 import { presetContextId } from '@ai-recap/prompts';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
@@ -31,6 +31,7 @@ import { chunkUri } from '../../features/recap/audioUri';
 import { ensureTranscript } from '../../features/recap/ensureTranscript';
 import { MARKDOWN, exportTextFile, safeFilename, shareText } from '../../features/share/shareService';
 import { getSummaryModel } from '../../lib/prefs';
+import { processingCoordinator } from '../../processing/coordinator';
 
 function parseArtifactContent(content: string): RecapDocument | null {
   try {
@@ -84,6 +85,9 @@ export default function RecapDetailScreen() {
       void load();
     }, [load]),
   );
+
+  // Live-refresh as the coordinator advances this recap (transcribing → ready) in the background.
+  useEffect(() => processingCoordinator.onChange(() => void load()), [load]);
 
   const selectContext = useCallback(
     async (ctxId: string) => {
