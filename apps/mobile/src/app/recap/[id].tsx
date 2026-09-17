@@ -199,8 +199,8 @@ export default function RecapDetailScreen() {
         ) : (
           <View style={[styles.card, { backgroundColor: c.backgroundElement }]}>
             <Text style={[styles.cardText, { color: c.textSecondary }]}>
-              Generate a structured recap from this meeting. (Demo: uses a sample Latvian+English
-              transcript until on-device transcription lands in M2.)
+              Generate a structured recap from this meeting's transcript. Recordings transcribe
+              on-device (or via OpenAI Whisper if you add a key in Settings), then recap.
             </Text>
           </View>
         )}
