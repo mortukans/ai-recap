@@ -9,4 +9,6 @@ module.exports = (config) => ({
   bundleIdentifier: '.watchkitapp',
   frameworks: ['SwiftUI', 'WatchConnectivity'],
   colors: { $accent: '#208AEF' },
+  // App Store / TestFlight uploads require a watch app icon (1024x1024, no alpha needed by Xcode).
+  icon: '../../assets/images/icon.png',
 });
