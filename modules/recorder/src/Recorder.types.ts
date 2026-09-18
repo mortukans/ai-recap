@@ -41,6 +41,16 @@ export interface WatchCommandEvent {
 
 export type WatchRecorderState = 'idle' | 'recording' | 'paused' | 'finishing';
 
+/** A recording captured on the Apple Watch was imported into recap storage. */
+export interface WatchRecordingReceivedEvent {
+  recapId: string;
+  source: 'watch';
+  /** Epoch ms when the watch started recording. */
+  startedAt: number;
+  durationSeconds: number;
+  receivedAt: number;
+}
+
 export interface RecorderEvents {
   duration: DurationEvent;
   chunkClosed: ChunkClosedEvent;
@@ -48,6 +58,7 @@ export interface RecorderEvents {
   resumed: Record<string, never>;
   error: RecorderErrorEvent;
   watchCommand: WatchCommandEvent;
+  watchRecordingReceived: WatchRecordingReceivedEvent;
 }
 
 export type RecorderEventName = keyof RecorderEvents;

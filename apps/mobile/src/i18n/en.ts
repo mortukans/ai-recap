@@ -94,10 +94,6 @@ export const en = {
     placeholder: 'Agenda, participants, project names, anything the recap should know…',
     saved: 'Saved — used the next time you generate.',
   },
-  watch: {
-    startTitle: 'Start recording?',
-    startBody: 'Your Apple Watch asked to start a recording. Tap to begin.',
-  },
   processing: {
     transcribing: 'Transcribing your recording…',
     summarizing: 'Writing the recap…',

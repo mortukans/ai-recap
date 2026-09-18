@@ -20,7 +20,7 @@ interface NativeRecorder {
   finish(): Promise<RecordResult>;
   addMarker(label: string | null): Promise<void>;
   transcribeFile(uri: string, locale: string): Promise<string>;
-  setWatchState?(state: WatchRecorderState, startedAt: number, pausedElapsed: number): Promise<void>;
+  setWatchState?(state: WatchRecorderState, startedAt: number, pausedElapsed: number, phoneActive: boolean): Promise<void>;
   addListener<E extends RecorderEventName>(
     event: E,
     listener: (payload: RecorderEvents[E]) => void,
@@ -64,8 +64,10 @@ export const Recorder = {
   addMarker: (label: string | null = null) => native.addMarker(label),
   transcribeFile: (uri: string, locale: string) => native.transcribeFile(uri, locale),
   /** Mirror recorder state to a paired Apple Watch (no-op on builds without the bridge). */
-  setWatchState: (state: WatchRecorderState, startedAt: number, pausedElapsed: number) =>
-    native.setWatchState ? native.setWatchState(state, startedAt, pausedElapsed).catch(() => undefined) : Promise.resolve(),
+  setWatchState: (state: WatchRecorderState, startedAt: number, pausedElapsed: number, phoneActive: boolean) =>
+    native.setWatchState
+      ? native.setWatchState(state, startedAt, pausedElapsed, phoneActive).catch(() => undefined)
+      : Promise.resolve(),
   addListener: <E extends RecorderEventName>(
     event: E,
     listener: (payload: RecorderEvents[E]) => void,

@@ -8,6 +8,13 @@
   <true/>
   <key>WKRunsIndependentlyOfCompanionApp</key>
   <false/>
+  <!-- Keep recording with the wrist down / screen off. -->
+  <key>WKBackgroundModes</key>
+  <array>
+    <string>audio</string>
+  </array>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>AI Recap records on your watch when your iPhone is not open, then sends the audio to your iPhone.</string>
   <key>UISupportedInterfaceOrientations</key>
   <array>
     <string>UIInterfaceOrientationPortrait</string>

@@ -10,7 +10,7 @@ public class RecorderModule: Module {
   public func definition() -> ModuleDefinition {
     Name("AiRecapRecorder")
 
-    Events("duration", "chunkClosed", "interrupted", "resumed", "error", "watchCommand")
+    Events("duration", "chunkClosed", "interrupted", "resumed", "error", "watchCommand", "watchRecordingReceived")
 
     OnCreate {
       self.engine.onEvent = { [weak self] name, payload in
@@ -20,12 +20,15 @@ public class RecorderModule: Module {
       WatchBridge.shared.onCommand = { [weak self] command in
         self?.sendEvent("watchCommand", ["command": command])
       }
+      WatchBridge.shared.onWatchRecording = { [weak self] payload in
+        self?.sendEvent("watchRecordingReceived", payload)
+      }
       WatchBridge.shared.activate()
     }
 
-    /// Mirror recorder state to the watch (state: idle|recording|paused|finishing).
-    AsyncFunction("setWatchState") { (state: String, startedAt: Double, pausedElapsed: Double) in
-      WatchBridge.shared.publish(state: state, startedAt: startedAt, pausedElapsed: pausedElapsed)
+    /// Mirror recorder state (+ whether the app is foregrounded) to the watch.
+    AsyncFunction("setWatchState") { (state: String, startedAt: Double, pausedElapsed: Double, phoneActive: Bool) in
+      WatchBridge.shared.publish(state: state, startedAt: startedAt, pausedElapsed: pausedElapsed, phoneActive: phoneActive)
     }
 
     OnDestroy {

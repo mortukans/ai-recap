@@ -7,7 +7,7 @@ module.exports = (config) => ({
   deploymentTarget: '10.0',
   // Leading dot → appended to the iOS app's bundle id: lv.airecap.app.watchkitapp
   bundleIdentifier: '.watchkitapp',
-  frameworks: ['SwiftUI', 'WatchConnectivity'],
+  frameworks: ['SwiftUI', 'WatchConnectivity', 'AVFoundation'],
   colors: { $accent: '#208AEF' },
   // App Store / TestFlight uploads require a watch app icon (1024x1024, no alpha needed by Xcode).
   icon: '../../assets/images/icon.png',

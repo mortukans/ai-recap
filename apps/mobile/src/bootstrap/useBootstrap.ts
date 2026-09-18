@@ -2,6 +2,7 @@ import { builtInContexts } from '@ai-recap/prompts';
 import { useEffect, useState } from 'react';
 import { ensureSession } from '../api/supabase';
 import { contextsRepo, initDatabase } from '../db';
+import { importPendingWatchRecordings } from '../features/recording/importWatchRecording';
 import { applyAudioRetention } from '../features/storage/audioStorage';
 import { processingCoordinator } from '../processing/coordinator';
 
@@ -24,6 +25,8 @@ export function useBootstrap() {
         await processingCoordinator.recover();
         // Audio retention (Settings → Storage) is enforced on launch; never blocks the UI on failure.
         void applyAudioRetention().catch(() => undefined);
+        // Recordings made on the Apple Watch while the app was closed are registered now.
+        void importPendingWatchRecordings();
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e : new Error(String(e)));
       } finally {

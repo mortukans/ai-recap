@@ -96,10 +96,6 @@ export const lv: TranslationKeys = {
     placeholder: 'Darba kārtība, dalībnieki, projektu nosaukumi — viss, ko kopsavilkumam vajadzētu zināt…',
     saved: 'Saglabāts — tiks izmantots nākamajā ģenerēšanā.',
   },
-  watch: {
-    startTitle: 'Sākt ierakstu?',
-    startBody: 'Apple Watch pieprasīja sākt ierakstu. Pieskaries, lai sāktu.',
-  },
   processing: {
     transcribing: 'Transkribē ierakstu…',
     summarizing: 'Raksta kopsavilkumu…',
