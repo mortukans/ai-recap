@@ -1,0 +1,71 @@
+# iOS build on GitHub's macOS runners using the EAS pipeline locally (`eas build --local`).
+# Uses the EAS project's stored credentials + env vars, but does NOT consume EAS build quota.
+# Submission to TestFlight goes through EAS Submit (free) with the stored App Store Connect key.
+#
+# Trigger: Actions → "iOS build" → Run workflow. Requires repo secret EXPO_TOKEN
+# (expo.dev → Account settings → Access tokens).
+name: iOS build
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: EAS build profile
+        type: choice
+        default: production
+        options: [production, preview, development]
+      submit:
+        description: Submit to TestFlight after building (production only)
+        type: boolean
+        default: true
+
+concurrency:
+  group: ios-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: eas build --local (${{ inputs.profile }})
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Faster, deterministic installs on the runner.
+      CI: 1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm (version from package.json "packageManager")
+        run: corepack enable && corepack prepare --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          xcodebuild -version
+
+      - name: Build (.ipa)
+        working-directory: apps/mobile
+        run: |
+          eas build --platform ios --profile "${{ inputs.profile }}" --local --non-interactive --output "$RUNNER_TEMP/AIRecap.ipa"
+
+      - name: Upload .ipa artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIRecap-${{ inputs.profile }}-${{ github.run_number }}.ipa
+          path: ${{ runner.temp }}/AIRecap.ipa
+          retention-days: 14
+
+      - name: Submit to TestFlight
+        if: ${{ inputs.submit && inputs.profile == 'production' }}
+        working-directory: apps/mobile
+        run: eas submit --platform ios --profile production --path "$RUNNER_TEMP/AIRecap.ipa" --non-interactive
