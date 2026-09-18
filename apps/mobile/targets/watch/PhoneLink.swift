@@ -55,7 +55,7 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
       })
     } else {
       session.transferUserInfo(payload)
-      lastError = "Open AI Recap on your iPhone"
+      lastError = command == "start" ? "Tap the notification on your iPhone to start" : "Open AI Recap on your iPhone"
     }
   }
 
