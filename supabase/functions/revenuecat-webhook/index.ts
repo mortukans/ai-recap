@@ -45,6 +45,9 @@ Deno.serve(async (req) => {
     return new Response('Bad JSON', { status: 400 });
   }
 
+  // Dashboard 'Send test event' — nothing to persist.
+  if (event.type === 'TEST') return new Response('ok (test event)', { status: 200 });
+
   // We log in to RevenueCat with the Supabase user id, so one of these is our uuid.
   const candidates = [event.app_user_id, event.original_app_user_id, ...(event.aliases ?? [])].filter(Boolean) as string[];
   const userId = candidates.find(isUuid);
@@ -84,6 +87,8 @@ Deno.serve(async (req) => {
   }
 
   const { error } = await admin.from('entitlements').upsert(patch, { onConflict: 'user_id' });
+  // 23503 = foreign key violation: the app_user_id is not one of our auth users (e.g. anonymous RC id).
+  if (error?.code === '23503') return new Response('Unknown user', { status: 202 });
   if (error) return new Response(error.message, { status: 500 });
   return new Response('ok', { status: 200 });
 });
