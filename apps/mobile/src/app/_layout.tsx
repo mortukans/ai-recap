@@ -27,6 +27,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="recording" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="recap/[id]" options={{ headerShown: true, title: '' }} />
+        <Stack.Screen name="paywall" options={{ presentation: 'modal', headerShown: true }} />
       </Stack>
     </ThemeProvider>
   );

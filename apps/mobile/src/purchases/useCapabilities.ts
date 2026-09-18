@@ -1,19 +1,11 @@
-import { type Capabilities, FREE_CAPABILITIES, resolveCapabilities } from '@ai-recap/core';
+import { type Capabilities, resolveCapabilities } from '@ai-recap/core';
 import { useEffect, useState } from 'react';
-import { fetchEntitlements } from './entitlements';
 
-/** Resolve the current capability set. Free until entitlements arrive (RevenueCat/backend). */
+import { getEntitlements, subscribeEntitlements } from './entitlements';
+
+/** Live capability set derived from entitlements (server truth + RevenueCat + cache). */
 export function useCapabilities(): Capabilities {
-  const [caps, setCaps] = useState<Capabilities>(FREE_CAPABILITIES);
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const resolved = resolveCapabilities(await fetchEntitlements());
-      if (!cancelled) setCaps(resolved);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [caps, setCaps] = useState<Capabilities>(() => resolveCapabilities(getEntitlements()));
+  useEffect(() => subscribeEntitlements((e) => setCaps(resolveCapabilities(e))), []);
   return caps;
 }

@@ -10,6 +10,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { type RecapSearchHit, recapsRepo, searchRepo } from '../../db';
 import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
 import { processingCoordinator } from '../../processing/coordinator';
+import { consumeQuota } from '../../purchases/quota';
 import { useCapabilities } from '../../purchases/useCapabilities';
 
 /** Library row: a recap plus, when searching, where it matched and a snippet around the hit. */
@@ -78,9 +79,22 @@ export default function RecapsScreen() {
   // Live-refresh the library as the processing coordinator advances recap statuses.
   useEffect(() => processingCoordinator.onChange(() => void load(query)), [load, query]);
 
-  const onStart = () => {
+  const showLimit = () =>
+    Alert.alert(t('free.limitTitle'), t('free.limitMsg', { max: caps.maxRecapsPerDay ?? 0 }), [
+      { text: t('home.cancel'), style: 'cancel' },
+      { text: t('free.upgrade'), onPress: () => router.push('/paywall') },
+    ]);
+
+  const onStart = async () => {
     if (!quota.canStart) {
-      Alert.alert(t('free.limitTitle'), t('free.limitMsg', { max: caps.maxRecapsPerDay ?? 0 }));
+      showLimit();
+      return;
+    }
+    // Server-side slot (anti-tamper) when the backend is configured; local count is the UX.
+    const decision = await consumeQuota(caps.maxRecapsPerDay);
+    if (!decision.allowed) {
+      if (decision.startedToday !== null) setStartedToday(decision.startedToday);
+      showLimit();
       return;
     }
     router.push('/recording');
@@ -94,7 +108,7 @@ export default function RecapsScreen() {
 
       <Pressable
         accessibilityRole="button"
-        onPress={onStart}
+        onPress={() => void onStart()}
         style={[styles.startButton, { backgroundColor: '#208AEF' }]}>
         <Ionicons name="mic" color="#fff" size={22} />
         <Text style={styles.startButtonText}>{t('home.startRecap')}</Text>

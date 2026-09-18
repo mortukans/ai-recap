@@ -1,10 +1,12 @@
 import { builtInContexts } from '@ai-recap/prompts';
 import { useEffect, useState } from 'react';
-import { ensureSession } from '../api/supabase';
+import { ensureSession, supabase } from '../api/supabase';
 import { contextsRepo, initDatabase } from '../db';
 import { importPendingWatchRecordings } from '../features/recording/importWatchRecording';
 import { applyAudioRetention } from '../features/storage/audioStorage';
 import { processingCoordinator } from '../processing/coordinator';
+import { initEntitlements } from '../purchases/entitlements';
+import { configurePurchases } from '../purchases/revenuecat';
 
 /**
  * App bootstrap: open the encrypted DB, seed built-in preset contexts, and (best-effort) establish a
@@ -30,7 +32,13 @@ export function useBootstrap() {
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e : new Error(String(e)));
       } finally {
-        void ensureSession().catch(() => undefined);
+        // Service plane: anonymous session → RevenueCat (app user id = Supabase uid) → entitlements.
+        void (async () => {
+          await ensureSession().catch(() => undefined);
+          const uid = (await supabase.auth.getSession().catch(() => null))?.data.session?.user.id ?? null;
+          await configurePurchases(uid);
+          await initEntitlements();
+        })();
         if (!cancelled) setReady(true);
       }
     })();

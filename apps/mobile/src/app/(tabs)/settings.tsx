@@ -1,5 +1,6 @@
-import { DEFAULT_SETTINGS, NO_ENTITLEMENTS, resolveCapabilities } from '@ai-recap/core';
+import { DEFAULT_SETTINGS } from '@ai-recap/core';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -18,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing } from '@/constants/theme';
 import { DEFAULT_SUMMARY_MODEL, DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '../../ai';
 import { ModelPicker } from '../../features/settings/ModelPicker';
+import { useCapabilities } from '../../purchases/useCapabilities';
 import {
   clearOpenAiKey,
   clearOpenRouterKey,
@@ -61,7 +63,9 @@ export default function SettingsScreen() {
   const { t } = useTranslation();
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
-  const caps = resolveCapabilities(NO_ENTITLEMENTS);
+  const router = useRouter();
+  const caps = useCapabilities();
+  const planName = caps.maxRecapsPerDay === null ? 'Unlimited' : caps.byokEnabled ? 'BYOK lifetime' : t('settings.planFree');
 
   const [hasKey, setHasKey] = useState(false);
   const [keyInput, setKeyInput] = useState('');
@@ -174,7 +178,9 @@ export default function SettingsScreen() {
         <Text style={[styles.h1, { color: c.text }]}>{t('settings.title')}</Text>
 
         <Text style={[styles.section, { color: c.textSecondary }]}>{t('settings.plan')}</Text>
-        <Row label={t('settings.plan')} value={t('settings.planFree')} color={c.text} secondary={c.backgroundElement} />
+        <Pressable onPress={() => router.push('/paywall')}>
+          <Row label={t('settings.plan')} value={planName + '  ›'} color={c.text} secondary={c.backgroundElement} />
+        </Pressable>
         <Row label="Max recording" value={`${caps.maxRecordingMinutes} min`} color={c.text} secondary={c.backgroundElement} />
         <Row
           label="Recaps / day"

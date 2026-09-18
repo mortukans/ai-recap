@@ -1,0 +1,26 @@
+# Supabase CLI project config (used by `supabase link`, `db push`, `functions deploy`).
+project_id = "ai-recap"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+
+[db]
+port = 54322
+major_version = 17
+
+[auth]
+enabled = true
+# Anonymous sign-ins power the no-signup-wall MVP (Arch §17). Also enable in Dashboard → Auth → Providers.
+enable_anonymous_sign_ins = true
+
+# RevenueCat cannot present a Supabase JWT — the function authenticates with a shared secret instead.
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+[functions.entitlements]
+verify_jwt = true
+
+[functions.quota-consume]
+verify_jwt = true
