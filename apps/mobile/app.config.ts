@@ -28,6 +28,12 @@ const config: ExpoConfig = {
       NSSpeechRecognitionUsageDescription:
         'AI Recap can transcribe recordings on-device when supported.',
       ITSAppUsesNonExemptEncryption: false,
+      // Not used by AI Recap; required by App Store processing because a bundled library (Expo UI /
+      // image components) references the Photos API. (ITMS-90683)
+      NSPhotoLibraryUsageDescription:
+        'AI Recap does not access your photos. This permission is only referenced by a shared UI component.',
+      NSPhotoLibraryAddUsageDescription:
+        'AI Recap does not save to your photo library. This permission is only referenced by a shared UI component.',
     },
   },
   android: {
