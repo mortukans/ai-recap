@@ -18,6 +18,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { DEFAULT_SUMMARY_MODEL, DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '../../ai';
+import { usageRepo } from '../../db';
+import type { UsageSummary } from '../../db/repositories/usage';
 import { ModelPicker } from '../../features/settings/ModelPicker';
 import { useCapabilities } from '../../purchases/useCapabilities';
 import {
@@ -78,6 +80,7 @@ export default function SettingsScreen() {
   const [models, setModels] = useState<LlmModel[]>([]);
   const [picker, setPicker] = useState<'summary' | 'transcription' | null>(null);
   const [audioBytes, setAudioBytes] = useState<number | null>(null);
+  const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [retentionDays, setRetentionDays] = useState<number | null>(null);
 
   const refreshStorage = async () => setAudioBytes(await getAudioStorageBytes());
@@ -124,6 +127,10 @@ export default function SettingsScreen() {
       setHasOpenAiKey((await getOpenAiKey()) !== null);
       setRetentionDays(await getAudioRetentionDays());
       void refreshStorage();
+      const monthStart = new Date();
+      monthStart.setDate(1);
+      monthStart.setHours(0, 0, 0, 0);
+      usageRepo.summarizeUsageSince(monthStart.getTime()).then(setUsage).catch(() => undefined);
       if (keyPresent) void loadModels();
     })();
   }, []);
@@ -297,6 +304,32 @@ export default function SettingsScreen() {
         <Row label={t('settings.language')} value={t('settings.languageAuto')} color={c.text} secondary={c.backgroundElement} />
         <Row label={t('settings.chunkDuration')} value={`${DEFAULT_SETTINGS.chunkDurationSeconds}s`} color={c.text} secondary={c.backgroundElement} />
         <Row label={t('settings.audioQuality')} value={DEFAULT_SETTINGS.audioQuality} color={c.text} secondary={c.backgroundElement} />
+
+        <Text style={[styles.section, { color: c.textSecondary }]}>Usage this month</Text>
+        <Row
+          label="Recorded"
+          value={usage ? `${Math.round(usage.recordingSeconds / 60)} min` : '…'}
+          color={c.text}
+          secondary={c.backgroundElement}
+        />
+        <Row
+          label="Transcribed"
+          value={usage ? `${Math.round(usage.transcriptionSeconds / 60)} min` : '…'}
+          color={c.text}
+          secondary={c.backgroundElement}
+        />
+        <Row
+          label="AI tokens"
+          value={usage ? `${((usage.inputTokens + usage.outputTokens) / 1000).toFixed(1)}k` : '…'}
+          color={c.text}
+          secondary={c.backgroundElement}
+        />
+        <Row
+          label="Provider cost (BYOK, reported)"
+          value={usage ? `${(usage.estimatedCostMicros / 1_000_000).toFixed(2)}` : '…'}
+          color={c.text}
+          secondary={c.backgroundElement}
+        />
 
         <Text style={[styles.section, { color: c.textSecondary }]}>Storage & privacy</Text>
         <Row
