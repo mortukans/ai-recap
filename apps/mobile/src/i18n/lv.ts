@@ -137,6 +137,14 @@ export const lv: TranslationKeys = {
     continueFree: 'Pagaidām turpināt bez maksas',
     freeNote: 'Bezmaksas: 15 minūšu ieraksti, 5 kopsavilkumi dienā, transkripcija ierīcē (labāk angliski). Atslēgu vai plānu var pievienot vēlāk Iestatījumos.',
   },
+  recap: {
+    versions: 'Versijas',
+    generate: 'Ģenerēt kopsavilkumu',
+    regenerate: 'Pārģenerēt kopsavilkumu',
+    empty: 'Ģenerē strukturētu kopsavilkumu no šī ieraksta transkripta: kopsavilkums, lēmumi, uzdevumi, datumi. Izvēlies kontekstu augstāk, lai to virzītu.',
+    noLlm: 'Pievieno OpenRouter atslēgu Iestatījumos vai pāriet uz Unlimited un mēģini vēlreiz.',
+    setKey: 'Iestatīt OpenRouter atslēgu Iestatījumos →',
+  },
   processing: {
     transcribing: 'Transkribē ierakstu…',
     summarizing: 'Raksta kopsavilkumu…',

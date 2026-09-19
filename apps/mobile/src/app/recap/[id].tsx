@@ -1,6 +1,7 @@
 import {
   AiRecapError,
   type Context,
+  type GeneratedArtifact,
   type IntegrityReport,
   type RecapDocument,
   checkRecordingIntegrity,
@@ -58,6 +59,9 @@ export default function RecapDetailScreen() {
   const [status, setStatus] = useState('recorded');
   const [segmentCount, setSegmentCount] = useState(0);
   const [doc, setDoc] = useState<RecapDocument | null>(null);
+  // Every generation is kept (M3-6): the user can flip between versions made with different contexts.
+  const [versions, setVersions] = useState<GeneratedArtifact[]>([]);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [contexts, setContexts] = useState<Context[]>([]);
@@ -85,12 +89,14 @@ export default function RecapDetailScreen() {
       const chunks = await chunksRepo.listChunks(id);
       setPlayChunks(chunks.map((ch) => ({ uri: chunkUri(id, ch.relativePath), duration: ch.duration })));
       setIntegrity(recap && recap.status !== 'recording' ? checkRecordingIntegrity(chunks, recap.durationSeconds) : null);
-      const latest = await artifactsRepo.latestArtifactOfType(id, 'summary');
-      setDoc(latest ? parseArtifactContent(latest.content) : null);
+      const summaries = (await artifactsRepo.listArtifacts(id)).filter((a) => a.type === 'summary');
+      setVersions(summaries);
+      const shown = summaries.find((a) => a.id === selectedVersionId) ?? summaries[0] ?? null;
+      setDoc(shown ? parseArtifactContent(shown.content) : null);
     } catch {
       /* db not ready */
     }
-  }, [id]);
+  }, [id, selectedVersionId]);
 
   useFocusEffect(
     useCallback(() => {
@@ -173,10 +179,11 @@ export default function RecapDetailScreen() {
         setTitle(generated.title);
       }
       await recapsRepo.updateRecapStatus(id, 'ready');
+      setSelectedVersionId(null); // show the newest version
       await load();
     } catch (e) {
       if (isAiRecapError(e) && e.code === 'llm/missing-key') {
-        setError('Add an OpenRouter key in Settings or upgrade to Unlimited, then try again.');
+        setError(t('recap.noLlm'));
       } else {
         setError(e instanceof Error ? e.message : String(e));
       }
@@ -184,7 +191,7 @@ export default function RecapDetailScreen() {
     } finally {
       setGenerating(false);
     }
-  }, [id, title, durationSeconds, contextId, notes, load]);
+  }, [id, title, durationSeconds, contextId, notes, load, t]);
 
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['bottom']}>
@@ -276,14 +283,34 @@ export default function RecapDetailScreen() {
           {notesSaved ? <Text style={[styles.notesHint, { color: c.textSecondary }]}>{t('notes.saved')}</Text> : null}
         </View>
 
+        {versions.length > 1 ? (
+          <View>
+            <Text style={[styles.ctxLabel, { color: c.textSecondary }]}>{t('recap.versions')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.ctxRow}>
+              {versions.map((v, i) => {
+                const selected = (selectedVersionId ?? versions[0]?.id) === v.id;
+                const ctxName = contexts.find((ctx) => ctx.id === v.contextVersion)?.name;
+                const when = new Date(v.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <Pressable
+                    key={v.id}
+                    onPress={() => setSelectedVersionId(v.id)}
+                    style={[styles.ctxChip, { backgroundColor: selected ? '#208AEF' : c.backgroundElement }]}>
+                    <Text style={[styles.ctxChipText, { color: selected ? '#fff' : c.text }]}>
+                      {`#${versions.length - i}${ctxName ? ` · ${ctxName}` : ''} · ${when}`}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
+
         {doc ? (
           <RecapDocumentView doc={doc} palette={c} />
         ) : (
           <View style={[styles.card, { backgroundColor: c.backgroundElement }]}>
-            <Text style={[styles.cardText, { color: c.textSecondary }]}>
-              Generate a structured recap from this meeting's transcript. Recordings transcribe
-              on-device (or via OpenAI Whisper if you add a key in Settings), then recap.
-            </Text>
+            <Text style={[styles.cardText, { color: c.textSecondary }]}>{t('recap.empty')}</Text>
           </View>
         )}
 
@@ -296,7 +323,7 @@ export default function RecapDetailScreen() {
           {generating ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>{doc ? 'Regenerate recap' : 'Generate recap'}</Text>
+            <Text style={styles.buttonText}>{doc ? t('recap.regenerate') : t('recap.generate')}</Text>
           )}
         </Pressable>
 
@@ -325,7 +352,7 @@ export default function RecapDetailScreen() {
         ) : null}
 
         <Pressable onPress={() => router.push('/settings')} style={styles.link}>
-          <Text style={[styles.linkText, { color: c.textSecondary }]}>Set OpenRouter key in Settings →</Text>
+          <Text style={[styles.linkText, { color: c.textSecondary }]}>{t('recap.setKey')}</Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>

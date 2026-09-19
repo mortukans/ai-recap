@@ -135,6 +135,14 @@ export const en = {
     continueFree: 'Continue free for now',
     freeNote: 'Free: 15-minute recordings, 5 recaps a day, on-device transcription (English works best). You can add a key or upgrade later in Settings.',
   },
+  recap: {
+    versions: 'Versions',
+    generate: 'Generate recap',
+    regenerate: 'Regenerate recap',
+    empty: "Generate a structured recap from this recording's transcript: summary, decisions, action items, dates. Pick a context above to steer it.",
+    noLlm: 'Add an OpenRouter key in Settings or upgrade to Unlimited, then try again.',
+    setKey: 'Set OpenRouter key in Settings →',
+  },
   processing: {
     transcribing: 'Transcribing your recording…',
     summarizing: 'Writing the recap…',
