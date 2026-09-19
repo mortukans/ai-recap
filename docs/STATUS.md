@@ -4,7 +4,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
 
 ## Where we are
 
-**On the phone (TestFlight 0.0.1 (16) — uploaded from commit 441e708, CI run 35432861840; daily cap lifted for testing. Everything below is in it.)**
+**On the phone (TestFlight 0.0.1 (16) is BROKEN — stuck on the splash: bootstrap awaited the processing queue. Fix in commit 06cf2d3, building as run 35434346121 → 0.0.1 (17). Daily cap lifted for testing.)**
 - Record → chunked audio → transcribe (Latvian/English via OpenRouter, Apple on-device fallback) → structured AI recap → transcript, speakers, Ask-AI chat, notes-for-AI, search, share/export.
 - Live Activity in the Dynamic Island / Lock Screen; phone-call and AirPods interruption handling.
 - Apple Watch app: remote control when the phone app is open; records on the watch itself otherwise and hands the audio to the phone.
