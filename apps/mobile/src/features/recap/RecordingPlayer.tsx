@@ -40,7 +40,8 @@ export function RecordingPlayer({
 }) {
   const [index, setIndex] = useState(0);
   const [wantPlay, setWantPlay] = useState(false);
-  const [pendingOffset, setPendingOffset] = useState<number | null>(null);
+  // Seek target waiting for its chunk to load (set when the seek crosses into another chunk).
+  const [pending, setPending] = useState<{ index: number; offset: number } | null>(null);
   const current = chunks[index];
   const player = useAudioPlayer(current ? { uri: current.uri } : null);
   const status = useAudioPlayerStatus(player);
@@ -59,20 +60,25 @@ export function RecordingPlayer({
       // Same chunk: seek right away (the "loaded" effect below only fires on chunk changes).
       void player.seekTo(offset).then(() => player.play());
     } else {
-      setPendingOffset(offset);
+      setPending({ index: target, offset });
       setIndex(target);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seekRequest?.nonce]);
 
-  // Apply a pending offset once the newly selected chunk has loaded.
+  // Apply the pending offset once *that* chunk's player reports itself loaded (duration known), so a
+  // stale "loaded" status from the previous chunk can't trigger the seek too early.
+  const loadedDuration = status?.duration ?? 0;
   useEffect(() => {
-    if (!isLoaded || pendingOffset === null) return;
-    const offset = pendingOffset;
-    setPendingOffset(null);
-    void player.seekTo(offset).then(() => player.play());
+    if (!pending || pending.index !== index || !isLoaded || loadedDuration <= 0) return;
+    const { offset } = pending;
+    setPending(null);
+    void player
+      .seekTo(offset)
+      .then(() => player.play())
+      .catch(() => player.play());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, pendingOffset, index]);
+  }, [isLoaded, loadedDuration, pending, index]);
 
   // Advance to the next chunk when the current one ends (or stop at the end).
   useEffect(() => {
@@ -87,7 +93,7 @@ export function RecordingPlayer({
 
   // When the active chunk changes while we intend to play, start it.
   useEffect(() => {
-    if (wantPlay && pendingOffset === null) player.play();
+    if (wantPlay && pending === null) player.play();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, wantPlay]);
 
