@@ -4,7 +4,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
 
 ## Where we are
 
-**On the phone (TestFlight 0.0.1 (17) — uploaded from commit 56bf2b8, CI run 35434346121. Build 16 was stuck on the splash (bootstrap awaited the processing queue; fixed). Daily cap lifted for testing.)**
+**On the phone (TestFlight 0.0.1 (17) — USER CONFIRMED 2026-09-19: starts fine, Live Activity buttons work, auto-naming works. Daily cap lifted for testing.)**
 - Record → chunked audio → transcribe (Latvian/English via OpenRouter, Apple on-device fallback) → structured AI recap → transcript, speakers, Ask-AI chat, notes-for-AI, search, share/export.
 - Live Activity in the Dynamic Island / Lock Screen; phone-call and AirPods interruption handling.
 - Apple Watch app: remote control when the phone app is open; records on the watch itself otherwise and hands the audio to the phone.
