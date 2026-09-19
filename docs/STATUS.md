@@ -1,6 +1,6 @@
 # AI Recap — project status
 
-_Last updated: 2026-09-19 (early morning). Owner: Martins Mortukans._
+_Last updated: 2026-09-19 (morning, autopilot session). Owner: Martins Mortukans._
 
 ## Where we are
 
@@ -27,17 +27,17 @@ _Last updated: 2026-09-19 (early morning). Owner: Martins Mortukans._
 1. **Paid Apps Agreement** (App Store Connect → Business → Agreements): confirm Legal Entity → DSA trader compliance → accept agreement → banking + tax forms. _Gates every purchase, including sandbox tests._
 2. **Sandbox tester** Apple ID (Users and Access → Sandbox → Testers) and sign in on the iPhone (Settings → App Store → Sandbox Account).
 3. After 1–2: buy Unlimited with the sandbox account → Plan row shows "Unlimited", Supabase `entitlements.unlimited_active = true`.
-4. Optional: Latvian localizations for both products in App Store Connect.
+4. ~~Latvian IAP localizations~~ — not possible: App Store Connect offers no Latvian for in-app purchase metadata (EN stays; app UI is LV/EN).
 
 ## Open items — owner: engineering
 
 - **M2-1 / M3-2 hosted AI path** — BUILT (Edge Functions `transcribe`, `recap-generate`, entitlement-gated, metered). Needs the server secret `OPENROUTER_API_KEY` (`npx supabase secrets set OPENROUTER_API_KEY=sk-or-…`) and an Unlimited entitlement to exercise end to end.
-- **M1-7** 60-minute locked-recording verification (+ automatic chunk-gap check).
+- **M1-7** chunk-gap check BUILT (core `checkRecordingIntegrity`, banner on recap screen). Still to run once by hand: a 60-minute locked-phone recording → expect no "audio missing" banner.
 - **M2-2** LV/EN transcription benchmark with real recordings (gates final pricing).
-- **M2-5** real speaker diarization (needs a hosted provider that returns speaker labels).
-- **M5-5** usage accounting → backend.
+- **M2-5** rough diarization BUILT ("Speaker N" labels from the transcription model, consistent within a chunk; may re-number across chunks — true diarization still needs a dedicated provider).
+- **M5-5** usage accounting BUILT (local records → `usage_events` idempotent sync; provider cost captured; Settings → "Usage this month").
 - Android: recorder (Kotlin foreground service), Play Billing, build/submit.
-- Watch: complication / Smart Stack tile, haptics.
+- Watch: haptics BUILT; complication / Smart Stack tile still open.
 - Before public launch: re-check Free caps, App Review notes/screenshots for IAPs, privacy labels.
 
 ## Reference
