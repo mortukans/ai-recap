@@ -55,6 +55,9 @@ export const en = {
     audioQuality: 'Audio quality',
     privacy: 'Privacy',
     about: 'About',
+    version: 'Version',
+    accountId: 'Account ID',
+    accountIdHint: 'Anonymous identifier our server uses for your plan and usage limits. Quote it if you ask us to delete your server data.',
   },
   chat: {
     title: 'Ask AI Recap',

@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { DEFAULT_SUMMARY_MODEL, DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '../../ai';
+import { supabase } from '../../api/supabase';
 import { usageRepo } from '../../db';
 import type { UsageSummary } from '../../db/repositories/usage';
 import { ModelPicker } from '../../features/settings/ModelPicker';
@@ -70,6 +71,13 @@ export default function SettingsScreen() {
   const planName = caps.maxRecapsPerDay === null ? 'Unlimited' : caps.byokEnabled ? 'BYOK lifetime' : t('settings.planFree');
 
   const [hasKey, setHasKey] = useState(false);
+  const [accountId, setAccountId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setAccountId(data.session?.user.id ?? null))
+      .catch(() => setAccountId(null));
+  }, []);
   const [keyInput, setKeyInput] = useState('');
   const [model, setModel] = useState(DEFAULT_SUMMARY_MODEL);
   const [testing, setTesting] = useState(false);
@@ -359,7 +367,15 @@ export default function SettingsScreen() {
         </Pressable>
 
         <Text style={[styles.section, { color: c.textSecondary }]}>{t('settings.about')}</Text>
-        <Row label="Version" value={Constants.expoConfig?.version ?? '0.0.1'} color={c.text} secondary={c.backgroundElement} />
+        <Row
+          label={t('settings.version')}
+          value={`${Constants.expoConfig?.version ?? '0.0.1'} (${Constants.nativeBuildVersion ?? '-'})`}
+          color={c.text}
+          secondary={c.backgroundElement}
+        />
+        {/* Anonymous backend id — the only identifier our server knows; quoted in privacy requests. */}
+        <Row label={t('settings.accountId')} value={accountId ?? '—'} color={c.text} secondary={c.backgroundElement} />
+        <Text style={[styles.hint, { color: c.textSecondary, marginTop: Spacing.two }]}>{t('settings.accountIdHint')}</Text>
       </ScrollView>
     </SafeAreaView>
   );

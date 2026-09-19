@@ -56,6 +56,9 @@ export const lv: TranslationKeys = {
     chunkDuration: 'Fragmenta ilgums',
     audioQuality: 'Audio kvalitāte',
     privacy: 'Privātums',
+    version: 'Versija',
+    accountId: 'Konta ID',
+    accountIdHint: 'Anonīms identifikators, ko mūsu serveris izmanto plānam un limitiem. Norādi to, ja lūgsi dzēst servera datus.',
     about: 'Par lietotni',
   },
   chat: {
