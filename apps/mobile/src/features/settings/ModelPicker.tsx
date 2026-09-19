@@ -5,6 +5,7 @@
 import type { LlmModel } from '../../ai';
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function ModelPicker({ visible, title, models, selectedId, requireModality, palette: c, onSelect, onClose }: Props) {
+  const { t } = useTranslation();
   const [filter, setFilter] = useState('');
 
   const items = useMemo(() => {
@@ -49,7 +51,7 @@ export function ModelPicker({ visible, title, models, selectedId, requireModalit
           </Pressable>
         </View>
         <TextInput
-          placeholder="Search models"
+          placeholder={t('settings.searchModels')}
           placeholderTextColor={c.textSecondary}
           value={filter}
           onChangeText={setFilter}

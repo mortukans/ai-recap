@@ -1,5 +1,6 @@
 import { type RecapDocument, formatTimestamp } from '@ai-recap/core';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
@@ -33,16 +34,17 @@ function Section({ title, palette, children }: { title: string; palette: Palette
 }
 
 export function RecapDocumentView({ doc, palette }: { doc: RecapDocument; palette: Palette }) {
+  const { t } = useTranslation();
   return (
     <View style={styles.container}>
       {doc.summary ? (
-        <Section title="Summary" palette={palette}>
+        <Section title={t('recapDoc.summary')} palette={palette}>
           <Text style={[styles.body, { color: palette.text }]}>{doc.summary}</Text>
         </Section>
       ) : null}
 
       {doc.decisions.length > 0 ? (
-        <Section title="Decisions" palette={palette}>
+        <Section title={t('recapDoc.decisions')} palette={palette}>
           {doc.decisions.map((d, i) => (
             <View key={i} style={styles.item}>
               <Text style={[styles.body, { color: palette.text }]}>• {d.text}</Text>
@@ -53,7 +55,7 @@ export function RecapDocumentView({ doc, palette }: { doc: RecapDocument; palett
       ) : null}
 
       {doc.actionItems.length > 0 ? (
-        <Section title="Action Items" palette={palette}>
+        <Section title={t('recapDoc.actionItems')} palette={palette}>
           {doc.actionItems.map((a, i) => (
             <View key={i} style={styles.item}>
               <Text style={[styles.body, { color: palette.text }]}>
@@ -68,7 +70,7 @@ export function RecapDocumentView({ doc, palette }: { doc: RecapDocument; palett
       ) : null}
 
       {doc.importantDates.length > 0 ? (
-        <Section title="Important Dates" palette={palette}>
+        <Section title={t('recapDoc.dates')} palette={palette}>
           {doc.importantDates.map((d, i) => (
             <View key={i} style={styles.item}>
               <Text style={[styles.body, { color: palette.text }]}>
@@ -82,7 +84,7 @@ export function RecapDocumentView({ doc, palette }: { doc: RecapDocument; palett
       ) : null}
 
       {doc.openQuestions.length > 0 ? (
-        <Section title="Open Questions" palette={palette}>
+        <Section title={t('recapDoc.openQuestions')} palette={palette}>
           {doc.openQuestions.map((q, i) => (
             <Text key={i} style={[styles.body, { color: palette.text }]}>
               • {q}
@@ -92,7 +94,7 @@ export function RecapDocumentView({ doc, palette }: { doc: RecapDocument; palett
       ) : null}
 
       {doc.topics.length > 0 ? (
-        <Section title="Topics" palette={palette}>
+        <Section title={t('recapDoc.topics')} palette={palette}>
           <View style={styles.chipRow}>
             {doc.topics.map((t, i) => (
               <Text key={i} style={[styles.topic, { color: palette.text, backgroundColor: palette.backgroundElement }]}>

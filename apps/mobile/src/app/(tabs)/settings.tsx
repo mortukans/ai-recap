@@ -196,20 +196,20 @@ export default function SettingsScreen() {
         <Pressable onPress={() => router.push('/paywall')}>
           <Row label={t('settings.plan')} value={planName + '  ›'} color={c.text} secondary={c.backgroundElement} />
         </Pressable>
-        <Row label="Max recording" value={`${caps.maxRecordingMinutes} min`} color={c.text} secondary={c.backgroundElement} />
+        <Row label={t('settings.maxRecording')} value={`${caps.maxRecordingMinutes} min`} color={c.text} secondary={c.backgroundElement} />
         <Row
-          label="Recaps / day"
+          label={t('settings.recapsPerDay')}
           value={caps.maxRecapsPerDay === null ? '∞' : String(caps.maxRecapsPerDay)}
           color={c.text}
           secondary={c.backgroundElement}
         />
 
-        <Text style={[styles.section, { color: c.textSecondary }]}>OpenRouter (BYOK)</Text>
+        <Text style={[styles.section, { color: c.textSecondary }]}>{t('settings.byokSection')}</Text>
         <Text style={[styles.hint, { color: c.textSecondary }]}>
-          {hasKey ? 'A key is saved on this device (in the keychain).' : 'Paste your OpenRouter API key (sk-or-…). It stays on-device and is sent only to OpenRouter.'}
+          {hasKey ? t('settings.byokSaved') : t('settings.byokPaste')}
         </Text>
         <TextInput
-          placeholder={hasKey ? '•••••••••••• (saved)' : 'sk-or-...'}
+          placeholder={hasKey ? t('settings.keySavedPlaceholder') : 'sk-or-...'}
           placeholderTextColor={c.textSecondary}
           value={keyInput}
           onChangeText={setKeyInput}
@@ -218,7 +218,7 @@ export default function SettingsScreen() {
           secureTextEntry
           style={[styles.input, { backgroundColor: c.backgroundElement, color: c.text }]}
         />
-        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Summary model</Text>
+        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>{t('settings.summaryModel')}</Text>
         <View style={styles.fieldRow}>
           <TextInput
             placeholder="e.g. openai/gpt-4o-mini"
@@ -233,10 +233,10 @@ export default function SettingsScreen() {
             onPress={() => setPicker('summary')}
             disabled={models.length === 0}
             style={[styles.choose, { backgroundColor: c.backgroundSelected, opacity: models.length === 0 ? 0.4 : 1 }]}>
-            <Text style={[styles.chooseText, { color: c.text }]}>Choose</Text>
+            <Text style={[styles.chooseText, { color: c.text }]}>{t('settings.choose')}</Text>
           </Pressable>
         </View>
-        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Transcription model (audio-capable)</Text>
+        <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>{t('settings.transcriptionModel')}</Text>
         <View style={styles.fieldRow}>
           <TextInput
             placeholder={`e.g. ${DEFAULT_TRANSCRIPTION_MODEL}`}
@@ -251,12 +251,12 @@ export default function SettingsScreen() {
             onPress={() => setPicker('transcription')}
             disabled={models.length === 0}
             style={[styles.choose, { backgroundColor: c.backgroundSelected, opacity: models.length === 0 ? 0.4 : 1 }]}>
-            <Text style={[styles.chooseText, { color: c.text }]}>Choose</Text>
+            <Text style={[styles.chooseText, { color: c.text }]}>{t('settings.choose')}</Text>
           </Pressable>
         </View>
         <ModelPicker
           visible={picker !== null}
-          title={picker === 'transcription' ? 'Transcription model' : 'Summary model'}
+          title={picker === 'transcription' ? t('settings.transcriptionModel') : t('settings.summaryModel')}
           models={models}
           selectedId={picker === 'transcription' ? transcriptionModel : model}
           requireModality={picker === 'transcription' ? 'audio' : undefined}
@@ -266,29 +266,25 @@ export default function SettingsScreen() {
         />
         <View style={styles.buttonRow}>
           <Pressable onPress={onSave} style={[styles.btn, { backgroundColor: '#208AEF' }]}>
-            <Text style={styles.btnText}>Save</Text>
+            <Text style={styles.btnText}>{t('settings.save')}</Text>
           </Pressable>
           <Pressable onPress={onTest} disabled={testing} style={[styles.btn, { backgroundColor: c.backgroundSelected }]}>
-            {testing ? <ActivityIndicator color={c.text} /> : <Text style={[styles.btnText, { color: c.text }]}>Test connection</Text>}
+            {testing ? <ActivityIndicator color={c.text} /> : <Text style={[styles.btnText, { color: c.text }]}>{t('settings.testConnection')}</Text>}
           </Pressable>
         </View>
         {hasKey ? (
           <Pressable onPress={onClear} style={styles.clear}>
-            <Text style={[styles.clearText, { color: '#E5484D' }]}>Remove key</Text>
+            <Text style={[styles.clearText, { color: '#E5484D' }]}>{t('settings.removeKey')}</Text>
           </Pressable>
         ) : null}
         {testResult ? <Text style={[styles.hint, { color: c.textSecondary }]}>{testResult}</Text> : null}
 
-        <Text style={[styles.section, { color: c.textSecondary }]}>Transcription (OpenAI Whisper)</Text>
+        <Text style={[styles.section, { color: c.textSecondary }]}>{t('settings.whisperSection')}</Text>
         <Text style={[styles.hint, { color: c.textSecondary }]}>
-          {hasOpenAiKey
-            ? 'An OpenAI key is saved — recordings transcribe with Whisper (handles Latvian + English).'
-            : hasKey
-              ? 'Optional. Recordings already transcribe through your OpenRouter key (model above). Add an OpenAI key only if you prefer Whisper.'
-              : 'Optional. With an OpenRouter key above, transcription runs through it too. Without any key, recordings use Apple on-device speech.'}
+          {hasOpenAiKey ? t('settings.whisperSaved') : hasKey ? t('settings.whisperOptionalWithKey') : t('settings.whisperOptionalNoKey')}
         </Text>
         <TextInput
-          placeholder={hasOpenAiKey ? '•••••••••••• (saved)' : 'sk-...'}
+          placeholder={hasOpenAiKey ? t('settings.keySavedPlaceholder') : 'sk-...'}
           placeholderTextColor={c.textSecondary}
           value={openAiInput}
           onChangeText={setOpenAiInput}
@@ -299,11 +295,11 @@ export default function SettingsScreen() {
         />
         <View style={styles.buttonRow}>
           <Pressable onPress={onSaveOpenAi} style={[styles.btn, { backgroundColor: '#208AEF' }]}>
-            <Text style={styles.btnText}>Save</Text>
+            <Text style={styles.btnText}>{t('settings.save')}</Text>
           </Pressable>
           {hasOpenAiKey ? (
             <Pressable onPress={onClearOpenAi} style={[styles.btn, { backgroundColor: c.backgroundSelected }]}>
-              <Text style={[styles.btnText, { color: c.text }]}>Remove</Text>
+              <Text style={[styles.btnText, { color: c.text }]}>{t('settings.remove')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -313,41 +309,41 @@ export default function SettingsScreen() {
         <Row label={t('settings.chunkDuration')} value={`${DEFAULT_SETTINGS.chunkDurationSeconds}s`} color={c.text} secondary={c.backgroundElement} />
         <Row label={t('settings.audioQuality')} value={DEFAULT_SETTINGS.audioQuality} color={c.text} secondary={c.backgroundElement} />
 
-        <Text style={[styles.section, { color: c.textSecondary }]}>Usage this month</Text>
+        <Text style={[styles.section, { color: c.textSecondary }]}>{t('settings.usageSection')}</Text>
         <Row
-          label="Recorded"
+          label={t('settings.usageRecorded')}
           value={usage ? `${Math.round(usage.recordingSeconds / 60)} min` : '…'}
           color={c.text}
           secondary={c.backgroundElement}
         />
         <Row
-          label="Transcribed"
+          label={t('settings.usageTranscribed')}
           value={usage ? `${Math.round(usage.transcriptionSeconds / 60)} min` : '…'}
           color={c.text}
           secondary={c.backgroundElement}
         />
         <Row
-          label="AI tokens"
+          label={t('settings.usageTokens')}
           value={usage ? `${((usage.inputTokens + usage.outputTokens) / 1000).toFixed(1)}k` : '…'}
           color={c.text}
           secondary={c.backgroundElement}
         />
         <Row
-          label="Provider cost (BYOK, reported)"
+          label={t('settings.usageCost')}
           value={usage ? `${(usage.estimatedCostMicros / 1_000_000).toFixed(2)}` : '…'}
           color={c.text}
           secondary={c.backgroundElement}
         />
 
-        <Text style={[styles.section, { color: c.textSecondary }]}>Storage & privacy</Text>
+        <Text style={[styles.section, { color: c.textSecondary }]}>{t('settings.storageSection')}</Text>
         <Row
-          label="Audio on this device"
+          label={t('settings.audioOnDevice')}
           value={audioBytes === null ? '…' : formatBytes(audioBytes)}
           color={c.text}
           secondary={c.backgroundElement}
         />
         <Text style={[styles.hint, { color: c.textSecondary, marginTop: Spacing.two }]}>
-          Keep audio after processing. Transcripts and recaps are always kept.
+          {t('settings.retentionHint')}
         </Text>
         <View style={styles.chipRow}>
           {RETENTION_OPTIONS.map((opt) => {
@@ -363,7 +359,7 @@ export default function SettingsScreen() {
           })}
         </View>
         <Pressable onPress={onDeleteAll} style={styles.clear}>
-          <Text style={[styles.clearText, { color: '#E5484D' }]}>Delete all recordings, transcripts and recaps</Text>
+          <Text style={[styles.clearText, { color: '#E5484D' }]}>{t('settings.deleteAll')}</Text>
         </Pressable>
 
         <Text style={[styles.section, { color: c.textSecondary }]}>{t('settings.about')}</Text>
