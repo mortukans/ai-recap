@@ -6,6 +6,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 import { recapsRepo } from '../../db';
+import { getDefaultContextId } from '../../lib/prefs';
 import { processingCoordinator } from '../../processing/coordinator';
 import { reconcileChunksFromManifest } from '../recap/manifest';
 
@@ -32,7 +33,7 @@ export async function importWatchRecording(marker: WatchRecordingMarker): Promis
         detectedLanguages: [],
         status: 'recorded',
         presetId: null,
-        contextId: null,
+        contextId: await getDefaultContextId(),
         createdAt: now,
         updatedAt: now,
       });

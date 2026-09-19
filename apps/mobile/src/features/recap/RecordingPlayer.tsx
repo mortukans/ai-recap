@@ -1,4 +1,4 @@
-import { formatTimestamp } from '@ai-recap/core';
+import { formatTimestamp, locateInChunks } from '@ai-recap/core';
 import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useEffect, useState } from 'react';
@@ -50,13 +50,10 @@ export function RecordingPlayer({
   // Absolute seconds -> (chunk, offset). Chunks are ordered and contiguous.
   useEffect(() => {
     if (!seekRequest || chunks.length === 0) return;
-    let remaining = Math.max(0, seekRequest.seconds);
-    let target = 0;
-    while (target < chunks.length - 1 && remaining >= chunks[target].duration) {
-      remaining -= chunks[target].duration;
-      target += 1;
-    }
-    const offset = Math.min(remaining, Math.max(0, chunks[target].duration - 0.25));
+    const { index: target, offset } = locateInChunks(
+      chunks.map((ch) => ch.duration),
+      seekRequest.seconds,
+    );
     setWantPlay(true);
     if (target === index) {
       // Same chunk: seek right away (the "loaded" effect below only fires on chunk changes).

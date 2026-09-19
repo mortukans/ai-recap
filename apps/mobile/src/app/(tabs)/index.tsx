@@ -158,7 +158,7 @@ export default function RecapsScreen() {
             delayLongPress={400}
             style={[styles.row, { borderBottomColor: c.backgroundElement }]}>
             <Text style={[styles.rowTitle, { color: c.text }]} numberOfLines={1}>
-              {item.recap.title || t('app.name')}
+              {item.recap.title || t('recap.untitled')}
             </Text>
             <Text style={[styles.rowMeta, { color: c.textSecondary }]}>
               {formatDuration(item.recap.durationSeconds)} · {new Date(item.recap.startedAt).toLocaleDateString()} ·{' '}
