@@ -4,7 +4,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
 
 ## Where we are
 
-**On the phone (TestFlight 0.0.1 (14) — uploaded 02:18 UTC from commit 2bbd05f, CI run 35414478590; processing at Apple. Everything below is in it.)**
+**On the phone (TestFlight 0.0.1 (15) — uploaded from commit 239c8a2, CI run 35431307247. Everything below is in it.)**
 - Record → chunked audio → transcribe (Latvian/English via OpenRouter, Apple on-device fallback) → structured AI recap → transcript, speakers, Ask-AI chat, notes-for-AI, search, share/export.
 - Live Activity in the Dynamic Island / Lock Screen; phone-call and AirPods interruption handling.
 - Apple Watch app: remote control when the phone app is open; records on the watch itself otherwise and hands the audio to the phone.
@@ -24,7 +24,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
   - Trigger: `gh workflow run ios-build.yml -f profile=production -f submit=true`
 - EAS env vars (all profiles): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_KEY`.
 
-## What to test on the next TestFlight build (after 0.0.1 (14); fixes the dead Live Activity buttons, adds auto-naming)
+## What to test on TestFlight 0.0.1 (15) (uploaded 2026-09-19; fixes the dead Live Activity buttons, adds auto-naming)
 
 1. Fresh install → onboarding screen appears once (Free / paste key / see plans). Reinstall or delete app data to see it again.
 2. Record 1–2 min, lock the phone → Lock Screen banner shows **Pause** and **Finish** buttons (build 14: rendered but dead — listener filtered on the wrong `source`; fixed); tap Pause → island shows paused + "Resume"; tap Finish → recording ends and processes. Expanded Dynamic Island (long-press) shows the same buttons.
