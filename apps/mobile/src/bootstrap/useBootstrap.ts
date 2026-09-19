@@ -20,12 +20,18 @@ export function useBootstrap() {
 
   useEffect(() => {
     let cancelled = false;
+    // Safety net: whatever happens below, show the UI within 4 s (errors surface in-app, not on the splash).
+    const failSafe = setTimeout(() => {
+      if (!cancelled) setReady(true);
+    }, 4000);
     (async () => {
       try {
         await initDatabase();
         await contextsRepo.ensureBuiltInContexts(builtInContexts(Date.now()));
         processingCoordinator.start();
-        await processingCoordinator.recover();
+        // Repairs interrupted recaps then resumes processing in the background. Never awaited: the
+        // queue can hold minutes of transcription/AI work and must not hold the splash screen.
+        void processingCoordinator.recover().catch(() => undefined);
         // Audio retention (Settings → Storage) is enforced on launch; never blocks the UI on failure.
         void applyAudioRetention().catch(() => undefined);
         // Recordings made on the Apple Watch while the app was closed are registered now.
@@ -46,6 +52,7 @@ export function useBootstrap() {
     })();
     return () => {
       cancelled = true;
+      clearTimeout(failSafe);
     };
   }, []);
 

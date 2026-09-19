@@ -109,7 +109,8 @@ export class ProcessingCoordinator {
       if (!this.queue.includes(r.id)) this.queue.push(r.id);
     }
     this.notify();
-    await this.pump();
+    // Processing runs in the background — callers (bootstrap) must never wait on network/AI work.
+    void this.pump();
   }
 
   private async pump(): Promise<void> {
