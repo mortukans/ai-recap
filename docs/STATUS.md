@@ -29,7 +29,8 @@ _Last updated: 2026-09-19 (autopilot, ~02:00). Owner: Martins Mortukans._
 1. **Paid Apps Agreement** (App Store Connect → Business → Agreements): confirm Legal Entity → DSA trader compliance → accept agreement → banking + tax forms. _Gates every purchase, including sandbox tests._
 2. **Sandbox tester** Apple ID (Users and Access → Sandbox → Testers) and sign in on the iPhone (Settings → App Store → Sandbox Account).
 3. After 1–2: buy Unlimited with the sandbox account → Plan row shows "Unlimited", Supabase `entitlements.unlimited_active = true`.
-4. ~~Latvian IAP localizations~~ — not possible: App Store Connect offers no Latvian for in-app purchase metadata (EN stays; app UI is LV/EN).
+4. **Watch complication credentials** — one interactive `eas credentials -p ios` run on branch `feat/watch-complication` (see engineering list below), ~2 minutes.
+5. ~~Latvian IAP localizations~~ — not possible: App Store Connect offers no Latvian for in-app purchase metadata (EN stays; app UI is LV/EN).
 
 ## Open items — owner: engineering
 
@@ -41,7 +42,8 @@ _Last updated: 2026-09-19 (autopilot, ~02:00). Owner: Martins Mortukans._
 - Android: recorder (Kotlin foreground service), Play Billing, build/submit.
 - Watch: haptics BUILT.
 - Before public launch: re-check Free caps, IAP review screenshots, privacy labels — draft answers + review notes in `docs/APP_REVIEW_NOTES.md`.
-- Onboarding BUILT (M5-4). Watch complication / Smart Stack tile still open.
+- Onboarding BUILT (M5-4).
+- **Watch-face complication** BUILT on branch `feat/watch-complication` (tap on the watch face → watch app opens and starts recording; `targets/watch-widget`, bundle `lv.airecap.app.watchkitapp.recordwidget`, already registered with Apple by CI). Blocked on a **one-time interactive credentials step** (EAS refuses to create a new provisioning profile non-interactively): Martins runs, on that branch, `cd apps/mobile && eas credentials -p ios` → production → set up a provisioning profile for target `AIRecapWatchWidget` (or just `eas build --profile production --platform ios` and cancel once credentials are stored). Then merge the branch and run the CI build. Not on main so TestFlight builds keep working.
 
 ## Reference
 
