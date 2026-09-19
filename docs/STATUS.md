@@ -31,7 +31,7 @@ _Last updated: 2026-09-19 (early morning). Owner: Martins Mortukans._
 
 ## Open items — owner: engineering
 
-- **M2-1 / M3-2 hosted AI path** for Unlimited (transcription + recap via Edge Functions with our provider keys, metered into `usage_events`). Today Unlimited only lifts limits; hosted AI is not wired.
+- **M2-1 / M3-2 hosted AI path** — BUILT (Edge Functions `transcribe`, `recap-generate`, entitlement-gated, metered). Needs the server secret `OPENROUTER_API_KEY` (`npx supabase secrets set OPENROUTER_API_KEY=sk-or-…`) and an Unlimited entitlement to exercise end to end.
 - **M1-7** 60-minute locked-recording verification (+ automatic chunk-gap check).
 - **M2-2** LV/EN transcription benchmark with real recordings (gates final pricing).
 - **M2-5** real speaker diarization (needs a hosted provider that returns speaker labels).
