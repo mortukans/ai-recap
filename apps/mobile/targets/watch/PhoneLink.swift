@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import WatchConnectivity
+import WatchKit
 
 /// Recorder state mirrored from the iPhone. `startedAt` lets the watch tick the timer locally.
 struct RecorderSnapshot: Equatable {
@@ -69,8 +70,13 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
 
   // MARK: Actions
 
+  private func haptic(_ type: WKHapticType) {
+    WKInterfaceDevice.current().play(type)
+  }
+
   func start() {
     lastError = nil
+    haptic(.start)
     let session = WCSession.default
     if snapshot.phoneActive && session.isReachable && snapshot.state == .idle {
       mode = .remote
@@ -81,14 +87,17 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
   }
 
   func pause() {
+    haptic(.click)
     if mode == .local { pauseLocal() } else { send("pause") }
   }
 
   func resume() {
+    haptic(.click)
     if mode == .local { resumeLocal() } else { send("resume") }
   }
 
   func finish() {
+    haptic(.stop)
     if mode == .local { finishLocal() } else { send("finish") }
   }
 
