@@ -4,13 +4,13 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
 
 ## Where we are
 
-**On the phone (TestFlight 0.0.1 (11) — uploaded 02:18 UTC from commit 2bbd05f, CI run 35414478590; processing at Apple. Everything below is in it.)**
+**On the phone (TestFlight 0.0.1 (14) — uploaded 02:18 UTC from commit 2bbd05f, CI run 35414478590; processing at Apple. Everything below is in it.)**
 - Record → chunked audio → transcribe (Latvian/English via OpenRouter, Apple on-device fallback) → structured AI recap → transcript, speakers, Ask-AI chat, notes-for-AI, search, share/export.
 - Live Activity in the Dynamic Island / Lock Screen; phone-call and AirPods interruption handling.
 - Apple Watch app: remote control when the phone app is open; records on the watch itself otherwise and hands the audio to the phone.
 - Free plan enforced: 15-min recordings, 5 recaps/day (server-verified when online). Paywall with Unlimited + BYOK lifetime (prices appear once Apple's Paid Apps Agreement is active).
 - Chunk-gap "audio missing" banner, usage accounting (Settings → Usage this month), watch haptics, rough speaker labels.
-- New in (11): first-launch onboarding (Free / paste OpenRouter key / see plans); last-used context remembered for new recordings; recap **version history** (switch between regenerated recaps); transcript **tap-to-seek** playback with playhead follow; rename a recap by tapping its title; duplicate any context as a custom template; Settings → About shows version (build) + anonymous account id; hosted AI fair-use caps; no more synthesized demo transcripts; **Live Activity Pause/Resume + Finish buttons** on the Lock Screen banner and expanded Dynamic Island (expo-widgets LiveActivityIntent → app; iOS 17+); Settings/recap sections fully LV/EN.
+- New in (14): first-launch onboarding (Free / paste OpenRouter key / see plans); last-used context remembered for new recordings; recap **version history** (switch between regenerated recaps); transcript **tap-to-seek** playback with playhead follow; rename a recap by tapping its title; duplicate any context as a custom template; Settings → About shows version (build) + anonymous account id; hosted AI fair-use caps; no more synthesized demo transcripts; **Live Activity Pause/Resume + Finish buttons** on the Lock Screen banner and expanded Dynamic Island (expo-widgets LiveActivityIntent → app; iOS 17+); Settings/recap sections fully LV/EN.
 
 **Backend (Supabase, EU/Ireland, project `syjpumaqnlmglrokiujy`)**
 - Anonymous auth, `entitlements`/`usage_events`/`daily_quota` tables with RLS, Edge Functions `entitlements`, `quota-consume`, `revenuecat-webhook` — all deployed and smoke-tested.
@@ -24,7 +24,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
   - Trigger: `gh workflow run ios-build.yml -f profile=production -f submit=true`
 - EAS env vars (all profiles): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_KEY`.
 
-## What to test on TestFlight 0.0.1 (11)
+## What to test on TestFlight 0.0.1 (14)
 
 1. Fresh install → onboarding screen appears once (Free / paste key / see plans). Reinstall or delete app data to see it again.
 2. Record 1–2 min, lock the phone → Lock Screen banner shows **Pause** and **Finish** buttons; tap Pause → island shows paused + "Resume"; tap Finish → recording ends and processes. Expanded Dynamic Island (long-press) shows the same buttons.
