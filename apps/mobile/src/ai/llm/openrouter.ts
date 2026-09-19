@@ -22,7 +22,7 @@ export interface OpenRouterConfig {
 interface ChatCompletionResponse {
   choices?: { message?: { content?: string } }[];
   model?: string;
-  usage?: { prompt_tokens?: number; completion_tokens?: number };
+  usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number };
 }
 
 interface ModelsResponse {
@@ -56,6 +56,7 @@ export class OpenRouterLLMProvider implements LLMProvider {
       model: req.model,
       messages: req.messages,
       stream,
+      usage: { include: true }, // OpenRouter returns cost per call → usage accounting
     };
     if (req.temperature !== undefined) payload.temperature = req.temperature;
     if (req.maxOutputTokens !== undefined) payload.max_tokens = req.maxOutputTokens;
@@ -105,6 +106,7 @@ export class OpenRouterLLMProvider implements LLMProvider {
         ? {
             inputTokens: json.usage.prompt_tokens ?? 0,
             outputTokens: json.usage.completion_tokens ?? 0,
+            costMicros: json.usage.cost ? Math.round(json.usage.cost * 1_000_000) : undefined,
           }
         : null,
     };

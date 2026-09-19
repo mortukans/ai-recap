@@ -54,6 +54,13 @@ export async function requireUnlimited(db: SupabaseClient, userId: string): Prom
 export interface OpenRouterUsage {
   prompt_tokens?: number;
   completion_tokens?: number;
+  /** USD credits charged for this call (OpenRouter returns it when usage.include = true). */
+  cost?: number;
+}
+
+/** Micro-dollars from OpenRouter's cost field (0 when unknown). */
+export function costMicros(u: OpenRouterUsage | null): number {
+  return u?.cost ? Math.round(u.cost * 1_000_000) : 0;
 }
 
 export async function callOpenRouter(body: Record<string, unknown>): Promise<{
@@ -66,7 +73,7 @@ export async function callOpenRouter(body: Record<string, unknown>): Promise<{
   const res = await fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'content-type': 'application/json', ...ATTRIBUTION },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, usage: { include: true } }),
   });
   if (!res.ok) {
     const detail = (await res.text().catch(() => '')).slice(0, 300);
@@ -93,6 +100,7 @@ export async function recordUsage(
     output_tokens?: number;
     model: string;
     provider: string;
+    estimated_cost_micros?: number;
   },
 ): Promise<void> {
   try {
@@ -104,7 +112,7 @@ export async function recordUsage(
       output_tokens: row.output_tokens ?? 0,
       model: row.model,
       provider: row.provider,
-      estimated_cost_micros: 0,
+      estimated_cost_micros: row.estimated_cost_micros ?? 0,
     });
   } catch (_) {
     /* metering must never break the product */

@@ -63,6 +63,8 @@ export interface LlmStreamChunk {
 export interface LlmUsage {
   inputTokens: number;
   outputTokens: number;
+  /** Provider-reported cost in micro-USD when available (OpenRouter usage.cost). */
+  costMicros?: number;
 }
 
 export interface LlmResult {

@@ -13,12 +13,12 @@ import type { TranscriptionInput, TranscriptionProvider, TranscriptionResult, Tr
 
 interface TranscribeResponse {
   language: string | null;
-  segments: { start: number; end: number; text: string }[];
+  segments: { start: number; end: number; text: string; speaker?: string | null }[];
   error?: string;
 }
 
 export class HostedTranscriber implements TranscriptionProvider {
-  readonly supportsDiarization = false;
+  readonly supportsDiarization = true; // rough, per chunk
   readonly runsOnDevice = false;
 
   async transcribe(input: TranscriptionInput): Promise<TranscriptionResult> {
@@ -58,7 +58,7 @@ export class HostedTranscriber implements TranscriptionProvider {
         segments.push({
           startTime: chunk.startOffset + Math.max(0, s.start),
           endTime: chunk.startOffset + Math.max(s.end, s.start),
-          speakerLabel: null,
+          speakerLabel: s.speaker ?? null,
           language: data.language,
           text: s.text,
         });

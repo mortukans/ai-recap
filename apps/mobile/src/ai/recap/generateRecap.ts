@@ -94,7 +94,7 @@ export async function generateRecap(
       outputTokens: result.usage?.outputTokens ?? 0,
       model: result.model,
       provider: input.provider.name,
-      estimatedCostMicros: 0,
+      estimatedCostMicros: result.usage?.costMicros ?? 0,
       occurredAt: Date.now(),
       syncedToBackend: false,
     })

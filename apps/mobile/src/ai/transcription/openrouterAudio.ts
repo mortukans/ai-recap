@@ -25,8 +25,8 @@ const ATTRIBUTION = { 'HTTP-Referer': 'https://airecap.lv', 'X-Title': 'AI Recap
 const SYSTEM_PROMPT = `You are a precise speech-to-text engine. Transcribe the audio verbatim.
 The speech is usually Latvian, English, or a mix; keep each utterance in its original language with correct diacritics.
 Respond with ONLY a JSON object, no prose, no markdown fences:
-{"language":"<dominant ISO 639-1 code>","segments":[{"start":<seconds from audio start>,"end":<seconds>,"text":"<utterance>"}]}
-Split segments at natural pauses (roughly one sentence each). If there is no speech, return {"language":null,"segments":[]}.`;
+{"language":"<dominant ISO 639-1 code>","segments":[{"start":<seconds from audio start>,"end":<seconds>,"speaker":"<Speaker 1|Speaker 2|...>","text":"<utterance>"}]}
+Split segments at natural pauses (roughly one sentence each) and whenever the speaker changes. Label distinct voices consistently within this audio as "Speaker 1", "Speaker 2", ... in order of first appearance; use "Speaker 1" if there is clearly only one voice. If there is no speech, return {"language":null,"segments":[]}.`;
 
 type MessageContent = string | { type?: string; text?: string }[] | undefined;
 
@@ -37,7 +37,7 @@ interface ChatCompletionResponse {
 
 interface ParsedTranscript {
   language: string | null;
-  segments: { start: number; end: number; text: string }[];
+  segments: { start: number; end: number; text: string; speaker: string | null }[];
 }
 
 /** Lenient JSON extraction — models occasionally wrap output in fences or leading text. */
@@ -47,20 +47,30 @@ function parseTranscript(raw: string, chunkDuration: number): ParsedTranscript {
   try {
     const json = JSON.parse(jsonText) as {
       language?: string | null;
-      segments?: { start?: number; end?: number; text?: string }[];
+      segments?: { start?: number; end?: number; text?: string; speaker?: string | null }[];
     };
     const segments = (json.segments ?? [])
       .map((s) => ({
         start: clamp(Number(s.start ?? 0), 0, chunkDuration),
         end: clamp(Number(s.end ?? chunkDuration), 0, chunkDuration),
         text: (s.text ?? '').trim(),
+        speaker: normalizeSpeaker(s.speaker),
       }))
       .filter((s) => s.text.length > 0);
     return { language: json.language ?? null, segments };
   } catch {
     // Not JSON at all: treat the whole reply as one utterance spanning the chunk.
-    return trimmed.length > 0 ? { language: null, segments: [{ start: 0, end: chunkDuration, text: trimmed }] } : { language: null, segments: [] };
+    return trimmed.length > 0
+      ? { language: null, segments: [{ start: 0, end: chunkDuration, text: trimmed, speaker: null }] }
+      : { language: null, segments: [] };
   }
+}
+
+/** Normalize model speaker labels to 'Speaker N' (rough per-chunk diarization, MVP task M2-5). */
+function normalizeSpeaker(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const m = raw.match(/(\d+)/);
+  return m ? `Speaker ${m[1]}` : raw.trim() || null;
 }
 
 function clamp(n: number, lo: number, hi: number): number {
@@ -74,7 +84,7 @@ function contentToText(content: MessageContent): string {
 }
 
 export class OpenRouterAudioTranscriber implements TranscriptionProvider {
-  readonly supportsDiarization = false;
+  readonly supportsDiarization = true; // rough, per chunk (labels may not persist across chunks)
   readonly runsOnDevice = false;
 
   constructor(
@@ -136,7 +146,7 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
         segments.push({
           startTime: chunk.startOffset + s.start,
           endTime: chunk.startOffset + Math.max(s.end, s.start),
-          speakerLabel: null,
+          speakerLabel: s.speaker,
           language: parsed.language,
           text: s.text,
         });
