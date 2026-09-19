@@ -49,6 +49,8 @@ vi.mock('../ai', () => ({
   },
   DEFAULT_SUMMARY_MODEL: 'test-model',
   getByokLLMProvider: () => ({}),
+  // Mirrors the real route: a BYOK key (h.state.key) unlocks summarization; nothing else in tests.
+  resolveLLMRoute: async () => (h.state.key ? { provider: {}, kind: 'byok', model: 'openai/gpt-4o-mini' } : null),
   generateRecap: () => h.state.generate(),
 }));
 

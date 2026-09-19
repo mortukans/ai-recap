@@ -1,4 +1,5 @@
 import {
+  AiRecapError,
   type Context,
   type RecapDocument,
   formatDuration,
@@ -24,7 +25,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
-import { DEFAULT_SUMMARY_MODEL, generateRecap, getByokLLMProvider } from '../../ai';
+import { DEFAULT_SUMMARY_MODEL, generateRecap, resolveLLMRoute } from '../../ai';
 import { artifactsRepo, attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
 import { newId } from '../../lib/ids';
 import { RecapDocumentView } from '../../features/recap/RecapDocumentView';
@@ -139,7 +140,8 @@ export default function RecapDetailScreen() {
 
       const context =
         (await contextsRepo.getContext(contextId ?? presetContextId('workMeeting'))) ?? null;
-      const model = (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL;
+      const route = await resolveLLMRoute((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
+      if (!route) throw new AiRecapError({ code: 'llm/missing-key', message: 'No LLM available.' });
       await attachmentsRepo.setNotes(id, notes, newId); // make sure unsaved edits count
       const extraContext = await attachmentsRepo.collectExtraContext(id);
 
@@ -154,8 +156,8 @@ export default function RecapDetailScreen() {
         },
         context,
         transcript: segments,
-        provider: getByokLLMProvider(),
-        model,
+        provider: route.provider,
+        model: route.model,
         extraContext,
       });
 
@@ -167,7 +169,7 @@ export default function RecapDetailScreen() {
       await load();
     } catch (e) {
       if (isAiRecapError(e) && e.code === 'llm/missing-key') {
-        setError('Set your OpenRouter key in Settings first, then try again.');
+        setError('Add an OpenRouter key in Settings or upgrade to Unlimited, then try again.');
       } else {
         setError(e instanceof Error ? e.message : String(e));
       }

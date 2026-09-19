@@ -8,7 +8,7 @@
  * Transcription uses an injected TranscriptionProvider (MockTranscriber today; HostedTranscriber in M2).
  * Summarization reuses generateRecap (BYOK); if no key is set, the recap rests at `transcribed`.
  */
-import { type Recap, type TranscriptSegment, isAiRecapError, retryTarget } from '@ai-recap/core';
+import { AiRecapError, type Recap, type TranscriptSegment, isAiRecapError, retryTarget } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
 import NetInfo from '@react-native-community/netinfo';
 
@@ -17,12 +17,11 @@ import {
   SmartTranscriber,
   type TranscriptionProvider,
   generateRecap,
-  getByokLLMProvider,
+  resolveLLMRoute,
 } from '../ai';
 import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../db';
 import { newId } from '../lib/ids';
 import { getSummaryModel } from '../lib/prefs';
-import { getOpenRouterKey } from '../security/byok-store';
 import { withRetry } from './backoff';
 
 export class ProcessingCoordinator {
@@ -160,7 +159,7 @@ export class ProcessingCoordinator {
           break;
         }
         case 'transcribed': {
-          if ((await getOpenRouterKey()) === null) return; // rest until a key is available
+          if ((await resolveLLMRoute(DEFAULT_SUMMARY_MODEL)) === null) return; // rest until a key or Unlimited is available
           const segCount = (await segmentsRepo.listSegments(recap.id)).length;
           if (segCount === 0) return; // nothing to summarize (unsupported language / silence)
           await this.setStatus(id, 'summarizing');
@@ -210,7 +209,8 @@ export class ProcessingCoordinator {
     const segments = await segmentsRepo.listSegments(recap.id);
     const context =
       (await contextsRepo.getContext(recap.contextId ?? presetContextId('workMeeting'))) ?? null;
-    const model = (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL;
+    const route = await resolveLLMRoute((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
+    if (!route) throw new AiRecapError({ code: 'llm/missing-key', message: 'No LLM available (no key, not Unlimited).' });
     const extraContext = await attachmentsRepo.collectExtraContext(recap.id).catch(() => undefined);
     await withRetry(
       () =>
@@ -223,8 +223,8 @@ export class ProcessingCoordinator {
           },
           context,
           transcript: segments,
-          provider: getByokLLMProvider(),
-          model,
+          provider: route.provider,
+          model: route.model,
           extraContext,
         }),
       {

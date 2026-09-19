@@ -1,8 +1,8 @@
-import { type ChatMessage, isAiRecapError } from '@ai-recap/core';
+import { AiRecapError, type ChatMessage, isAiRecapError } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
 import { useCallback, useEffect, useState } from 'react';
 
-import { DEFAULT_SUMMARY_MODEL, askChat, getByokLLMProvider } from '../../ai';
+import { DEFAULT_SUMMARY_MODEL, askChat, resolveLLMRoute } from '../../ai';
 import type { LlmMessage } from '../../ai';
 import { chatRepo, contextsRepo, recapsRepo } from '../../db';
 import { newId } from '../../lib/ids';
@@ -51,7 +51,8 @@ export function useChat(recapId: string) {
         const segments = await ensureTranscript(recapId);
         const context =
           (await contextsRepo.getContext(recap?.contextId ?? presetContextId('workMeeting'))) ?? null;
-        const model = (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL;
+        const route = await resolveLLMRoute((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
+        if (!route) throw new AiRecapError({ code: 'llm/missing-key', message: 'No LLM available.' });
 
         const { answer, citations } = await askChat({
           context,
@@ -63,8 +64,8 @@ export function useChat(recapId: string) {
           transcript: segments,
           history,
           question: q,
-          provider: getByokLLMProvider(),
-          model,
+          provider: route.provider,
+          model: route.model,
         });
 
         const assistantMsg: ChatMessage = {

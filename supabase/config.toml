@@ -24,3 +24,9 @@ verify_jwt = true
 
 [functions.quota-consume]
 verify_jwt = true
+
+[functions.recap-generate]
+verify_jwt = true
+
+[functions.transcribe]
+verify_jwt = true
