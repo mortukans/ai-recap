@@ -24,11 +24,11 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
   - Trigger: `gh workflow run ios-build.yml -f profile=production -f submit=true`
 - EAS env vars (all profiles): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_KEY`.
 
-## What to test on TestFlight 0.0.1 (14)
+## What to test on the next TestFlight build (after 0.0.1 (14); fixes the dead Live Activity buttons, adds auto-naming)
 
 1. Fresh install → onboarding screen appears once (Free / paste key / see plans). Reinstall or delete app data to see it again.
-2. Record 1–2 min, lock the phone → Lock Screen banner shows **Pause** and **Finish** buttons; tap Pause → island shows paused + "Resume"; tap Finish → recording ends and processes. Expanded Dynamic Island (long-press) shows the same buttons.
-3. Recap screen: tap the title to rename; regenerate with another context → a "Versions" row appears, chips switch between versions; the context you picked is preselected on the next recording.
+2. Record 1–2 min, lock the phone → Lock Screen banner shows **Pause** and **Finish** buttons (build 14: rendered but dead — listener filtered on the wrong `source`; fixed); tap Pause → island shows paused + "Resume"; tap Finish → recording ends and processes. Expanded Dynamic Island (long-press) shows the same buttons.
+3. Recap gets a name automatically: first words spoken right after transcription, then the AI's short title once the recap is generated. Tap the title to rename; regenerate with another context → a "Versions" row appears, chips switch between versions; the context you picked is preselected on the next recording.
 4. Transcript: tap a line → audio jumps there and plays; the highlighted line follows playback.
 5. Contexts → open "Sales Call" → "Duplicate as custom context" → edit and save; it appears in the recap context chips.
 6. Settings: everything in Latvian when the phone is Latvian; About shows version (build) and an Account ID.
