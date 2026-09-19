@@ -24,6 +24,16 @@ _Last updated: 2026-09-19 (autopilot, ~02:00). Owner: Martins Mortukans._
   - Trigger: `gh workflow run ios-build.yml -f profile=production -f submit=true`
 - EAS env vars (all profiles): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_KEY`.
 
+## What to test on the next TestFlight build (0.0.1 (11), triggered 2026-09-19 ~02:20 from main)
+
+1. Fresh install → onboarding screen appears once (Free / paste key / see plans). Reinstall or delete app data to see it again.
+2. Record 1–2 min, lock the phone → Lock Screen banner shows **Pause** and **Finish** buttons; tap Pause → island shows paused + "Resume"; tap Finish → recording ends and processes. Expanded Dynamic Island (long-press) shows the same buttons.
+3. Recap screen: tap the title to rename; regenerate with another context → a "Versions" row appears, chips switch between versions; the context you picked is preselected on the next recording.
+4. Transcript: tap a line → audio jumps there and plays; the highlighted line follows playback.
+5. Contexts → open "Sales Call" → "Duplicate as custom context" → edit and save; it appears in the recap context chips.
+6. Settings: everything in Latvian when the phone is Latvian; About shows version (build) and an Account ID.
+7. Watch: still works as before (complication is on a separate branch, not in this build).
+
 ## Open items — owner: Martins (account/legal)
 
 1. **Paid Apps Agreement** (App Store Connect → Business → Agreements): confirm Legal Entity → DSA trader compliance → accept agreement → banking + tax forms. _Gates every purchase, including sandbox tests._
