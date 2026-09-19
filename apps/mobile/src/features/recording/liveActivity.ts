@@ -64,7 +64,8 @@ export function startLiveActivityInteractions(handlers: LiveActivityHandlers): v
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const widgets = require('expo-widgets') as typeof import('expo-widgets');
     widgets.addUserInteractionListener((event) => {
-      if (event.source !== 'RecordingActivity') return;
+      // NB: for Live Activities `event.source` is the ActivityKit activity id (a UUID), not the
+      // activity name — so route on the button target alone; our targets are unique to this activity.
       if (event.target === 'pause') handlers.togglePause();
       else if (event.target === 'finish') handlers.finish();
     });
