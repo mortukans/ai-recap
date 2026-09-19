@@ -139,8 +139,10 @@ export default function RecapDetailScreen() {
     setError(null);
     setGenerating(true);
     try {
-      // DEMO: synthesize a transcript if none exists yet (real transcription lands in M2).
       const segments = await ensureTranscript(id);
+      if (segments.length === 0) {
+        throw new AiRecapError({ code: 'transcription/failed', message: t('processing.noTranscript') });
+      }
 
       const context =
         (await contextsRepo.getContext(contextId ?? presetContextId('workMeeting'))) ?? null;

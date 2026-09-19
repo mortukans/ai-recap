@@ -51,6 +51,45 @@ export async function requireUnlimited(db: SupabaseClient, userId: string): Prom
   return active ? null : json({ error: 'unlimited_required' }, 402);
 }
 
+/** Fair-use guards for hosted AI (Arch §18): generous for real meetings, hostile to abuse. */
+export const FAIR_USE = {
+  /** Transcription minutes per user per rolling 24 h (Unlimited = 60-min recordings; ~10 meetings/day). */
+  transcriptionMinutesPerDay: 600,
+  /** Hosted LLM calls per user per rolling 24 h (recaps + chat). */
+  llmCallsPerDay: 400,
+};
+
+/**
+ * Returns a 429 Response when the caller exceeded the rolling-24h fair-use budget, else null.
+ * Reads our own usage_events (service role); never blocks on metering errors.
+ */
+export async function requireFairUse(
+  db: SupabaseClient,
+  userId: string,
+  kind: 'transcription' | 'llm',
+): Promise<Response | null> {
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data } = await db
+      .from('usage_events')
+      .select('transcription_seconds, input_tokens, output_tokens')
+      .eq('user_id', userId)
+      .eq('provider', 'openrouter-hosted')
+      .gte('occurred_at', since);
+    const rows = data ?? [];
+    if (kind === 'transcription') {
+      const minutes = rows.reduce((s, r) => s + (r.transcription_seconds ?? 0), 0) / 60;
+      if (minutes >= FAIR_USE.transcriptionMinutesPerDay) return json({ error: 'fair_use_exceeded', kind }, 429);
+    } else {
+      const calls = rows.filter((r) => (r.input_tokens ?? 0) + (r.output_tokens ?? 0) > 0).length;
+      if (calls >= FAIR_USE.llmCallsPerDay) return json({ error: 'fair_use_exceeded', kind }, 429);
+    }
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
 export interface OpenRouterUsage {
   prompt_tokens?: number;
   completion_tokens?: number;

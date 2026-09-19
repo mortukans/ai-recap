@@ -2,7 +2,7 @@
 // Body: LlmRequest from the app { model: 'fast'|'balanced'|'best'|<ignored>, messages, temperature?,
 //       maxOutputTokens?, responseJsonSchema? } plus optional recapId for metering.
 // Returns LlmResult { text, model, usage }.
-import { LLM_TIERS, admin, callOpenRouter, costMicros, json, recordUsage, requireUnlimited, requireUser } from '../_shared/hosted.ts';
+import { LLM_TIERS, admin, callOpenRouter, costMicros, json, recordUsage, requireFairUse, requireUnlimited, requireUser } from '../_shared/hosted.ts';
 
 interface Body {
   model?: string;
@@ -20,6 +20,8 @@ Deno.serve(async (req) => {
   const db = admin();
   const denied = await requireUnlimited(db, who.userId);
   if (denied) return denied;
+  const throttled = await requireFairUse(db, who.userId, 'llm');
+  if (throttled) return throttled;
 
   let body: Body;
   try {

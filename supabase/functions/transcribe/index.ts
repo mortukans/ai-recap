@@ -2,7 +2,7 @@
 // Body: { audioBase64, format: 'm4a', durationSeconds, recapId?, languageHint?: 'auto'|'lv'|'en' }
 // Returns { language: string|null, segments: [{ start, end, speaker, text }] } with times relative to the chunk.
 // The audio is processed in memory and never stored server-side (Arch §16: no user content at rest).
-import { TRANSCRIPTION_MODEL, admin, callOpenRouter, costMicros, json, recordUsage, requireUnlimited, requireUser } from '../_shared/hosted.ts';
+import { TRANSCRIPTION_MODEL, admin, callOpenRouter, costMicros, json, recordUsage, requireFairUse, requireUnlimited, requireUser } from '../_shared/hosted.ts';
 
 const SYSTEM_PROMPT = `You are a precise speech-to-text engine. Transcribe the audio verbatim.
 The speech is usually Latvian, English, or a mix; keep each utterance in its original language with correct diacritics.
@@ -34,6 +34,8 @@ Deno.serve(async (req) => {
   const db = admin();
   const denied = await requireUnlimited(db, who.userId);
   if (denied) return denied;
+  const throttled = await requireFairUse(db, who.userId, 'transcription');
+  if (throttled) return throttled;
 
   let body: Body;
   try {

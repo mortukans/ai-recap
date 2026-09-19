@@ -49,6 +49,9 @@ export function useChat(recapId: string) {
 
         const recap = await recapsRepo.getRecap(recapId);
         const segments = await ensureTranscript(recapId);
+        if (segments.length === 0) {
+          throw new AiRecapError({ code: 'transcription/failed', message: 'No transcript yet for this recording.' });
+        }
         const context =
           (await contextsRepo.getContext(recap?.contextId ?? presetContextId('workMeeting'))) ?? null;
         const route = await resolveLLMRoute((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);

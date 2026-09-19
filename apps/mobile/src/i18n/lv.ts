@@ -131,6 +131,7 @@ export const lv: TranslationKeys = {
     gaps: 'Trūkst {{seconds}} s audio ({{count}} pārrāvums). Atskaņošana un transkripts var izlaist daļu.',
     gaps_plural: 'Trūkst {{seconds}} s audio ({{count}} pārrāvumi). Atskaņošana un transkripts var izlaist daļu.',
     noKey: 'Pievieno OpenRouter atslēgu Iestatījumos, lai izveidotu kopsavilkumu.',
+    noTranscript: 'Transkripta vēl nav — pagaidi, kamēr transkripcija pabeigta, vai spied Mēģināt vēlreiz.',
   },
   status: {
     recording: 'Ieraksta',

@@ -129,6 +129,7 @@ export const en = {
     gaps: '{{seconds}} s of audio missing ({{count}} gap). Playback and transcript may skip.',
     gaps_plural: '{{seconds}} s of audio missing ({{count}} gaps). Playback and transcript may skip.',
     noKey: 'Add an OpenRouter key in Settings to generate the recap.',
+    noTranscript: 'No transcript yet — wait for transcription to finish or tap Retry.',
   },
   status: {
     recording: 'Recording',
