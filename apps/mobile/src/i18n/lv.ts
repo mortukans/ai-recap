@@ -42,6 +42,8 @@ export const lv: TranslationKeys = {
     instructionsPlaceholder: 'Kā rakstīt kopsavilkumu?',
     save: 'Saglabāt',
     delete: 'Dzēst',
+    duplicate: 'Dublēt kā pielāgotu kontekstu',
+    copyName: '{{name}} (kopija)',
     selectLabel: 'Konteksts',
   },
   settings: {
@@ -54,6 +56,9 @@ export const lv: TranslationKeys = {
     chunkDuration: 'Fragmenta ilgums',
     audioQuality: 'Audio kvalitāte',
     privacy: 'Privātums',
+    version: 'Versija',
+    accountId: 'Konta ID',
+    accountIdHint: 'Anonīms identifikators, ko mūsu serveris izmanto plānam un limitiem. Norādi to, ja lūgsi dzēst servera datus.',
     about: 'Par lietotni',
   },
   chat: {
@@ -136,6 +141,19 @@ export const lv: TranslationKeys = {
     seePlans: 'Skatīt plānus (Unlimited — atslēga nav vajadzīga)',
     continueFree: 'Pagaidām turpināt bez maksas',
     freeNote: 'Bezmaksas: 15 minūšu ieraksti, 5 kopsavilkumi dienā, transkripcija ierīcē (labāk angliski). Atslēgu vai plānu var pievienot vēlāk Iestatījumos.',
+  },
+  recap: {
+    titlePlaceholder: 'Kopsavilkuma nosaukums',
+    untitled: 'Kopsavilkums bez nosaukuma',
+    segments_zero: '{{count}} segmentu',
+    segments_one: '{{count}} segments',
+    segments_other: '{{count}} segmenti',
+    versions: 'Versijas',
+    generate: 'Ģenerēt kopsavilkumu',
+    regenerate: 'Pārģenerēt kopsavilkumu',
+    empty: 'Ģenerē strukturētu kopsavilkumu no šī ieraksta transkripta: kopsavilkums, lēmumi, uzdevumi, datumi. Izvēlies kontekstu augstāk, lai to virzītu.',
+    noLlm: 'Pievieno OpenRouter atslēgu Iestatījumos vai pāriet uz Unlimited un mēģini vēlreiz.',
+    setKey: 'Iestatīt OpenRouter atslēgu Iestatījumos →',
   },
   processing: {
     transcribing: 'Transkribē ierakstu…',

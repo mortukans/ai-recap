@@ -1,15 +1,16 @@
 # AI Recap — project status
 
-_Last updated: 2026-09-19 (morning, autopilot session). Owner: Martins Mortukans._
+_Last updated: 2026-09-19 (autopilot, ~02:00). Owner: Martins Mortukans._
 
 ## Where we are
 
-**On the phone (TestFlight 0.0.1 (7))**
+**On the phone (TestFlight 0.0.1 (10) — processing at Apple; built from commit 2947764. Everything listed below up to "Backend" is in it except the items marked *next build*.)**
 - Record → chunked audio → transcribe (Latvian/English via OpenRouter, Apple on-device fallback) → structured AI recap → transcript, speakers, Ask-AI chat, notes-for-AI, search, share/export.
 - Live Activity in the Dynamic Island / Lock Screen; phone-call and AirPods interruption handling.
 - Apple Watch app: remote control when the phone app is open; records on the watch itself otherwise and hands the audio to the phone.
 - Free plan enforced: 15-min recordings, 5 recaps/day (server-verified when online). Paywall with Unlimited + BYOK lifetime (prices appear once Apple's Paid Apps Agreement is active).
-- First-launch onboarding (one screen: Free / paste OpenRouter key / see plans), last-used context remembered for new recordings, chunk-gap "audio missing" banner, usage accounting (Settings → Usage this month). Hosted AI path (Edge Functions `transcribe`, `recap-generate`) wired for Unlimited users with per-user fair-use caps; the app never synthesizes demo transcripts anymore.
+- Chunk-gap "audio missing" banner, usage accounting (Settings → Usage this month), watch haptics, rough speaker labels.
+- *next build:* first-launch onboarding (Free / paste OpenRouter key / see plans); last-used context remembered for new recordings; recap **version history** (switch between regenerated recaps); transcript **tap-to-seek** playback with playhead follow; rename a recap by tapping its title; duplicate any context as a custom template; Settings → About shows version (build) + anonymous account id; hosted AI fair-use caps; no more synthesized demo transcripts.
 
 **Backend (Supabase, EU/Ireland, project `syjpumaqnlmglrokiujy`)**
 - Anonymous auth, `entitlements`/`usage_events`/`daily_quota` tables with RLS, Edge Functions `entitlements`, `quota-consume`, `revenuecat-webhook` — all deployed and smoke-tested.

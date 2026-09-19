@@ -41,6 +41,8 @@ export const en = {
     save: 'Save',
     delete: 'Delete',
     selectLabel: 'Context',
+    duplicate: 'Duplicate as custom context',
+    copyName: '{{name}} (copy)',
   },
   settings: {
     title: 'Settings',
@@ -53,6 +55,9 @@ export const en = {
     audioQuality: 'Audio quality',
     privacy: 'Privacy',
     about: 'About',
+    version: 'Version',
+    accountId: 'Account ID',
+    accountIdHint: 'Anonymous identifier our server uses for your plan and usage limits. Quote it if you ask us to delete your server data.',
   },
   chat: {
     title: 'Ask AI Recap',
@@ -134,6 +139,19 @@ export const en = {
     seePlans: 'See plans (Unlimited — no key needed)',
     continueFree: 'Continue free for now',
     freeNote: 'Free: 15-minute recordings, 5 recaps a day, on-device transcription (English works best). You can add a key or upgrade later in Settings.',
+  },
+  recap: {
+    titlePlaceholder: 'Recap title',
+    untitled: 'Untitled recap',
+    segments_zero: '{{count}} segments',
+    segments_one: '{{count}} segment',
+    segments_other: '{{count}} segments',
+    versions: 'Versions',
+    generate: 'Generate recap',
+    regenerate: 'Regenerate recap',
+    empty: "Generate a structured recap from this recording's transcript: summary, decisions, action items, dates. Pick a context above to steer it.",
+    noLlm: 'Add an OpenRouter key in Settings or upgrade to Unlimited, then try again.',
+    setKey: 'Set OpenRouter key in Settings →',
   },
   processing: {
     transcribing: 'Transcribing your recording…',
