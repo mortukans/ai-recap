@@ -26,7 +26,8 @@ export interface Entitlements {
 
 export const FREE_CAPABILITIES: Capabilities = {
   maxRecordingMinutes: 15,
-  maxRecapsPerDay: 5,
+  // TESTING: daily cap lifted for TestFlight testing (2026-09-19). Restore to 5 before public launch.
+  maxRecapsPerDay: null,
   hostedTranscription: true,
   hostedLLM: true, // standard model, basic summary
   byokEnabled: false,

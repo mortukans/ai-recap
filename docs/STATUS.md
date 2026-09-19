@@ -9,6 +9,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
 - Live Activity in the Dynamic Island / Lock Screen; phone-call and AirPods interruption handling.
 - Apple Watch app: remote control when the phone app is open; records on the watch itself otherwise and hands the audio to the phone.
 - Free plan enforced: 15-min recordings, 5 recaps/day (server-verified when online). Paywall with Unlimited + BYOK lifetime (prices appear once Apple's Paid Apps Agreement is active).
+- **Free daily cap (5 recaps/day) temporarily LIFTED for testing** (`FREE_CAPABILITIES.maxRecapsPerDay: null`, commit on 2026-09-19) — restore to 5 before public launch.
 - Chunk-gap "audio missing" banner, usage accounting (Settings → Usage this month), watch haptics, rough speaker labels.
 - New in (14): first-launch onboarding (Free / paste OpenRouter key / see plans); last-used context remembered for new recordings; recap **version history** (switch between regenerated recaps); transcript **tap-to-seek** playback with playhead follow; rename a recap by tapping its title; duplicate any context as a custom template; Settings → About shows version (build) + anonymous account id; hosted AI fair-use caps; no more synthesized demo transcripts; **Live Activity Pause/Resume + Finish buttons** on the Lock Screen banner and expanded Dynamic Island (expo-widgets LiveActivityIntent → app; iOS 17+); Settings/recap sections fully LV/EN.
 

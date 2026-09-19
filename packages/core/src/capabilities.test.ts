@@ -5,7 +5,7 @@ describe('resolveCapabilities', () => {
   it('returns the Free baseline with no entitlements', () => {
     expect(resolveCapabilities(NO_ENTITLEMENTS)).toEqual(FREE_CAPABILITIES);
     expect(FREE_CAPABILITIES.maxRecordingMinutes).toBe(15);
-    expect(FREE_CAPABILITIES.maxRecapsPerDay).toBe(5);
+    expect(FREE_CAPABILITIES.maxRecapsPerDay).toBeNull(); // TESTING: lifted; restore toBe(5) at launch
   });
 
   it('Unlimited lifts the caps and enables hosted AI', () => {
@@ -22,7 +22,7 @@ describe('resolveCapabilities', () => {
     expect(c.byokEnabled).toBe(true);
     expect(c.maxRecordingMinutes).toBe(PAID_RECORDING_MINUTES);
     expect(c.advancedTemplates).toBe(true);
-    expect(c.maxRecapsPerDay).toBe(5);
+    expect(c.maxRecapsPerDay).toBe(FREE_CAPABILITIES.maxRecapsPerDay);
   });
 
   it('BYOK + Unlimited co-exist as the most-permissive union', () => {
