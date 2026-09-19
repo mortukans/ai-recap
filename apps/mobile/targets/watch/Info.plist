@@ -13,6 +13,18 @@
   <array>
     <string>audio</string>
   </array>
+  <!-- Deep link used by the watch-face complication (targets/watch-widget). -->
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>lv.airecap.app.watchkitapp</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>airecap-watch</string>
+      </array>
+    </dict>
+  </array>
   <key>NSMicrophoneUsageDescription</key>
   <string>AI Recap records on your watch when your iPhone is not open, then sends the audio to your iPhone.</string>
   <key>UISupportedInterfaceOrientations</key>

@@ -86,6 +86,12 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
     }
   }
 
+  /// Complication tap: start unless something is already running (never double-start or toggle).
+  func startIfIdle() {
+    guard displayState == .idle else { return }
+    start()
+  }
+
   func pause() {
     haptic(.click)
     if mode == .local { pauseLocal() } else { send("pause") }
