@@ -35,7 +35,7 @@ import { RecordingPlayer } from '../../features/recap/RecordingPlayer';
 import { chunkUri } from '../../features/recap/audioUri';
 import { ensureTranscript } from '../../features/recap/ensureTranscript';
 import { MARKDOWN, exportTextFile, safeFilename, shareText } from '../../features/share/shareService';
-import { getSummaryModel } from '../../lib/prefs';
+import { getSummaryModel, setDefaultContextId } from '../../lib/prefs';
 import { processingCoordinator } from '../../processing/coordinator';
 
 function parseArtifactContent(content: string): RecapDocument | null {
@@ -106,6 +106,7 @@ export default function RecapDetailScreen() {
       if (!id) return;
       setContextId(ctxId);
       await recapsRepo.updateRecap(id, { contextId: ctxId });
+      await setDefaultContextId(ctxId); // remembered for the next recording
     },
     [id],
   );

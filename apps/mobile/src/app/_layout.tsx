@@ -28,6 +28,7 @@ export default function RootLayout() {
         <Stack.Screen name="recording" options={{ presentation: 'modal', headerShown: false }} />
         <Stack.Screen name="recap/[id]" options={{ headerShown: true, title: '' }} />
         <Stack.Screen name="paywall" options={{ presentation: 'modal', headerShown: true }} />
+        <Stack.Screen name="onboarding" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
       </Stack>
     </ThemeProvider>
   );

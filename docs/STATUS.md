@@ -9,6 +9,7 @@ _Last updated: 2026-09-19 (morning, autopilot session). Owner: Martins Mortukans
 - Live Activity in the Dynamic Island / Lock Screen; phone-call and AirPods interruption handling.
 - Apple Watch app: remote control when the phone app is open; records on the watch itself otherwise and hands the audio to the phone.
 - Free plan enforced: 15-min recordings, 5 recaps/day (server-verified when online). Paywall with Unlimited + BYOK lifetime (prices appear once Apple's Paid Apps Agreement is active).
+- First-launch onboarding (one screen: Free / paste OpenRouter key / see plans), last-used context remembered for new recordings, chunk-gap "audio missing" banner, usage accounting (Settings → Usage this month). Hosted AI path (Edge Functions `transcribe`, `recap-generate`) wired for Unlimited users with per-user fair-use caps; the app never synthesizes demo transcripts anymore.
 
 **Backend (Supabase, EU/Ireland, project `syjpumaqnlmglrokiujy`)**
 - Anonymous auth, `entitlements`/`usage_events`/`daily_quota` tables with RLS, Edge Functions `entitlements`, `quota-consume`, `revenuecat-webhook` — all deployed and smoke-tested.
@@ -37,10 +38,11 @@ _Last updated: 2026-09-19 (morning, autopilot session). Owner: Martins Mortukans
 - **M2-5** rough diarization BUILT ("Speaker N" labels from the transcription model, consistent within a chunk; may re-number across chunks — true diarization still needs a dedicated provider).
 - **M5-5** usage accounting BUILT (local records → `usage_events` idempotent sync; provider cost captured; Settings → "Usage this month").
 - Android: recorder (Kotlin foreground service), Play Billing, build/submit.
-- Watch: haptics BUILT; complication / Smart Stack tile still open.
-- Before public launch: re-check Free caps, App Review notes/screenshots for IAPs, privacy labels.
+- Watch: haptics BUILT.
+- Before public launch: re-check Free caps, IAP review screenshots, privacy labels — draft answers + review notes in `docs/APP_REVIEW_NOTES.md`.
+- Onboarding BUILT (M5-4). Watch complication / Smart Stack tile still open.
 
 ## Reference
 
-- Setup runbook: `docs/BACKEND_SETUP.md` · Tasks: `docs/AI_RECAP_MVP_TASKS.md` · Architecture: `docs/AI_RECAP_TECHNICAL_ARCHITECTURE.md`
+- Setup runbook: `docs/BACKEND_SETUP.md` · App Review prep: `docs/APP_REVIEW_NOTES.md` · Tasks: `docs/AI_RECAP_MVP_TASKS.md` · Architecture: `docs/AI_RECAP_TECHNICAL_ARCHITECTURE.md`
 - App Store Connect app id `6813450802` · RevenueCat project `19269c38` · EAS project `77676bfa-…`

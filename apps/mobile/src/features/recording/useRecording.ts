@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { chunksRepo, recapsRepo, usageRepo } from '../../db';
 import { newId } from '../../lib/ids';
+import { getDefaultContextId } from '../../lib/prefs';
 import { reconcileChunksFromManifest } from '../recap/manifest';
 import {
   endRecordingActivity,
@@ -56,7 +57,7 @@ export function useRecording() {
         detectedLanguages: [],
         status: 'recording',
         presetId: null,
-        contextId: null,
+        contextId: await getDefaultContextId(), // last-used context (M3-6); changeable on the recap screen
         createdAt: now,
         updatedAt: now,
       });

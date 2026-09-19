@@ -60,3 +60,40 @@ export async function setSummaryModel(model: string): Promise<void> {
     /* non-fatal */
   }
 }
+
+const DEFAULT_CONTEXT_KEY = 'airecap.pref.defaultContextId';
+const ONBOARDED_KEY = 'airecap.pref.onboarded';
+
+/** Last context the user picked; applied to new recordings (Product Plan §4 "ask after recording"). */
+export async function getDefaultContextId(): Promise<string | null> {
+  try {
+    return (await AsyncStorage.getItem(DEFAULT_CONTEXT_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setDefaultContextId(id: string | null): Promise<void> {
+  try {
+    if (id) await AsyncStorage.setItem(DEFAULT_CONTEXT_KEY, id);
+    else await AsyncStorage.removeItem(DEFAULT_CONTEXT_KEY);
+  } catch {
+    /* non-fatal */
+  }
+}
+
+export async function isOnboarded(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(ONBOARDED_KEY)) === '1';
+  } catch {
+    return true; // never trap the user in onboarding if storage is unavailable
+  }
+}
+
+export async function setOnboarded(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(ONBOARDED_KEY, '1');
+  } catch {
+    /* non-fatal */
+  }
+}

@@ -10,6 +10,7 @@ import { Colors, Spacing } from '@/constants/theme';
 import { type RecapSearchHit, recapsRepo, searchRepo } from '../../db';
 import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
 import { processingCoordinator } from '../../processing/coordinator';
+import { isOnboarded } from '../../lib/prefs';
 import { consumeQuota } from '../../purchases/quota';
 import { useCapabilities } from '../../purchases/useCapabilities';
 
@@ -75,6 +76,14 @@ export default function RecapsScreen() {
       void refreshQuota();
     }, [load, query, refreshQuota]),
   );
+
+  // First launch → onboarding (choose Free / BYOK key / plans). Stored flag, so it shows once.
+  useEffect(() => {
+    void isOnboarded().then((done) => {
+      if (!done) router.push('/onboarding');
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Live-refresh the library as the processing coordinator advances recap statuses.
   useEffect(() => processingCoordinator.onChange(() => void load(query)), [load, query]);
