@@ -138,6 +138,11 @@ export const lv: TranslationKeys = {
     freeNote: 'Bezmaksas: 15 minūšu ieraksti, 5 kopsavilkumi dienā, transkripcija ierīcē (labāk angliski). Atslēgu vai plānu var pievienot vēlāk Iestatījumos.',
   },
   recap: {
+    titlePlaceholder: 'Kopsavilkuma nosaukums',
+    untitled: 'Kopsavilkums bez nosaukuma',
+    segments_zero: '{{count}} segmentu',
+    segments_one: '{{count}} segments',
+    segments_other: '{{count}} segmenti',
     versions: 'Versijas',
     generate: 'Ģenerēt kopsavilkumu',
     regenerate: 'Pārģenerēt kopsavilkumu',

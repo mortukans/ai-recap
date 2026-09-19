@@ -70,6 +70,8 @@ export default function RecapDetailScreen() {
   const [integrity, setIntegrity] = useState<IntegrityReport | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
   const [notesSaved, setNotesSaved] = useState(false);
 
   const load = useCallback(async () => {
@@ -116,6 +118,16 @@ export default function RecapDetailScreen() {
     },
     [id],
   );
+
+  // Tap the title to rename the recap (the AI only fills a title when it is still empty).
+  const commitTitle = useCallback(async () => {
+    setEditingTitle(false);
+    if (!id) return;
+    const next = draftTitle.trim();
+    if (next === title) return;
+    setTitle(next);
+    await recapsRepo.updateRecap(id, { title: next });
+  }, [id, draftTitle, title]);
 
   // Notes (agenda, participants…) are stored as an inline text attachment and fed to generation.
   const saveNotes = useCallback(async () => {
@@ -208,9 +220,30 @@ export default function RecapDetailScreen() {
         }}
       />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.h1, { color: c.text }]}>{title || t('app.name')}</Text>
+        {editingTitle ? (
+          <TextInput
+            value={draftTitle}
+            onChangeText={setDraftTitle}
+            onBlur={() => void commitTitle()}
+            onSubmitEditing={() => void commitTitle()}
+            autoFocus
+            returnKeyType="done"
+            placeholder={t('recap.titlePlaceholder')}
+            placeholderTextColor={c.textSecondary}
+            style={[styles.h1, styles.h1Input, { color: c.text, borderColor: c.backgroundSelected }]}
+          />
+        ) : (
+          <Pressable
+            onPress={() => {
+              setDraftTitle(title);
+              setEditingTitle(true);
+            }}
+            hitSlop={4}>
+            <Text style={[styles.h1, { color: c.text }]}>{title || t('recap.untitled')}</Text>
+          </Pressable>
+        )}
         <Text style={[styles.meta, { color: c.textSecondary }]}>
-          {formatDuration(durationSeconds)} · {t(`status.${status}`)} · {segmentCount} segments
+          {formatDuration(durationSeconds)} · {t(`status.${status}`)} · {t('recap.segments', { count: segmentCount })}
         </Text>
 
         {playChunks.length > 0 ? <RecordingPlayer chunks={playChunks} palette={c} /> : null}
@@ -363,6 +396,7 @@ const styles = StyleSheet.create({
   fill: { flex: 1 },
   content: { padding: Spacing.four, gap: Spacing.three },
   h1: { fontSize: 24, fontWeight: '700' },
+  h1Input: { borderBottomWidth: 1, paddingVertical: 2 },
   meta: { fontSize: 14 },
   ctxLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.one },
   ctxRow: { gap: Spacing.two, paddingRight: Spacing.four },

@@ -136,6 +136,11 @@ export const en = {
     freeNote: 'Free: 15-minute recordings, 5 recaps a day, on-device transcription (English works best). You can add a key or upgrade later in Settings.',
   },
   recap: {
+    titlePlaceholder: 'Recap title',
+    untitled: 'Untitled recap',
+    segments_zero: '{{count}} segments',
+    segments_one: '{{count}} segment',
+    segments_other: '{{count}} segments',
     versions: 'Versions',
     generate: 'Generate recap',
     regenerate: 'Regenerate recap',
