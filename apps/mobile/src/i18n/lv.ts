@@ -42,6 +42,8 @@ export const lv: TranslationKeys = {
     instructionsPlaceholder: 'Kā rakstīt kopsavilkumu?',
     save: 'Saglabāt',
     delete: 'Dzēst',
+    duplicate: 'Dublēt kā pielāgotu kontekstu',
+    copyName: '{{name}} (kopija)',
     selectLabel: 'Konteksts',
   },
   settings: {

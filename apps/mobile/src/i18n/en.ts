@@ -41,6 +41,8 @@ export const en = {
     save: 'Save',
     delete: 'Delete',
     selectLabel: 'Context',
+    duplicate: 'Duplicate as custom context',
+    copyName: '{{name}} (copy)',
   },
   settings: {
     title: 'Settings',

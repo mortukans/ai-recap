@@ -59,6 +59,22 @@ export default function ContextEditorScreen() {
     router.back();
   };
 
+  // M3-5: start a custom template from any context (built-ins are the usual starting point).
+  const onDuplicate = async () => {
+    if (!existing) return;
+    const now = Date.now();
+    const copy: Context = {
+      ...existing,
+      id: newId(),
+      name: t('contexts.copyName', { name: existing.name }),
+      isBuiltIn: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await contextsRepo.upsertContext(copy);
+    router.replace({ pathname: '/context/[id]', params: { id: copy.id } });
+  };
+
   const onDelete = async () => {
     if (existing && !existing.isBuiltIn) {
       await contextsRepo.deleteContext(existing.id);
@@ -96,6 +112,11 @@ export default function ContextEditorScreen() {
         <Pressable onPress={onSave} style={[styles.save, { backgroundColor: '#208AEF', opacity: name.trim() ? 1 : 0.5 }]}>
           <Text style={styles.saveText}>{t('contexts.save')}</Text>
         </Pressable>
+        {existing ? (
+          <Pressable onPress={onDuplicate} style={styles.delete}>
+            <Text style={[styles.deleteText, { color: '#208AEF' }]}>{t('contexts.duplicate')}</Text>
+          </Pressable>
+        ) : null}
         {canDelete ? (
           <Pressable onPress={onDelete} style={styles.delete}>
             <Text style={[styles.deleteText, { color: '#E5484D' }]}>{t('contexts.delete')}</Text>
