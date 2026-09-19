@@ -6,7 +6,7 @@ module.exports = (config) => ({
   name: 'AIRecapWatchWidget',
   displayName: 'AI Recap',
   deploymentTarget: '10.0',
-  // Must be prefixed by the watch app's bundle id: lv.airecap.app.watchkitapp.complication
-  bundleIdentifier: '.watchkitapp.complication',
+  // Must be prefixed by the watch app's bundle id: lv.airecap.app.watchkitapp.recordwidget
+  bundleIdentifier: '.watchkitapp.recordwidget',
   colors: { $accent: '#208AEF' },
 });
