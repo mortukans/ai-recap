@@ -1,5 +1,7 @@
 # Backend + purchases setup (M0-5 · M5-1 · M5-2)
 
+> **Status 2026-09-19:** sections A, C and D are DONE (Supabase project `syjpumaqnlmglrokiujy`, RevenueCat project `19269c38`, EAS env vars set). Section B products are created; the **Paid Apps Agreement, sandbox tester and the E verification are still open** — see `docs/STATUS.md`.
+
 Everything the code needs is already in the repo (`supabase/` schema + Edge Functions, `apps/mobile/src/purchases/*`).
 This checklist covers the accounts and dashboard steps that can only be done by hand. ~45 minutes.
 
