@@ -128,6 +128,8 @@ export const lv: TranslationKeys = {
     waitingForNetwork: 'Gaida tīkla savienojumu, lai transkribētu.',
     failed: 'Apstrāde neizdevās',
     retry: 'Mēģināt vēlreiz',
+    gaps: 'Trūkst {{seconds}} s audio ({{count}} pārrāvums). Atskaņošana un transkripts var izlaist daļu.',
+    gaps_plural: 'Trūkst {{seconds}} s audio ({{count}} pārrāvumi). Atskaņošana un transkripts var izlaist daļu.',
     noKey: 'Pievieno OpenRouter atslēgu Iestatījumos, lai izveidotu kopsavilkumu.',
   },
   status: {

@@ -126,6 +126,8 @@ export const en = {
     waitingForNetwork: 'Waiting for a network connection to transcribe.',
     failed: 'Processing failed',
     retry: 'Retry',
+    gaps: '{{seconds}} s of audio missing ({{count}} gap). Playback and transcript may skip.',
+    gaps_plural: '{{seconds}} s of audio missing ({{count}} gaps). Playback and transcript may skip.',
     noKey: 'Add an OpenRouter key in Settings to generate the recap.',
   },
   status: {

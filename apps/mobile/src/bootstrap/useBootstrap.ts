@@ -4,6 +4,7 @@ import { ensureSession, supabase } from '../api/supabase';
 import { contextsRepo, initDatabase } from '../db';
 import { importPendingWatchRecordings } from '../features/recording/importWatchRecording';
 import { applyAudioRetention } from '../features/storage/audioStorage';
+import { syncUsage } from '../features/usage/syncUsage';
 import { processingCoordinator } from '../processing/coordinator';
 import { initEntitlements } from '../purchases/entitlements';
 import { configurePurchases } from '../purchases/revenuecat';
@@ -38,6 +39,7 @@ export function useBootstrap() {
           const uid = (await supabase.auth.getSession().catch(() => null))?.data.session?.user.id ?? null;
           await configurePurchases(uid);
           await initEntitlements();
+          void syncUsage(); // M5-5: mirror local usage records to the backend
         })();
         if (!cancelled) setReady(true);
       }

@@ -12,7 +12,7 @@ import {
   parseRecapDocument,
 } from '@ai-recap/core';
 import { RECAP_PROMPT_VERSION, buildRecapMessages } from '@ai-recap/prompts';
-import { artifactsRepo } from '../../db';
+import { artifactsRepo, usageRepo } from '../../db';
 import { newId } from '../../lib/ids';
 import type { LLMProvider } from '../types';
 
@@ -83,5 +83,21 @@ export async function generateRecap(
     createdAt: Date.now(),
   };
   await artifactsRepo.addArtifact(artifact);
+  // Usage accounting (M5-5): tokens + model, never content. Mirrored to the backend by syncUsage().
+  await usageRepo
+    .addUsage({
+      id: newId(),
+      recapId: input.recapId,
+      recordingSeconds: 0,
+      transcriptionSeconds: 0,
+      inputTokens: result.usage?.inputTokens ?? 0,
+      outputTokens: result.usage?.outputTokens ?? 0,
+      model: result.model,
+      provider: input.provider.name,
+      estimatedCostMicros: 0,
+      occurredAt: Date.now(),
+      syncedToBackend: false,
+    })
+    .catch(() => undefined);
   return { artifact, doc };
 }

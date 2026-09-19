@@ -19,7 +19,8 @@ import {
   generateRecap,
   resolveLLMRoute,
 } from '../ai';
-import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../db';
+import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo, usageRepo } from '../db';
+import { syncUsage } from '../features/usage/syncUsage';
 import { newId } from '../lib/ids';
 import { getSummaryModel } from '../lib/prefs';
 import { withRetry } from './backoff';
@@ -181,6 +182,7 @@ export class ProcessingCoordinator {
           break;
         }
         default:
+          void syncUsage(); // recap reached a resting state → mirror usage to the backend
           return; // ready, or a failed state awaiting retry()
       }
     }
@@ -203,6 +205,22 @@ export class ProcessingCoordinator {
     }));
     await segmentsRepo.replaceSegments(recap.id, segments);
     await recapsRepo.updateRecap(recap.id, { detectedLanguages: result.detectedLanguages });
+    // Usage accounting (M5-5): seconds transcribed + which provider did it.
+    await usageRepo
+      .addUsage({
+        id: newId(),
+        recapId: recap.id,
+        recordingSeconds: 0,
+        transcriptionSeconds: result.durationSeconds || recap.durationSeconds,
+        inputTokens: 0,
+        outputTokens: 0,
+        model: '',
+        provider: this.transcriber.runsOnDevice ? 'on-device' : 'transcription',
+        estimatedCostMicros: 0,
+        occurredAt: Date.now(),
+        syncedToBackend: false,
+      })
+      .catch(() => undefined);
   }
 
   private async doSummary(recap: Recap): Promise<void> {

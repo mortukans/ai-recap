@@ -16,3 +16,4 @@ export * from './format';
 export * from './ids';
 export * from './limits';
 export * from './search';
+export * from './integrity';

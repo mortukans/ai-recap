@@ -1,7 +1,9 @@
 import {
   AiRecapError,
   type Context,
+  type IntegrityReport,
   type RecapDocument,
+  checkRecordingIntegrity,
   formatDuration,
   formatRecapMarkdown,
   isAiRecapError,
@@ -61,6 +63,7 @@ export default function RecapDetailScreen() {
   const [contexts, setContexts] = useState<Context[]>([]);
   const [contextId, setContextId] = useState<string | null>(null);
   const [playChunks, setPlayChunks] = useState<{ uri: string; duration: number }[]>([]);
+  const [integrity, setIntegrity] = useState<IntegrityReport | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [notesSaved, setNotesSaved] = useState(false);
@@ -81,6 +84,7 @@ export default function RecapDetailScreen() {
       setSegmentCount((await segmentsRepo.listSegments(id)).length);
       const chunks = await chunksRepo.listChunks(id);
       setPlayChunks(chunks.map((ch) => ({ uri: chunkUri(id, ch.relativePath), duration: ch.duration })));
+      setIntegrity(recap && recap.status !== 'recording' ? checkRecordingIntegrity(chunks, recap.durationSeconds) : null);
       const latest = await artifactsRepo.latestArtifactOfType(id, 'summary');
       setDoc(latest ? parseArtifactContent(latest.content) : null);
     } catch {
@@ -200,6 +204,15 @@ export default function RecapDetailScreen() {
         </Text>
 
         {playChunks.length > 0 ? <RecordingPlayer chunks={playChunks} palette={c} /> : null}
+
+        {integrity && !integrity.ok && integrity.gaps.length > 0 ? (
+          <View style={[styles.banner, styles.bannerFailed]}>
+            <Ionicons name="warning-outline" size={18} color="#E5484D" />
+            <Text style={[styles.bannerText, styles.fill, { color: c.textSecondary }]}>
+              {t('processing.gaps', { seconds: integrity.missingSeconds, count: integrity.gaps.length })}
+            </Text>
+          </View>
+        ) : null}
 
         {/* Pipeline state: progress while the coordinator works, a reason + Retry when it failed. */}
         {isBusy || status === 'waitingForNetwork' ? (

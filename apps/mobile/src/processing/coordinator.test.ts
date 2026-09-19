@@ -37,7 +37,9 @@ vi.mock('../db', () => ({
   },
   contextsRepo: { getContext: async () => null },
   attachmentsRepo: { collectExtraContext: async () => undefined },
+  usageRepo: { addUsage: async () => {} },
 }));
+vi.mock('../features/usage/syncUsage', () => ({ syncUsage: async () => 0 }));
 
 vi.mock('../ai', () => ({
   SmartTranscriber: class {

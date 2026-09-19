@@ -3,7 +3,7 @@
  * persists chunks as they close, tracks duration, and finalizes on stop. Tolerant of a missing native
  * module (before a development build) — surfaces an error instead of crashing.
  */
-import { DEFAULT_SETTINGS, FREE_CAPABILITIES } from '@ai-recap/core';
+import { DEFAULT_SETTINGS, FREE_CAPABILITIES, checkRecordingIntegrity } from '@ai-recap/core';
 import { Recorder } from '@ai-recap/recorder';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -141,6 +141,9 @@ export function useRecording() {
           if (manifestDuration > result.durationSeconds) {
             await recapsRepo.updateRecap(id, { durationSeconds: manifestDuration });
           }
+          // M1-7: definitive lost-audio check (also surfaced on the recap screen).
+          const report = checkRecordingIntegrity(await chunksRepo.listChunks(id), result.durationSeconds);
+          if (!report.ok) console.warn('[recording] integrity gaps:', JSON.stringify(report.gaps));
         } catch (e) {
           console.warn('[recording] chunk reconcile failed:', String(e));
         }
