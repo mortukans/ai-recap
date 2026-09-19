@@ -10,16 +10,19 @@
 // Compiler must not memoize anything here (it would inject `_c` from react/compiler-runtime).
 'use no memo';
 
-import { HStack, Image, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
+import { Button, HStack, Image, Spacer, Text, VStack, ZStack } from '@expo/ui/swift-ui';
 import {
   clipShape,
   containerBackground,
+  buttonStyle,
+  controlSize,
   font,
   foregroundStyle,
   frame,
   monospacedDigit,
   multilineTextAlignment,
   padding,
+  tint,
 } from '@expo/ui/swift-ui/modifiers';
 import { createLiveActivity, type LiveActivityEnvironment } from 'expo-widgets';
 
@@ -36,7 +39,11 @@ export type RecordingActivityProps = {
   statusLabel: string;
   /** Localized app name shown in the expanded island. */
   appName: string;
+  /** Localized button labels ("Pause" / "Resume", "Finish"). */
+  pauseLabel: string;
+  finishLabel: string;
 };
+
 
 const RecordingActivity = (props: RecordingActivityProps, _env: LiveActivityEnvironment) => {
   'widget';
@@ -47,6 +54,27 @@ const RecordingActivity = (props: RecordingActivityProps, _env: LiveActivityEnvi
   const endDate = new Date(props.endEpochMs);
   const icon = props.paused ? 'pause.circle.fill' : 'mic.fill';
   const iconColor = props.paused ? GREY : RED;
+  const BLUE = '#208AEF';
+
+  // Pause/Resume + Finish. Taps run as LiveActivityIntents inside the app process (iOS 17+), so the
+  // recorder is controlled without opening the app (M6-1 acceptance).
+  const Controls = () => (
+    <HStack spacing={8}>
+      <Button
+        target="pause"
+        label={props.pauseLabel}
+        systemImage={props.paused ? 'play.fill' : 'pause.fill'}
+        modifiers={[buttonStyle('bordered'), controlSize('small'), tint(BLUE)]}
+      />
+      <Button
+        target="finish"
+        label={props.finishLabel}
+        systemImage="stop.fill"
+        role="destructive"
+        modifiers={[buttonStyle('bordered'), controlSize('small'), tint(RED)]}
+      />
+    </HStack>
+  );
 
   // Elapsed time — live while recording, frozen label while paused. Timer text is greedy, so a fixed
   // width + monospaced digits keep it from pushing neighbours around.
@@ -80,17 +108,20 @@ const RecordingActivity = (props: RecordingActivityProps, _env: LiveActivityEnvi
     // Lock Screen / Notification Center banner.
     banner: (
       <ZStack modifiers={[containerBackground('#101418', 'widget'), clipShape('containerRelativeShape')]}>
-        <HStack spacing={12} modifiers={[frame({ maxWidth: Infinity }), padding({ all: 16 })]}>
-          <Image systemName={icon} size={28} color={iconColor} />
-          <VStack alignment="leading" spacing={2}>
-            <Text modifiers={[font({ weight: 'semibold', size: 16 }), foregroundStyle(WHITE)]}>
-              {props.statusLabel}
-            </Text>
-            <Text modifiers={[font({ size: 13 }), foregroundStyle(GREY)]}>{props.appName}</Text>
-          </VStack>
-          <Spacer />
-          <Elapsed size={28} width={96} color={WHITE} />
-        </HStack>
+        <VStack alignment="leading" spacing={10} modifiers={[frame({ maxWidth: Infinity }), padding({ all: 16 })]}>
+          <HStack spacing={12}>
+            <Image systemName={icon} size={28} color={iconColor} />
+            <VStack alignment="leading" spacing={2}>
+              <Text modifiers={[font({ weight: 'semibold', size: 16 }), foregroundStyle(WHITE)]}>
+                {props.statusLabel}
+              </Text>
+              <Text modifiers={[font({ size: 13 }), foregroundStyle(GREY)]}>{props.appName}</Text>
+            </VStack>
+            <Spacer />
+            <Elapsed size={28} width={96} color={WHITE} />
+          </HStack>
+          <Controls />
+        </VStack>
       </ZStack>
     ),
     // Dynamic Island — compact: mic on the left, elapsed on the right.
@@ -111,9 +142,11 @@ const RecordingActivity = (props: RecordingActivityProps, _env: LiveActivityEnvi
       </HStack>
     ),
     expandedBottom: (
-      <Text modifiers={[font({ size: 13 }), foregroundStyle(GREY), padding({ top: 4, horizontal: 8 })]}>
-        {props.statusLabel}
-      </Text>
+      <HStack spacing={8} modifiers={[padding({ top: 4, horizontal: 8 })]}>
+        <Text modifiers={[font({ size: 13 }), foregroundStyle(GREY)]}>{props.statusLabel}</Text>
+        <Spacer />
+        <Controls />
+      </HStack>
     ),
   };
 };

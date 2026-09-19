@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { AppState, Platform } from 'react-native';
 
 import { importPendingWatchRecordings, importWatchRecording } from './importWatchRecording';
+import { startLiveActivityInteractions } from './liveActivity';
 
 interface RecordingControls {
   pause: () => Promise<void>;
@@ -68,6 +69,12 @@ export function startWatchBridge(): void {
       default:
         break;
     }
+  });
+
+  // Dynamic Island / Lock Screen buttons act on the same live session as the watch does.
+  startLiveActivityInteractions({
+    togglePause: () => void (lastState === 'paused' ? controls?.resume() : controls?.pause()),
+    finish: () => void controls?.finish(),
   });
 
   // A watch recording landed (app running in foreground or woken in background) → register + process.

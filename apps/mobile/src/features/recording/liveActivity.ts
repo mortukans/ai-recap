@@ -40,7 +40,37 @@ function props(paused: boolean, elapsedSeconds: number) {
     elapsedLabel: formatTimestamp(elapsedSeconds),
     statusLabel: paused ? i18n.t('recording.paused') : i18n.t('recording.recording'),
     appName: i18n.t('app.name'),
+    pauseLabel: paused ? i18n.t('recording.resume') : i18n.t('recording.pause'),
+    finishLabel: i18n.t('recording.finish'),
   };
+}
+
+export interface LiveActivityHandlers {
+  /** Pause when recording, resume when paused. */
+  togglePause: () => void;
+  finish: () => void;
+}
+
+let interactionsStarted = false;
+
+/**
+ * Route Live Activity button taps (LiveActivityIntent → `onExpoWidgetsUserInteraction`) to the recorder.
+ * Install once at app start; the handlers look up the live recording session themselves.
+ */
+export function startLiveActivityInteractions(handlers: LiveActivityHandlers): void {
+  if (interactionsStarted || Platform.OS !== 'ios') return;
+  interactionsStarted = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const widgets = require('expo-widgets') as typeof import('expo-widgets');
+    widgets.addUserInteractionListener((event) => {
+      if (event.source !== 'RecordingActivity') return;
+      if (event.target === 'pause') handlers.togglePause();
+      else if (event.target === 'finish') handlers.finish();
+    });
+  } catch {
+    /* module absent on this build — buttons simply do nothing */
+  }
 }
 
 /** Start the Live Activity for a recording. `maxSeconds` bounds the on-island timer. */
