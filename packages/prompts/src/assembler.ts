@@ -39,6 +39,9 @@ const RECAP_SYSTEM = [
   'terms in their original language when that is how they were said.',
   'Every factual claim in decisions, action items, and important dates MUST include timestampRefs:',
   'the transcript offsets in seconds where it was said, so the app can link back to the audio.',
+  'The "title" must be a short, specific name for this recording (3–7 words, in the meeting’s main language):',
+  'what it was about, e.g. "Q3 budget review with finance" — never generic like "Meeting" or "Recording".',
+  'If a title was provided in the metadata, keep it unless it is empty or "(untitled)".',
   'Respond with ONLY a JSON object matching the provided schema. No markdown, no prose outside JSON.',
 ].join(' ');
 

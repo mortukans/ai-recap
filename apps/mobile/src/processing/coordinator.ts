@@ -8,7 +8,7 @@
  * Transcription uses an injected TranscriptionProvider (MockTranscriber today; HostedTranscriber in M2).
  * Summarization reuses generateRecap (BYOK); if no key is set, the recap rests at `transcribed`.
  */
-import { AiRecapError, type Recap, type TranscriptSegment, isAiRecapError, retryTarget } from '@ai-recap/core';
+import { AiRecapError, type Recap, type TranscriptSegment, isAiRecapError, retryTarget, titleFromTranscript } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
 import NetInfo from '@react-native-community/netinfo';
 
@@ -204,7 +204,12 @@ export class ProcessingCoordinator {
       text: s.text,
     }));
     await segmentsRepo.replaceSegments(recap.id, segments);
-    await recapsRepo.updateRecap(recap.id, { detectedLanguages: result.detectedLanguages });
+    // Provisional name from the first words spoken; replaced by the AI title once the recap is generated.
+    const provisionalTitle = recap.title.trim() ? undefined : titleFromTranscript(segments.map((s) => s.text));
+    await recapsRepo.updateRecap(recap.id, {
+      detectedLanguages: result.detectedLanguages,
+      ...(provisionalTitle ? { title: provisionalTitle } : {}),
+    });
     // Usage accounting (M5-5): seconds transcribed + which provider did it.
     await usageRepo
       .addUsage({
@@ -230,7 +235,7 @@ export class ProcessingCoordinator {
     const route = await resolveLLMRoute((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
     if (!route) throw new AiRecapError({ code: 'llm/missing-key', message: 'No LLM available (no key, not Unlimited).' });
     const extraContext = await attachmentsRepo.collectExtraContext(recap.id).catch(() => undefined);
-    await withRetry(
+    const generated = await withRetry(
       () =>
         generateRecap({
           recapId: recap.id,
@@ -251,6 +256,11 @@ export class ProcessingCoordinator {
         shouldRetry: (e) => !(isAiRecapError(e) && e.code === 'llm/missing-key'),
       },
     );
+    // Auto-name the recap from the model's title (the user can rename it any time on the recap screen).
+    const aiTitle = generated?.doc?.title?.trim();
+    if (!recap.title.trim() && aiTitle) {
+      await recapsRepo.updateRecap(recap.id, { title: aiTitle });
+    }
   }
 }
 
