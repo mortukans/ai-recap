@@ -55,7 +55,7 @@ export default function OnboardingScreen() {
         <Text style={[styles.h1, { color: c.text }]}>{t('onboarding.title')}</Text>
         <Text style={[styles.lead, { color: c.textSecondary }]}>{t('onboarding.lead')}</Text>
 
-        <View style={[styles.card, { backgroundColor: c.backgroundElement }]}>
+        <View style={[styles.card, { backgroundColor: c.backgroundElement, borderColor: th.line }]}>
           <Step icon="mic-outline" text={t('onboarding.step1')} />
           <Step icon="text-outline" text={t('onboarding.step2')} />
           <Step icon="sparkles-outline" text={t('onboarding.step3')} />
@@ -64,7 +64,7 @@ export default function OnboardingScreen() {
 
         <Text style={[styles.h2, { color: c.text }]}>{t('onboarding.chooseTitle')}</Text>
 
-        <View style={[styles.card, { backgroundColor: c.backgroundElement }]}>
+        <View style={[styles.card, { backgroundColor: c.backgroundElement, borderColor: th.line }]}>
           <Text style={[styles.optionTitle, { color: c.text }]}>{t('onboarding.byokTitle')}</Text>
           <Text style={[styles.optionText, { color: c.textSecondary }]}>{t('onboarding.byokText')}</Text>
           <TextInput
@@ -75,7 +75,7 @@ export default function OnboardingScreen() {
             autoCapitalize="none"
             autoCorrect={false}
             secureTextEntry
-            style={[styles.input, { backgroundColor: c.background, color: c.text }]}
+            style={[styles.input, { backgroundColor: c.background, color: c.text, borderColor: th.line }]}
           />
           <Pressable
             onPress={() => void saveKey()}
@@ -103,18 +103,18 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   content: { padding: Spacing.four, gap: Spacing.three, paddingTop: Spacing.six },
-  h1: { fontSize: 30, fontWeight: '700' },
-  h2: { fontSize: 18, fontWeight: '700', marginTop: Spacing.two },
-  lead: { fontSize: 16, lineHeight: 23 },
-  card: { borderRadius: 16, padding: Spacing.four, gap: Spacing.three },
+  h1: { fontFamily: 'Newsreader_500Medium', fontSize: 36, lineHeight: 38, letterSpacing: -0.7 },
+  h2: { fontFamily: 'Newsreader_500Medium', fontSize: 22, lineHeight: 26, marginTop: Spacing.two },
+  lead: { fontFamily: 'HankenGrotesk_400Regular', fontSize: 16, lineHeight: 23 },
+  card: { borderRadius: 18, padding: Spacing.four, gap: Spacing.three, borderWidth: 1 },
   step: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three },
-  stepText: { fontSize: 15, flex: 1, lineHeight: 21 },
-  optionTitle: { fontSize: 16, fontWeight: '600' },
-  optionText: { fontSize: 14, lineHeight: 20 },
-  input: { height: 44, borderRadius: 12, paddingHorizontal: Spacing.three },
-  button: { height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  stepText: { fontFamily: 'HankenGrotesk_400Regular', fontSize: 15, flex: 1, lineHeight: 21 },
+  optionTitle: { fontFamily: 'HankenGrotesk_600SemiBold', fontSize: 16 },
+  optionText: { fontFamily: 'HankenGrotesk_400Regular', fontSize: 14, lineHeight: 20 },
+  input: { height: 50, borderRadius: 14, paddingHorizontal: Spacing.three, borderWidth: 1, fontFamily: 'HankenGrotesk_400Regular', fontSize: 16 },
+  button: { height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  buttonText: { fontFamily: 'HankenGrotesk_600SemiBold', fontSize: 15 },
   link: { alignItems: 'center', paddingVertical: Spacing.two },
-  linkText: { fontSize: 15, fontWeight: '600' },
-  note: { fontSize: 12, lineHeight: 17, textAlign: 'center' },
+  linkText: { fontFamily: 'HankenGrotesk_600SemiBold', fontSize: 15 },
+  note: { fontFamily: 'HankenGrotesk_400Regular', fontSize: 12, lineHeight: 17, textAlign: 'center' },
 });
