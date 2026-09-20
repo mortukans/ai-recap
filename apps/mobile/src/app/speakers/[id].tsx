@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useColorSchem
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
+import { useTheme } from '../../design/useTheme';
 import { useSpeakers } from '../../features/speakers/useSpeakers';
 
 interface Palette {
@@ -56,8 +57,8 @@ function SpeakerCard({
       />
 
       <View style={styles.buttonRow}>
-        <Pressable onPress={() => onRename(name)} style={[styles.btn, { backgroundColor: '#208AEF' }]}>
-          <Text style={styles.btnText}>{t('speakers.save')}</Text>
+        <Pressable onPress={() => onRename(name)} style={[styles.btn, { backgroundColor: useTheme().primaryBtn }]}>
+          <Text style={[styles.btnText, { color: useTheme().onPrimaryBtn }]}>{t('speakers.save')}</Text>
         </Pressable>
         <Pressable onPress={() => onSaveAsPerson(name)} style={[styles.btn, { backgroundColor: palette.backgroundSelected }]}>
           <Text style={[styles.btnText, { color: palette.text }]}>{t('speakers.saveAsPerson')}</Text>
@@ -91,6 +92,7 @@ export default function SpeakersScreen() {
   const { t } = useTranslation();
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const th = useTheme();
   const { speakers, profiles, samples, rename, assignProfile, saveAsProfile } = useSpeakers(id ?? '');
 
   return (
@@ -128,7 +130,7 @@ const styles = StyleSheet.create({
   input: { height: 44, borderRadius: 12, paddingHorizontal: Spacing.three, marginTop: Spacing.one },
   buttonRow: { flexDirection: 'row', gap: Spacing.two },
   btn: { flex: 1, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  btnText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  btnText: { fontSize: 15, fontWeight: '600' },
   savedLabel: { fontSize: 12, marginTop: Spacing.one },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.one },
   chip: { borderRadius: 14, paddingHorizontal: Spacing.three, paddingVertical: 6 },

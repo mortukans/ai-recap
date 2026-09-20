@@ -47,14 +47,14 @@ export type RecordingActivityProps = {
 
 const RecordingActivity = (props: RecordingActivityProps, _env: LiveActivityEnvironment) => {
   'widget';
-  const RED = '#E5484D';
+  const RED = '#F2543F';
   const GREY = '#FFFFFF99';
   const WHITE = '#FFFFFF';
   const startDate = new Date(props.startEpochMs);
   const endDate = new Date(props.endEpochMs);
   const icon = props.paused ? 'pause.circle.fill' : 'mic.fill';
   const iconColor = props.paused ? GREY : RED;
-  const BLUE = '#208AEF';
+  const AMBER = '#E9A24A';
 
   // Pause/Resume + Finish. Taps run as LiveActivityIntents inside the app process (iOS 17+), so the
   // recorder is controlled without opening the app (M6-1 acceptance).
@@ -64,7 +64,7 @@ const RecordingActivity = (props: RecordingActivityProps, _env: LiveActivityEnvi
         target="pause"
         label={props.pauseLabel}
         systemImage={props.paused ? 'play.fill' : 'pause.fill'}
-        modifiers={[buttonStyle('bordered'), controlSize('small'), tint(BLUE)]}
+        modifiers={[buttonStyle('bordered'), controlSize('small'), tint(AMBER)]}
       />
       <Button
         target="finish"
@@ -107,7 +107,7 @@ const RecordingActivity = (props: RecordingActivityProps, _env: LiveActivityEnvi
   return {
     // Lock Screen / Notification Center banner.
     banner: (
-      <ZStack modifiers={[containerBackground('#101418', 'widget'), clipShape('containerRelativeShape')]}>
+      <ZStack modifiers={[containerBackground('#15171B', 'widget'), clipShape('containerRelativeShape')]}>
         <VStack alignment="leading" spacing={10} modifiers={[frame({ maxWidth: Infinity }), padding({ all: 16 })]}>
           <HStack spacing={12}>
             <Image systemName={icon} size={28} color={iconColor} />

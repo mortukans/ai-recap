@@ -12,6 +12,8 @@ import { Recorder, type WatchRecorderState } from '@ai-recap/recorder';
 import { router } from 'expo-router';
 import { AppState, Platform } from 'react-native';
 
+import { recapsRepo } from '../../db';
+import { processingCoordinator } from '../../processing/coordinator';
 import { importPendingWatchRecordings, importWatchRecording } from './importWatchRecording';
 import { startLiveActivityInteractions } from './liveActivity';
 
@@ -81,6 +83,18 @@ export function startWatchBridge(): void {
   Recorder.addListener('watchRecordingReceived', (event) => {
     void importWatchRecording(event);
   });
+
+  // Watch home card: the most recent recap and where it is in the pipeline.
+  const publishLast = () => {
+    recapsRepo
+      .pageRecaps({ limit: 1 })
+      .then(([r]) => {
+        if (r) void Recorder.setWatchLastRecap(r.title, r.status, r.startedAt);
+      })
+      .catch(() => undefined);
+  };
+  publishLast();
+  processingCoordinator.onChange(publishLast);
 
   // Foreground/background flips change whether the phone may start recording; tell the watch.
   AppState.addEventListener('change', () => {

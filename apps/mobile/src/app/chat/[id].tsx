@@ -18,6 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
+import { useTheme } from '../../design/useTheme';
 import { useChat } from '../../features/chat/useChat';
 
 export default function ChatScreen() {
@@ -25,6 +26,7 @@ export default function ChatScreen() {
   const { t } = useTranslation();
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const th = useTheme();
   const { messages, sending, error, send } = useChat(id ?? '');
   const [input, setInput] = useState('');
   const scrollRef = useRef<ScrollView>(null);
@@ -58,10 +60,10 @@ export default function ChatScreen() {
                   style={[
                     styles.bubble,
                     isUser
-                      ? { alignSelf: 'flex-end', backgroundColor: '#208AEF' }
+                      ? { alignSelf: 'flex-end', backgroundColor: th.primaryBtn }
                       : { alignSelf: 'flex-start', backgroundColor: c.backgroundElement },
                   ]}>
-                  <Text style={[styles.bubbleText, { color: isUser ? '#fff' : c.text }]}>{m.content}</Text>
+                  <Text style={[styles.bubbleText, { color: isUser ? th.onPrimaryBtn : c.text }]}>{m.content}</Text>
                   {!isUser && m.citations && m.citations.length > 0 ? (
                     <View style={styles.chipRow}>
                       {m.citations.map((s, i) => (
@@ -79,7 +81,7 @@ export default function ChatScreen() {
           )}
           {sending ? <ActivityIndicator style={styles.typing} color={c.textSecondary} /> : null}
           {error ? (
-            <Text style={[styles.err, { color: '#E5484D' }]}>{error === 'needKey' ? t('chat.needKey') : error}</Text>
+            <Text style={[styles.err, { color: th.destructive }]}>{error === 'needKey' ? t('chat.needKey') : error}</Text>
           ) : null}
         </ScrollView>
 
@@ -95,8 +97,8 @@ export default function ChatScreen() {
           <Pressable
             onPress={onSend}
             disabled={sending || input.trim().length === 0}
-            style={[styles.sendBtn, { opacity: sending || input.trim().length === 0 ? 0.4 : 1 }]}>
-            <Ionicons name="arrow-up" color="#fff" size={22} />
+            style={[styles.sendBtn, { backgroundColor: th.primaryBtn, opacity: sending || input.trim().length === 0 ? 0.4 : 1 }]}>
+            <Ionicons name="arrow-up" color={th.onPrimaryBtn} size={22} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -116,5 +118,5 @@ const styles = StyleSheet.create({
   err: { fontSize: 13, margin: Spacing.two },
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', gap: Spacing.two, padding: Spacing.two, borderTopWidth: StyleSheet.hairlineWidth },
   input: { flex: 1, minHeight: 44, maxHeight: 120, borderRadius: 20, paddingHorizontal: Spacing.three, paddingTop: 12, paddingBottom: 12 },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#208AEF', alignItems: 'center', justifyContent: 'center' },
+  sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

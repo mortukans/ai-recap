@@ -21,6 +21,7 @@ interface NativeRecorder {
   addMarker(label: string | null): Promise<void>;
   transcribeFile(uri: string, locale: string): Promise<string>;
   setWatchState?(state: WatchRecorderState, startedAt: number, pausedElapsed: number, phoneActive: boolean): Promise<void>;
+  setWatchLastRecap?(title: string, status: string, startedAt: number): Promise<void>;
   addListener<E extends RecorderEventName>(
     event: E,
     listener: (payload: RecorderEvents[E]) => void,
@@ -68,6 +69,9 @@ export const Recorder = {
     native.setWatchState
       ? native.setWatchState(state, startedAt, pausedElapsed, phoneActive).catch(() => undefined)
       : Promise.resolve(),
+  /** Latest recap for the watch home card (title, pipeline status, start ms). No-op on old builds. */
+  setWatchLastRecap: (title: string, status: string, startedAt: number) =>
+    native.setWatchLastRecap ? native.setWatchLastRecap(title, status, startedAt).catch(() => undefined) : Promise.resolve(),
   addListener: <E extends RecorderEventName>(
     event: E,
     listener: (payload: RecorderEvents[E]) => void,

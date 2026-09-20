@@ -17,6 +17,10 @@ final class WatchBridge: NSObject, WCSessionDelegate {
   var onWatchRecording: (([String: Any]) -> Void)?
 
   private var lastState: [String: Any] = ["state": "idle", "startedAt": 0, "pausedElapsed": 0, "phoneActive": false]
+  /// Most recent recap (title/status/time) so the watch home card can show it.
+  private var lastRecap: [String: Any] = [:]
+
+  private var context: [String: Any] { lastState.merging(lastRecap) { current, _ in current } }
 
   private override init() {
     super.init()
@@ -31,12 +35,22 @@ final class WatchBridge: NSObject, WCSessionDelegate {
 
   func publish(state: String, startedAt: Double, pausedElapsed: Double, phoneActive: Bool) {
     lastState = ["state": state, "startedAt": startedAt, "pausedElapsed": pausedElapsed, "phoneActive": phoneActive]
+    push(sendMessage: true)
+  }
+
+  /// Latest recap summary line for the watch home screen (title, pipeline status, start time in ms).
+  func publishLastRecap(title: String, status: String, startedAt: Double) {
+    lastRecap = ["lastTitle": title, "lastStatus": status, "lastStartedAt": startedAt]
+    push(sendMessage: false)
+  }
+
+  private func push(sendMessage: Bool) {
     guard WCSession.isSupported() else { return }
     let session = WCSession.default
     guard session.activationState == .activated else { return }
-    try? session.updateApplicationContext(lastState)
-    if session.isReachable {
-      session.sendMessage(lastState, replyHandler: nil, errorHandler: nil)
+    try? session.updateApplicationContext(context)
+    if sendMessage && session.isReachable {
+      session.sendMessage(context, replyHandler: nil, errorHandler: nil)
     }
   }
 
@@ -86,7 +100,7 @@ final class WatchBridge: NSObject, WCSessionDelegate {
   // MARK: WCSessionDelegate
 
   func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState, error: Error?) {
-    if state == .activated { try? session.updateApplicationContext(lastState) }
+    if state == .activated { try? session.updateApplicationContext(context) }
   }
 
   func sessionDidBecomeInactive(_ session: WCSession) {}

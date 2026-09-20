@@ -31,6 +31,11 @@ public class RecorderModule: Module {
       WatchBridge.shared.publish(state: state, startedAt: startedAt, pausedElapsed: pausedElapsed, phoneActive: phoneActive)
     }
 
+    /// Latest recap (title / status / start ms) for the watch home card.
+    AsyncFunction("setWatchLastRecap") { (title: String, status: String, startedAt: Double) in
+      WatchBridge.shared.publishLastRecap(title: title, status: status, startedAt: startedAt)
+    }
+
     OnDestroy {
       self.engine.teardown()
     }

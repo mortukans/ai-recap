@@ -11,6 +11,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View, useColorSchem
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
+import { useTheme } from '../design/useTheme';
 import { setOnboarded } from '../lib/prefs';
 import { setOpenRouterKey } from '../security/byok-store';
 
@@ -19,6 +20,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const th = useTheme();
   const [key, setKey] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -42,7 +44,7 @@ export default function OnboardingScreen() {
 
   const Step = ({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) => (
     <View style={styles.step}>
-      <Ionicons name={icon} size={22} color="#208AEF" />
+      <Ionicons name={icon} size={22} color={th.accentText} />
       <Text style={[styles.stepText, { color: c.text }]}>{text}</Text>
     </View>
   );
@@ -78,8 +80,8 @@ export default function OnboardingScreen() {
           <Pressable
             onPress={() => void saveKey()}
             disabled={!key.trim() || saving}
-            style={[styles.button, { backgroundColor: '#208AEF', opacity: key.trim() ? 1 : 0.5 }]}>
-            <Text style={styles.buttonText}>{t('onboarding.saveKey')}</Text>
+            style={[styles.button, { backgroundColor: th.primaryBtn, opacity: key.trim() ? 1 : 0.5 }]}>
+            <Text style={[styles.buttonText, { color: th.onPrimaryBtn }]}>{t('onboarding.saveKey')}</Text>
           </Pressable>
         </View>
 

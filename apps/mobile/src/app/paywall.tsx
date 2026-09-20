@@ -13,6 +13,7 @@ import type { PurchasesPackage } from 'react-native-purchases';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
+import { useTheme } from '../design/useTheme';
 import { applyEntitlements, refreshEntitlements } from '../purchases/entitlements';
 import {
   PRODUCT_BYOK_LIFETIME,
@@ -29,6 +30,7 @@ export default function PaywallScreen() {
   const router = useRouter();
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const th = useTheme();
   const caps = useCapabilities();
 
   const [packages, setPackages] = useState<PurchasesPackage[] | null>(null);
@@ -93,23 +95,23 @@ export default function PaywallScreen() {
     owned: boolean;
     highlight?: boolean;
   }) => (
-    <View style={[styles.card, { backgroundColor: c.backgroundElement, borderColor: highlight ? '#208AEF' : 'transparent' }]}>
+    <View style={[styles.card, { backgroundColor: c.backgroundElement, borderColor: highlight ? th.accent : th.line, borderWidth: 1 }]}>
       <Text style={[styles.cardTitle, { color: c.text }]}>{title}</Text>
       <Text style={[styles.price, { color: c.text }]}>{price}</Text>
       {features.map((f) => (
         <View key={f} style={styles.featureRow}>
-          <Ionicons name="checkmark-circle" size={18} color="#208AEF" />
+          <Ionicons name="checkmark-circle" size={18} color={th.accentText} />
           <Text style={[styles.feature, { color: c.text }]}>{f}</Text>
         </View>
       ))}
       <Pressable
         disabled={owned || !pkg || busy !== null}
         onPress={() => void buy(pkg)}
-        style={[styles.buy, { backgroundColor: owned ? c.backgroundSelected : '#208AEF', opacity: !pkg && !owned ? 0.5 : 1 }]}>
+        style={[styles.buy, { backgroundColor: owned ? c.backgroundSelected : th.primaryBtn, opacity: !pkg && !owned ? 0.5 : 1 }]}>
         {busy === pkg?.identifier ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={th.onPrimaryBtn} />
         ) : (
-          <Text style={[styles.buyText, { color: owned ? c.text : '#fff' }]}>
+          <Text style={[styles.buyText, { color: owned ? c.text : th.onPrimaryBtn }]}>
             {owned ? t('paywall.owned') : pkg ? t('paywall.buy') : t('paywall.unavailable')}
           </Text>
         )}

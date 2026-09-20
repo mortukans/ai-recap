@@ -41,6 +41,40 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
   @Published var reachable = false
   @Published var uploading = false
   @Published var lastError: String?
+  /// Most recent recap on the phone (for the home card).
+  @Published var lastRecap: LastRecap?
+  /// Shown right after a recording was saved; auto-dismissed after 4 s.
+  @Published var justSaved: SavedInfo?
+
+  struct LastRecap: Equatable {
+    var title: String
+    var status: String
+    var startedAt: TimeInterval
+
+    var time: String {
+      let f = DateFormatter()
+      f.dateFormat = "HH:mm"
+      return f.string(from: Date(timeIntervalSince1970: startedAt / 1000))
+    }
+    var processing: Bool { ["recorded", "transcribing", "transcribed", "summarizing", "waitingForNetwork"].contains(status) }
+    var statusLabel: String {
+      switch status {
+      case "recorded", "waitingForNetwork": return "Gaida apstrādi"
+      case "transcribing": return "Transkribē"
+      case "transcribed", "summarizing": return "Apkopo"
+      case "ready": return "Gatavs"
+      case "transcriptionFailed", "summaryFailed", "uploadFailed": return "Neizdevās"
+      default: return status
+      }
+    }
+  }
+
+  struct SavedInfo: Equatable {
+    var elapsed: TimeInterval
+    var subtitle: String
+  }
+
+  private var pendingSaveElapsed: TimeInterval?
 
   private let recorder = WatchRecorder()
   private var localRecapId = ""
@@ -98,7 +132,25 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
 
   func finish() {
     haptic(.stop)
-    if mode == .local { finishLocal() } else { send("finish") }
+    if mode == .local {
+      finishLocal()
+    } else {
+      pendingSaveElapsed = elapsed(at: Date())
+      send("finish")
+    }
+  }
+
+  func dismissSaved() {
+    justSaved = nil
+  }
+
+  private func showSaved(elapsed: TimeInterval, source: String) {
+    let s = Int(elapsed)
+    justSaved = SavedInfo(elapsed: elapsed, subtitle: String(format: "%02d:%02d · %@", s / 60, s % 60, source))
+    haptic(.success)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 4) { [weak self] in
+      if self?.justSaved?.elapsed == elapsed { self?.justSaved = nil }
+    }
   }
 
   // MARK: Local (on-watch) recording
@@ -147,6 +199,7 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
     WCSession.default.transferFile(result.url, metadata: meta)
     localState = .idle
     mode = .remote
+    showSaved(elapsed: result.durationSeconds, source: "Apple Watch")
   }
 
   // MARK: Remote commands
@@ -167,7 +220,19 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
   }
 
   private func apply(_ dict: [String: Any]) {
-    if dict["state"] != nil { snapshot = RecorderSnapshot.from(dict) }
+    if dict["state"] != nil {
+      let previous = snapshot.state
+      snapshot = RecorderSnapshot.from(dict)
+      // Remote finish completed: the phone went back to idle after we asked it to stop.
+      if previous != .idle, snapshot.state == .idle, let elapsed = pendingSaveElapsed {
+        pendingSaveElapsed = nil
+        showSaved(elapsed: elapsed, source: "iPhone")
+      }
+    }
+    if let title = dict["lastTitle"] as? String, let status = dict["lastStatus"] as? String {
+      let startedAt = (dict["lastStartedAt"] as? Double) ?? 0
+      lastRecap = LastRecap(title: title, status: status, startedAt: startedAt)
+    }
   }
 
   // MARK: WCSessionDelegate
