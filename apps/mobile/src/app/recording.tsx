@@ -1,11 +1,22 @@
+/**
+ * Ieraksta — the recording screen (HANDOFF.md §5.2). Live indicator + context chip on top, the big
+ * Newsreader timer with an amber halo, a live waveform, chunk/language line, Pauzēt + Pabeigt.
+ */
 import { formatTimestamp, recordingLimitState } from '@ai-recap/core';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Colors, Spacing } from '@/constants/theme';
+import { contextsRepo } from '../db';
+import { Button, Chip, Dot, LiveIndicator } from '../design/components';
+import { Lottie } from '../design/Lottie';
+import { Layout } from '../design/tokens';
+import { Type } from '../design/typography';
+import { useTheme } from '../design/useTheme';
+import { ContextPicker } from '../features/contexts/ContextPicker';
 import { useRecording } from '../features/recording/useRecording';
 import { registerRecordingControls } from '../features/recording/watchBridge';
 import { processingCoordinator } from '../processing/coordinator';
@@ -14,18 +25,30 @@ import { useCapabilities } from '../purchases/useCapabilities';
 export default function RecordingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const scheme = useColorScheme() ?? 'light';
-  const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
-  const { status, seconds, error, start, pause, resume, finish } = useRecording();
+  const th = useTheme();
+  useKeepAwake();
+  const { status, seconds, error, start, pause, resume, finish, chunkCount, contextId, setContext } = useRecording();
   const caps = useCapabilities();
   const limit = recordingLimitState(seconds, caps.maxRecordingMinutes);
   const autoStopped = useRef(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [contextName, setContextName] = useState<string>('');
 
-  // Auto-start when the screen opens.
   useEffect(() => {
     void start(caps.maxRecordingMinutes * 60);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!contextId) {
+      setContextName('');
+      return;
+    }
+    contextsRepo
+      .getContext(contextId)
+      .then((c) => setContextName(c?.name ?? ''))
+      .catch(() => setContextName(''));
+  }, [contextId]);
 
   const isPaused = status === 'paused';
   const isActive = status === 'recording' || status === 'paused';
@@ -33,21 +56,19 @@ export default function RecordingScreen() {
   const onFinish = async () => {
     const id = await finish();
     if (id) {
-      void processingCoordinator.enqueue(id); // auto transcribe → recap (respects offline + BYOK key)
+      void processingCoordinator.enqueue(id);
       router.replace({ pathname: '/recap/[id]', params: { id } });
     } else {
       router.back();
     }
   };
 
-  // Apple Watch remote control acts on this live session while the screen is mounted.
   useEffect(() => {
     registerRecordingControls({ pause, resume, finish: onFinish });
     return () => registerRecordingControls(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pause, resume, status]);
 
-  // Free-plan cap: auto-stop at the limit (the recording is still saved + processed).
   useEffect(() => {
     if (limit.shouldStop && !autoStopped.current && isActive) {
       autoStopped.current = true;
@@ -57,61 +78,72 @@ export default function RecordingScreen() {
   }, [limit.shouldStop, isActive]);
 
   return (
-    <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]}>
+    <SafeAreaView style={[styles.fill, { backgroundColor: th.bg }]}>
+      {/* Soft amber halo behind the timer. */}
+      <View pointerEvents="none" style={styles.halo}>
+        <Lottie name="halo-breathe" style={{ width: 400, height: 400, opacity: isPaused ? 0.06 : 0.12 }} play={!isPaused} />
+      </View>
+
+      <View style={styles.top}>
+        <LiveIndicator label={isPaused ? t('recording.paused') : t('recording.recording')} />
+        <Chip label={contextName || t('contexts.selectLabel')} chevron size="md" onPress={() => setPickerOpen(true)} />
+      </View>
+
       <View style={styles.center}>
-        <View style={styles.statusRow}>
-          <View style={[styles.dot, { backgroundColor: isPaused ? c.textSecondary : '#E5484D' }]} />
-          <Text style={[styles.statusText, { color: c.textSecondary }]}>
-            {isPaused ? t('recording.paused') : t('recording.recording')}
+        <View style={{ alignItems: 'center', gap: 6 }}>
+          <Text style={[Type.timer, { color: th.text }]} maxFontSizeMultiplier={1}>
+            {formatTimestamp(seconds)}
           </Text>
+          {limit.warn || limit.strongWarn ? (
+            <Text style={[Type.metaStrong, { color: limit.strongWarn ? th.record : th.accentText }]}>
+              {t('free.limitIn', { time: formatTimestamp(limit.remainingSeconds) })}
+            </Text>
+          ) : (
+            <Text style={[Type.meta, { color: th.text2 }]}>{t('ui.ofMaxContinuous', { min: caps.maxRecordingMinutes })}</Text>
+          )}
         </View>
 
-        <Text style={[styles.timer, { color: c.text }]}>{formatTimestamp(seconds)}</Text>
+        <View style={styles.wave}>
+          <Lottie name="waveform-live" style={{ width: 350, height: 120 }} play={status === 'recording'} />
+        </View>
 
-        {(limit.warn || limit.strongWarn) && !isPaused ? (
-          <Text style={[styles.warn, { color: limit.strongWarn ? '#E5484D' : '#F5A623' }]}>
-            {t('free.limitIn', { time: formatTimestamp(limit.remainingSeconds) })}
-          </Text>
-        ) : null}
+        <View style={styles.meta}>
+          <Text style={[Type.meta, { color: th.text2 }]}>{t('ui.fragmentsSent', { count: chunkCount })}</Text>
+          <Dot size={4} />
+          <Text style={[Type.meta, { color: th.text2 }]}>LV + EN</Text>
+        </View>
 
         {error === 'permission' ? (
-          <Text style={[styles.note, { color: '#E5484D' }]}>{t('recording.permissionNeeded')}</Text>
-        ) : (
-          <Text style={[styles.note, { color: c.textSecondary }]}>{t('recording.savedContinuously')}</Text>
-        )}
-        {error && error !== 'permission' ? <Text style={[styles.err, { color: '#E5484D' }]}>{error}</Text> : null}
+          <Text style={[Type.meta, { color: th.record, textAlign: 'center' }]}>{t('recording.permissionNeeded')}</Text>
+        ) : error ? (
+          <Text style={[Type.caption, { color: th.record, textAlign: 'center', paddingHorizontal: 24 }]}>{error}</Text>
+        ) : null}
       </View>
 
       <View style={styles.controls}>
-        <Pressable
+        <Button
+          label={isPaused ? t('recording.resume') : t('recording.pause')}
+          icon={isPaused ? 'play' : 'pause'}
+          variant="secondary"
+          height={64}
+          flex={1}
           disabled={!isActive}
-          onPress={() => (isPaused ? resume() : pause())}
-          style={[styles.secondary, { backgroundColor: c.backgroundElement, opacity: isActive ? 1 : 0.4 }]}>
-          <Text style={[styles.secondaryText, { color: c.text }]}>
-            {isPaused ? t('recording.resume') : t('recording.pause')}
-          </Text>
-        </Pressable>
-        <Pressable onPress={onFinish} style={[styles.primary, { backgroundColor: '#208AEF' }]}>
-          <Text style={styles.primaryText}>{t('recording.finish')}</Text>
-        </Pressable>
+          onPress={() => void (isPaused ? resume() : pause())}
+        />
+        <Button label={t('recording.finish')} icon="stop" variant="primary" height={64} flex={1.4} onPress={() => void onFinish()} />
       </View>
+
+      <ContextPicker visible={pickerOpen} onClose={() => setPickerOpen(false)} selectedId={contextId} onSelect={(id) => void setContext(id)} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: Spacing.three },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  statusText: { fontSize: 15, textTransform: 'uppercase', letterSpacing: 1 },
-  timer: { fontSize: 64, fontWeight: '200', fontVariant: ['tabular-nums'] },
-  note: { fontSize: 14 },
-  warn: { fontSize: 14, fontWeight: '600' },
-  err: { fontSize: 12, marginTop: Spacing.two, paddingHorizontal: Spacing.four, textAlign: 'center' },
-  controls: { flexDirection: 'row', gap: Spacing.three, padding: Spacing.four },
-  secondary: { flex: 1, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  secondaryText: { fontSize: 17, fontWeight: '600' },
-  primary: { flex: 1, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  primaryText: { color: '#fff', fontSize: 17, fontWeight: '600' },
+  fill: { flex: 1, paddingHorizontal: Layout.screenPadding, paddingBottom: 14 },
+  halo: { position: 'absolute', left: 0, right: 0, top: '28%', alignItems: 'center' },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 28 },
+  wave: { height: 120, alignItems: 'center', justifyContent: 'center' },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  controls: { flexDirection: 'row', gap: 12 },
 });

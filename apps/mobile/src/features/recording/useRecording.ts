@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { chunksRepo, recapsRepo, usageRepo } from '../../db';
 import { newId } from '../../lib/ids';
-import { getDefaultContextId } from '../../lib/prefs';
+import { getDefaultContextId, setDefaultContextId } from '../../lib/prefs';
 import { reconcileChunksFromManifest } from '../recap/manifest';
 import {
   endRecordingActivity,
@@ -24,6 +24,8 @@ export function useRecording() {
   const [status, setStatus] = useState<RecordingStatus>('idle');
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [chunkCount, setChunkCount] = useState(0);
+  const [contextId, setContextIdState] = useState<string | null>(null);
   const recapIdRef = useRef<string | null>(null);
   const secondsRef = useRef(0); // latest duration for callbacks that must not re-create on every tick
   const subsRef = useRef<{ remove: () => void }[]>([]);
@@ -48,6 +50,9 @@ export function useRecording() {
 
       const id = newId();
       const now = Date.now();
+      const initialContext = await getDefaultContextId();
+      setContextIdState(initialContext);
+      setChunkCount(0);
       await recapsRepo.createRecap({
         id,
         title: '',
@@ -57,7 +62,7 @@ export function useRecording() {
         detectedLanguages: [],
         status: 'recording',
         presetId: null,
-        contextId: await getDefaultContextId(), // last-used context (M3-6); changeable on the recap screen
+        contextId: initialContext, // last-used context (M3-6); changeable while recording + on the recap screen
         createdAt: now,
         updatedAt: now,
       });
@@ -69,6 +74,7 @@ export function useRecording() {
           setSeconds(s);
         }),
         Recorder.addListener('chunkClosed', (chunk) => {
+          setChunkCount((n) => n + 1);
           chunksRepo
             .addChunk({
               id: newId(),
@@ -177,5 +183,12 @@ export function useRecording() {
     }
   }, [cleanup]);
 
-  return { status, seconds, error, start, pause, resume, finish };
+  /** Change the context of the in-progress recording (also remembered as the default). */
+  const setContext = useCallback(async (id: string) => {
+    setContextIdState(id);
+    await setDefaultContextId(id);
+    if (recapIdRef.current) await recapsRepo.updateRecap(recapIdRef.current, { contextId: id }).catch(() => undefined);
+  }, []);
+
+  return { status, seconds, error, start, pause, resume, finish, chunkCount, contextId, setContext };
 }

@@ -1,73 +1,79 @@
+/**
+ * Sequential playback across a recap's audio chunks (M1-9) in two skins (HANDOFF.md §5.3 / §5.4):
+ *  - `card`: 44-pt play button + waveform scrubber + times row (recap detail)
+ *  - `bar`:  48-pt play button + 3-pt progress + times (transcript floating player)
+ * `seekRequest` jumps to a transcript timestamp; `onTime` reports the absolute playhead (~4×/s).
+ */
 import { formatTimestamp, locateInChunks } from '@ai-recap/core';
-import { Ionicons } from '@expo/vector-icons';
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { type GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Spacing } from '@/constants/theme';
-
-interface Palette {
-  text: string;
-  textSecondary: string;
-  backgroundElement: string;
-}
+import { Card, IconButton, Waveform, waveformFor } from '../../design/components';
+import { Type } from '../../design/typography';
+import { useTheme } from '../../design/useTheme';
 
 export interface PlayChunk {
   uri: string;
   duration: number;
 }
 
-/** A request to jump to an absolute position (seconds across all chunks); `nonce` makes repeats distinct. */
 export interface SeekRequest {
   seconds: number;
   nonce: number;
 }
 
-/**
- * Sequential playback across a recap's audio chunks (M1-9). Advances to the next chunk on finish.
- * `seekRequest` jumps to a transcript timestamp; `onTime` reports the absolute playhead (~4x/s).
- */
+const WAVE_BARS = 52;
+
 export function RecordingPlayer({
   chunks,
-  palette,
+  seed,
+  variant = 'card',
   seekRequest = null,
   onTime,
 }: {
   chunks: PlayChunk[];
-  palette: Palette;
+  /** Stable id used to draw a deterministic waveform silhouette (recap id). */
+  seed: string;
+  variant?: 'card' | 'bar';
   seekRequest?: SeekRequest | null;
   onTime?: (seconds: number, playing: boolean) => void;
 }) {
+  const t = useTheme();
   const [index, setIndex] = useState(0);
   const [wantPlay, setWantPlay] = useState(false);
-  // Seek target waiting for its chunk to load (set when the seek crosses into another chunk).
   const [pending, setPending] = useState<{ index: number; offset: number } | null>(null);
+  const [waveWidth, setWaveWidth] = useState(0);
   const current = chunks[index];
   const player = useAudioPlayer(current ? { uri: current.uri } : null);
   const status = useAudioPlayerStatus(player);
   const didFinish = status?.didJustFinish ?? false;
   const isLoaded = status?.isLoaded ?? false;
 
-  // Absolute seconds -> (chunk, offset). Chunks are ordered and contiguous.
-  useEffect(() => {
-    if (!seekRequest || chunks.length === 0) return;
-    const { index: target, offset } = locateInChunks(
-      chunks.map((ch) => ch.duration),
-      seekRequest.seconds,
-    );
+  const durations = chunks.map((ch) => ch.duration);
+  const totalDuration = durations.reduce((s, d) => s + d, 0);
+  const priorDuration = durations.slice(0, index).reduce((s, d) => s + d, 0);
+  const currentTime = priorDuration + (status?.currentTime ?? 0);
+  const playing = status?.playing ?? false;
+  const progress = totalDuration > 0 ? currentTime / totalDuration : 0;
+
+  const seekAbsolute = (seconds: number) => {
+    if (chunks.length === 0) return;
+    const { index: target, offset } = locateInChunks(durations, seconds);
     setWantPlay(true);
     if (target === index) {
-      // Same chunk: seek right away (the "loaded" effect below only fires on chunk changes).
       void player.seekTo(offset).then(() => player.play());
     } else {
       setPending({ index: target, offset });
       setIndex(target);
     }
+  };
+
+  useEffect(() => {
+    if (seekRequest) seekAbsolute(seekRequest.seconds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seekRequest?.nonce]);
 
-  // Apply the pending offset once *that* chunk's player reports itself loaded (duration known), so a
-  // stale "loaded" status from the previous chunk can't trigger the seek too early.
   const loadedDuration = status?.duration ?? 0;
   useEffect(() => {
     if (!pending || pending.index !== index || !isLoaded || loadedDuration <= 0) return;
@@ -80,27 +86,19 @@ export function RecordingPlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, loadedDuration, pending, index]);
 
-  // Advance to the next chunk when the current one ends (or stop at the end).
   useEffect(() => {
     if (!didFinish) return;
-    if (index < chunks.length - 1) {
-      setIndex((i) => i + 1);
-    } else {
+    if (index < chunks.length - 1) setIndex((i) => i + 1);
+    else {
       setWantPlay(false);
       setIndex(0);
     }
   }, [didFinish, index, chunks.length]);
 
-  // When the active chunk changes while we intend to play, start it.
   useEffect(() => {
     if (wantPlay && pending === null) player.play();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, wantPlay]);
-
-  const priorDuration = chunks.slice(0, index).reduce((s, c) => s + c.duration, 0);
-  const totalDuration = chunks.reduce((s, c) => s + c.duration, 0);
-  const currentTime = priorDuration + (status?.currentTime ?? 0);
-  const playing = status?.playing ?? false;
 
   useEffect(() => {
     onTime?.(currentTime, playing);
@@ -117,20 +115,69 @@ export function RecordingPlayer({
     }
   };
 
-  return (
-    <View style={[styles.bar, { backgroundColor: palette.backgroundElement }]}>
-      <Pressable onPress={onToggle} hitSlop={8} style={styles.btn}>
-        <Ionicons name={playing ? 'pause' : 'play'} size={22} color={palette.text} />
-      </Pressable>
-      <Text style={[styles.time, { color: palette.textSecondary }]}>
-        {formatTimestamp(currentTime)} / {formatTimestamp(totalDuration)}
-      </Text>
+  const onScrub = (e: GestureResponderEvent) => {
+    if (waveWidth <= 0 || totalDuration <= 0) return;
+    const ratio = Math.min(1, Math.max(0, e.nativeEvent.locationX / waveWidth));
+    seekAbsolute(ratio * totalDuration);
+  };
+
+  const times = (
+    <View style={styles.times}>
+      <Text style={[Type.captionStrong, styles.tabular, { color: t.text }]}>{formatTimestamp(currentTime)}</Text>
+      {variant === 'card' ? <Text style={[Type.caption, { color: t.text2 }]}>1×</Text> : null}
+      <Text style={[Type.caption, styles.tabular, { color: t.text2 }]}>{formatTimestamp(totalDuration)}</Text>
     </View>
+  );
+
+  if (variant === 'bar') {
+    return (
+      <View style={styles.bar}>
+        <IconButton
+          name={playing ? 'pause' : 'play'}
+          accessibilityLabel={playing ? 'Pause' : 'Play'}
+          onPress={onToggle}
+          size={48}
+          iconSize={18}
+          background={t.primaryBtn}
+          color={t.onPrimaryBtn}
+          style={t.shadows.float}
+        />
+        <View style={{ flex: 1, gap: 6 }}>
+          <Pressable onLayout={(e) => setWaveWidth(e.nativeEvent.layout.width)} onPress={onScrub} hitSlop={{ top: 12, bottom: 12 }}>
+            <View style={{ height: 3, borderRadius: 2, backgroundColor: t.line, overflow: 'hidden' }}>
+              <View style={{ width: `${Math.round(progress * 100)}%`, height: 3, borderRadius: 2, backgroundColor: t.accent }} />
+            </View>
+          </Pressable>
+          {times}
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <Card style={{ gap: 10, paddingVertical: 14 }}>
+      <View style={styles.row}>
+        <IconButton
+          name={playing ? 'pause' : 'play'}
+          accessibilityLabel={playing ? 'Pause' : 'Play'}
+          onPress={onToggle}
+          size={44}
+          iconSize={18}
+          background={t.primaryBtn}
+          color={t.onPrimaryBtn}
+        />
+        <Pressable style={{ flex: 1, height: 44, justifyContent: 'center' }} onLayout={(e) => setWaveWidth(e.nativeEvent.layout.width)} onPress={onScrub}>
+          <Waveform heights={waveformFor(seed, WAVE_BARS)} progress={progress} height={38} barWidth={3} gap={3} style={{ justifyContent: 'space-between' }} />
+        </Pressable>
+      </View>
+      {times}
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
-  bar: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, borderRadius: 12, padding: Spacing.two },
-  btn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  time: { fontSize: 14, fontVariant: ['tabular-nums'] },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  times: { flexDirection: 'row', justifyContent: 'space-between' },
+  tabular: { fontVariant: ['tabular-nums'] },
+  bar: { flexDirection: 'row', alignItems: 'center', gap: 14 },
 });

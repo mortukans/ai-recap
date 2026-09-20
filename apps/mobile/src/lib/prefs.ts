@@ -97,3 +97,24 @@ export async function setOnboarded(): Promise<void> {
     /* non-fatal */
   }
 }
+
+const DONE_TASKS_PREFIX = 'airecap.pref.doneTasks.';
+
+/** Indices of action items the user ticked off on a recap (UI state only; the recap itself is immutable). */
+export async function getDoneTasks(recapId: string): Promise<number[]> {
+  try {
+    const raw = await AsyncStorage.getItem(DONE_TASKS_PREFIX + recapId);
+    const parsed: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((n): n is number => typeof n === 'number') : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function setDoneTasks(recapId: string, indices: number[]): Promise<void> {
+  try {
+    await AsyncStorage.setItem(DONE_TASKS_PREFIX + recapId, JSON.stringify(indices));
+  } catch {
+    /* non-fatal */
+  }
+}

@@ -1,43 +1,49 @@
+/**
+ * Recap detail — Kopsavilkums (HANDOFF.md §5.3). Custom nav (back / share / more), Newsreader title
+ * (tap to rename), meta + context chip, player card, segmented Kopsavilkums | Transkripts | Jautāt AI,
+ * the structured summary, and a floating "Pārģenerēt ar piezīmēm" pill that opens the notes sheet.
+ */
 import {
   AiRecapError,
   type Context,
   type GeneratedArtifact,
   type IntegrityReport,
   type RecapDocument,
+  type RecapStatus,
   checkRecordingIntegrity,
-  formatDuration,
+  distinctSpeakerLabels,
   formatRecapMarkdown,
   isAiRecapError,
   parseRecapDocument,
 } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
-import { Ionicons } from '@expo/vector-icons';
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  useColorScheme,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors, Spacing } from '@/constants/theme';
 import { DEFAULT_SUMMARY_MODEL, generateRecap, resolveLLMRoute } from '../../ai';
 import { artifactsRepo, attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
-import { newId } from '../../lib/ids';
-import { RecapDocumentView } from '../../features/recap/RecapDocumentView';
-import { RecordingPlayer } from '../../features/recap/RecordingPlayer';
+import { Button, Chip, Dot, IconButton, Input, ProcessingBars, Rise, Segmented } from '../../design/components';
+import { dayAndClock, shortDuration } from '../../design/format';
+import { Icon } from '../../design/icons';
+import { Sheet } from '../../design/Sheet';
+import { Layout } from '../../design/tokens';
+import { Type } from '../../design/typography';
+import { useTheme } from '../../design/useTheme';
+import { ContextPicker } from '../../features/contexts/ContextPicker';
+import { RecordingPlayer, type SeekRequest } from '../../features/recap/RecordingPlayer';
+import { SummaryBody } from '../../features/recap/SummaryBody';
 import { chunkUri } from '../../features/recap/audioUri';
+import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
 import { ensureTranscript } from '../../features/recap/ensureTranscript';
 import { MARKDOWN, exportTextFile, safeFilename, shareText } from '../../features/share/shareService';
+import { newId } from '../../lib/ids';
 import { getSummaryModel, setDefaultContextId } from '../../lib/prefs';
 import { processingCoordinator } from '../../processing/coordinator';
+
+type Tab = 'summary' | 'transcript' | 'chat';
 
 function parseArtifactContent(content: string): RecapDocument | null {
   try {
@@ -51,15 +57,16 @@ export default function RecapDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { t } = useTranslation();
   const router = useRouter();
-  const scheme = useColorScheme() ?? 'light';
-  const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const th = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [title, setTitle] = useState('');
+  const [startedAt, setStartedAt] = useState(0);
   const [durationSeconds, setDurationSeconds] = useState(0);
-  const [status, setStatus] = useState('recorded');
+  const [status, setStatus] = useState<RecapStatus>('recorded');
+  const [speakerCount, setSpeakerCount] = useState(0);
   const [segmentCount, setSegmentCount] = useState(0);
   const [doc, setDoc] = useState<RecapDocument | null>(null);
-  // Every generation is kept (M3-6): the user can flip between versions made with different contexts.
   const [versions, setVersions] = useState<GeneratedArtifact[]>([]);
   const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -72,7 +79,9 @@ export default function RecapDetailScreen() {
   const [notes, setNotes] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState('');
-  const [notesSaved, setNotesSaved] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [seek, setSeek] = useState<SeekRequest | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -80,14 +89,17 @@ export default function RecapDetailScreen() {
       const recap = await recapsRepo.getRecap(id);
       if (recap) {
         setTitle(recap.title);
+        setStartedAt(recap.startedAt);
         setDurationSeconds(recap.durationSeconds);
         setStatus(recap.status);
         setProcessingError(processingCoordinator.getLastError(id));
+        setContextId(recap.contextId ?? null);
       }
       setNotes((await attachmentsRepo.getNotes(id))?.extractedText ?? '');
-      setContextId(recap?.contextId ?? null);
       setContexts(await contextsRepo.listContexts());
-      setSegmentCount((await segmentsRepo.listSegments(id)).length);
+      const segments = await segmentsRepo.listSegments(id);
+      setSegmentCount(segments.length);
+      setSpeakerCount(distinctSpeakerLabels(segments).length);
       const chunks = await chunksRepo.listChunks(id);
       setPlayChunks(chunks.map((ch) => ({ uri: chunkUri(id, ch.relativePath), duration: ch.duration })));
       setIntegrity(recap && recap.status !== 'recording' ? checkRecordingIntegrity(chunks, recap.durationSeconds) : null);
@@ -105,21 +117,20 @@ export default function RecapDetailScreen() {
       void load();
     }, [load]),
   );
-
-  // Live-refresh as the coordinator advances this recap (transcribing → ready) in the background.
   useEffect(() => processingCoordinator.onChange(() => void load()), [load]);
+
+  const contextName = contexts.find((c) => c.id === (contextId ?? presetContextId('workMeeting')))?.name ?? '';
 
   const selectContext = useCallback(
     async (ctxId: string) => {
       if (!id) return;
       setContextId(ctxId);
       await recapsRepo.updateRecap(id, { contextId: ctxId });
-      await setDefaultContextId(ctxId); // remembered for the next recording
+      await setDefaultContextId(ctxId);
     },
     [id],
   );
 
-  // Tap the title to rename the recap (the AI only fills a title when it is still empty).
   const commitTitle = useCallback(async () => {
     setEditingTitle(false);
     if (!id) return;
@@ -129,29 +140,40 @@ export default function RecapDetailScreen() {
     await recapsRepo.updateRecap(id, { title: next });
   }, [id, draftTitle, title]);
 
-  // Notes (agenda, participants…) are stored as an inline text attachment and fed to generation.
-  const saveNotes = useCallback(async () => {
-    if (!id) return;
-    await attachmentsRepo.setNotes(id, notes, newId);
-    setNotesSaved(notes.trim().length > 0);
-  }, [id, notes]);
-
-  const onRetry = useCallback(() => {
-    if (id) void processingCoordinator.retry(id);
-  }, [id]);
-
-  const isFailed = status === 'transcriptionFailed' || status === 'summaryFailed';
-  const isBusy = status === 'transcribing' || status === 'summarizing';
-
   const onShare = useCallback(async () => {
     if (doc) await shareText(formatRecapMarkdown(doc, { title }), title || undefined);
   }, [doc, title]);
 
   const onExportMd = useCallback(async () => {
-    if (doc) {
-      await exportTextFile(`${safeFilename(title)}.md`, formatRecapMarkdown(doc, { title }), MARKDOWN.mime, MARKDOWN.uti);
-    }
+    if (doc) await exportTextFile(`${safeFilename(title)}.md`, formatRecapMarkdown(doc, { title }), MARKDOWN.mime, MARKDOWN.uti);
   }, [doc, title]);
+
+  const onMore = () => {
+    Alert.alert(title || t('recap.untitled'), undefined, [
+      {
+        text: t('ui.rename'),
+        onPress: () => {
+          setDraftTitle(title);
+          setEditingTitle(true);
+        },
+      },
+      ...(doc ? [{ text: t('share.exportMd'), onPress: () => void onExportMd() }] : []),
+      {
+        text: t('home.delete'),
+        style: 'destructive' as const,
+        onPress: () =>
+          Alert.alert(t('home.deleteTitle'), t('home.deleteMessage'), [
+            { text: t('home.cancel'), style: 'cancel' },
+            { text: t('home.delete'), style: 'destructive', onPress: () => id && void deleteRecapCompletely(id).then(() => router.back()) },
+          ]),
+      },
+      { text: t('ui.cancel'), style: 'cancel' },
+    ]);
+  };
+
+  const onRetry = useCallback(() => {
+    if (id) void processingCoordinator.retry(id);
+  }, [id]);
 
   const onGenerate = useCallback(async () => {
     if (!id) return;
@@ -159,17 +181,12 @@ export default function RecapDetailScreen() {
     setGenerating(true);
     try {
       const segments = await ensureTranscript(id);
-      if (segments.length === 0) {
-        throw new AiRecapError({ code: 'transcription/failed', message: t('processing.noTranscript') });
-      }
-
-      const context =
-        (await contextsRepo.getContext(contextId ?? presetContextId('workMeeting'))) ?? null;
+      if (segments.length === 0) throw new AiRecapError({ code: 'transcription/failed', message: t('processing.noTranscript') });
+      const context = (await contextsRepo.getContext(contextId ?? presetContextId('workMeeting'))) ?? null;
       const route = await resolveLLMRoute((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
       if (!route) throw new AiRecapError({ code: 'llm/missing-key', message: 'No LLM available.' });
-      await attachmentsRepo.setNotes(id, notes, newId); // make sure unsaved edits count
+      await attachmentsRepo.setNotes(id, notes, newId);
       const extraContext = await attachmentsRepo.collectExtraContext(id);
-
       await recapsRepo.updateRecapStatus(id, 'summarizing');
       const { doc: generated } = await generateRecap({
         recapId: id,
@@ -185,245 +202,221 @@ export default function RecapDetailScreen() {
         model: route.model,
         extraContext,
       });
-
       if (!title && generated.title) {
         await recapsRepo.updateRecap(id, { title: generated.title });
         setTitle(generated.title);
       }
       await recapsRepo.updateRecapStatus(id, 'ready');
-      setSelectedVersionId(null); // show the newest version
+      setSelectedVersionId(null);
       await load();
     } catch (e) {
-      if (isAiRecapError(e) && e.code === 'llm/missing-key') {
-        setError(t('recap.noLlm'));
-      } else {
-        setError(e instanceof Error ? e.message : String(e));
-      }
+      setError(isAiRecapError(e) && e.code === 'llm/missing-key' ? t('recap.noLlm') : e instanceof Error ? e.message : String(e));
       await recapsRepo.updateRecapStatus(id, 'transcribed').catch(() => undefined);
     } finally {
       setGenerating(false);
     }
   }, [id, title, durationSeconds, contextId, notes, load, t]);
 
-  return (
-    <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['bottom']}>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: '',
-          headerRight: () =>
-            doc ? (
-              <Pressable onPress={onShare} hitSlop={8}>
-                <Ionicons name="share-outline" size={22} color={c.text} />
-              </Pressable>
-            ) : null,
-        }}
-      />
-      <ScrollView contentContainerStyle={styles.content}>
-        {editingTitle ? (
-          <TextInput
-            value={draftTitle}
-            onChangeText={setDraftTitle}
-            onBlur={() => void commitTitle()}
-            onSubmitEditing={() => void commitTitle()}
-            autoFocus
-            returnKeyType="done"
-            placeholder={t('recap.titlePlaceholder')}
-            placeholderTextColor={c.textSecondary}
-            style={[styles.h1, styles.h1Input, { color: c.text, borderColor: c.backgroundSelected }]}
-          />
-        ) : (
-          <Pressable
-            onPress={() => {
-              setDraftTitle(title);
-              setEditingTitle(true);
-            }}
-            hitSlop={4}>
-            <Text style={[styles.h1, { color: c.text }]}>{title || t('recap.untitled')}</Text>
-          </Pressable>
-        )}
-        <Text style={[styles.meta, { color: c.textSecondary }]}>
-          {formatDuration(durationSeconds)} · {t(`status.${status}`)} · {t('recap.segments', { count: segmentCount })}
-        </Text>
+  const onTab = (tab: Tab) => {
+    if (!id || tab === 'summary') return;
+    if (tab === 'transcript') router.push({ pathname: '/transcript/[id]', params: { id } });
+    else router.push({ pathname: '/chat/[id]', params: { id } });
+  };
 
-        {playChunks.length > 0 ? <RecordingPlayer chunks={playChunks} palette={c} /> : null}
+  const isFailed = status === 'transcriptionFailed' || status === 'summaryFailed';
+  const isBusy = status === 'transcribing' || status === 'summarizing' || status === 'recorded' || status === 'waitingForNetwork';
+  const canGenerate = segmentCount > 0;
+  let rise = 0;
+
+  return (
+    <SafeAreaView style={[styles.fill, { backgroundColor: th.bg }]} edges={['top']}>
+      <View style={styles.nav}>
+        <IconButton name="chevronLeft" iconSize={24} accessibilityLabel={t('ui.back')} onPress={() => router.back()} style={{ marginLeft: -10 }} strokeWidth={2} />
+        <View style={{ flexDirection: 'row', gap: 4, marginRight: -10 }}>
+          {doc ? <IconButton name="share" accessibilityLabel={t('ui.share')} onPress={() => void onShare()} /> : null}
+          <IconButton name="more" accessibilityLabel={t('ui.more')} onPress={onMore} />
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 120 + insets.bottom }]} keyboardShouldPersistTaps="handled">
+        <Rise index={rise++} style={{ gap: 10 }}>
+          {editingTitle ? (
+            <TextInput
+              value={draftTitle}
+              onChangeText={setDraftTitle}
+              onBlur={() => void commitTitle()}
+              onSubmitEditing={() => void commitTitle()}
+              autoFocus
+              returnKeyType="done"
+              placeholder={t('recap.titlePlaceholder')}
+              placeholderTextColor={th.text3}
+              style={[Type.detailTitle, { color: th.text, borderBottomWidth: 1, borderColor: th.accent, paddingVertical: 2 }]}
+            />
+          ) : (
+            <Pressable
+              onPress={() => {
+                setDraftTitle(title);
+                setEditingTitle(true);
+              }}>
+              <Text style={[Type.detailTitle, { color: th.text }]}>{title || t('recap.untitled')}</Text>
+            </Pressable>
+          )}
+          <View style={styles.metaRow}>
+            <Text style={[Type.meta, { color: th.text2 }]}>{shortDuration(durationSeconds)}</Text>
+            <Dot />
+            <Text style={[Type.meta, { color: th.text2 }]}>{startedAt ? dayAndClock(startedAt) : ''}</Text>
+            {speakerCount > 0 ? (
+              <>
+                <Dot />
+                <Text style={[Type.meta, { color: th.text2 }]}>{t('ui.speakersCount', { count: speakerCount })}</Text>
+              </>
+            ) : null}
+            <View style={{ marginLeft: 'auto' }}>
+              <Chip label={contextName || t('contexts.selectLabel')} onPress={() => setPickerOpen(true)} />
+            </View>
+          </View>
+        </Rise>
+
+        {playChunks.length > 0 && id ? (
+          <Rise index={rise++}>
+            <RecordingPlayer chunks={playChunks} seed={id} seekRequest={seek} />
+          </Rise>
+        ) : null}
+
+        <Rise index={rise++}>
+          <Segmented<Tab>
+            value="summary"
+            onChange={onTab}
+            options={[
+              { value: 'summary', label: t('ui.summary') },
+              { value: 'transcript', label: t('ui.transcript') },
+              { value: 'chat', label: t('ui.askAi') },
+            ]}
+          />
+        </Rise>
 
         {integrity && !integrity.ok && integrity.gaps.length > 0 ? (
-          <View style={[styles.banner, styles.bannerFailed]}>
-            <Ionicons name="warning-outline" size={18} color="#E5484D" />
-            <Text style={[styles.bannerText, styles.fill, { color: c.textSecondary }]}>
-              {t('processing.gaps', { seconds: integrity.missingSeconds, count: integrity.gaps.length })}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Pipeline state: progress while the coordinator works, a reason + Retry when it failed. */}
-        {isBusy || status === 'waitingForNetwork' ? (
-          <View style={[styles.banner, { backgroundColor: c.backgroundElement }]}>
-            {isBusy ? <ActivityIndicator color={c.textSecondary} /> : null}
-            <Text style={[styles.bannerText, { color: c.textSecondary }]}>{t(`processing.${status}`)}</Text>
-          </View>
-        ) : null}
-        {isFailed ? (
-          <View style={[styles.banner, styles.bannerFailed]}>
-            <View style={styles.fill}>
-              <Text style={[styles.bannerTitle, { color: '#E5484D' }]}>{t('processing.failed')}</Text>
-              {processingError ? (
-                <Text style={[styles.bannerText, { color: c.textSecondary }]} numberOfLines={3}>
-                  {processingError}
-                </Text>
-              ) : null}
+          <Rise index={rise++}>
+            <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
+              <Icon name="info" size={18} color={th.destructive} />
+              <Text style={[Type.meta, { color: th.text2, flex: 1 }]}>
+                {t('processing.gaps', { seconds: integrity.missingSeconds, count: integrity.gaps.length })}
+              </Text>
             </View>
-            <Pressable onPress={onRetry} style={[styles.retry, { backgroundColor: '#E5484D' }]}>
-              <Text style={styles.retryText}>{t('processing.retry')}</Text>
-            </Pressable>
-          </View>
+          </Rise>
         ) : null}
 
-        {contexts.length > 0 ? (
-          <View>
-            <Text style={[styles.ctxLabel, { color: c.textSecondary }]}>{t('contexts.selectLabel')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.ctxRow}>
-              {contexts.map((ctx) => {
-                const selected = (contextId ?? presetContextId('workMeeting')) === ctx.id;
-                return (
-                  <Pressable
-                    key={ctx.id}
-                    onPress={() => selectContext(ctx.id)}
-                    style={[styles.ctxChip, { backgroundColor: selected ? '#208AEF' : c.backgroundElement }]}>
-                    <Text style={[styles.ctxChipText, { color: selected ? '#fff' : c.text }]}>{ctx.name}</Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
+        {isBusy ? (
+          <Rise index={rise++}>
+            <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
+              <ProcessingBars color={th.accent} />
+              <Text style={[Type.metaStrong, { color: th.accentText, flex: 1 }]}>{t(`processing.${status}`, { defaultValue: t(`status.${status}`) })}</Text>
+            </View>
+          </Rise>
         ) : null}
 
-        <View>
-          <Text style={[styles.ctxLabel, { color: c.textSecondary }]}>{t('notes.label')}</Text>
-          <TextInput
-            value={notes}
-            onChangeText={(v) => {
-              setNotes(v);
-              setNotesSaved(false);
-            }}
-            onBlur={() => void saveNotes()}
-            placeholder={t('notes.placeholder')}
-            placeholderTextColor={c.textSecondary}
-            multiline
-            style={[styles.notes, { backgroundColor: c.backgroundElement, color: c.text }]}
-          />
-          {notesSaved ? <Text style={[styles.notesHint, { color: c.textSecondary }]}>{t('notes.saved')}</Text> : null}
-        </View>
+        {isFailed ? (
+          <Rise index={rise++}>
+            <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[Type.metaStrong, { color: th.destructive }]}>{t('processing.failed')}</Text>
+                {processingError ? (
+                  <Text style={[Type.caption, { color: th.text2 }]} numberOfLines={3}>
+                    {processingError}
+                  </Text>
+                ) : null}
+              </View>
+              <Button label={t('processing.retry')} height={36} onPress={onRetry} style={{ paddingHorizontal: 14 }} />
+            </View>
+          </Rise>
+        ) : null}
 
         {versions.length > 1 ? (
-          <View>
-            <Text style={[styles.ctxLabel, { color: c.textSecondary }]}>{t('recap.versions')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.ctxRow}>
+          <Rise index={rise++}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {versions.map((v, i) => {
                 const selected = (selectedVersionId ?? versions[0]?.id) === v.id;
                 const ctxName = contexts.find((ctx) => ctx.id === v.contextVersion)?.name;
-                const when = new Date(v.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 return (
                   <Pressable
                     key={v.id}
                     onPress={() => setSelectedVersionId(v.id)}
-                    style={[styles.ctxChip, { backgroundColor: selected ? '#208AEF' : c.backgroundElement }]}>
-                    <Text style={[styles.ctxChipText, { color: selected ? '#fff' : c.text }]}>
-                      {`#${versions.length - i}${ctxName ? ` · ${ctxName}` : ''} · ${when}`}
+                    style={[styles.version, { backgroundColor: selected ? th.primaryBtn : th.surface, borderColor: th.line }]}>
+                    <Text style={[Type.captionStrong, { color: selected ? th.onPrimaryBtn : th.text }]}>
+                      {`#${versions.length - i}${ctxName ? ` · ${ctxName}` : ''}`}
                     </Text>
                   </Pressable>
                 );
               })}
             </ScrollView>
-          </View>
+          </Rise>
         ) : null}
 
-        {doc ? (
-          <RecapDocumentView doc={doc} palette={c} />
-        ) : (
-          <View style={[styles.card, { backgroundColor: c.backgroundElement }]}>
-            <Text style={[styles.cardText, { color: c.textSecondary }]}>{t('recap.empty')}</Text>
-          </View>
-        )}
+        {doc && id ? (
+          <SummaryBody doc={doc} recapId={id} onSeek={(s) => setSeek({ seconds: s, nonce: Date.now() })} />
+        ) : !isBusy ? (
+          <Rise index={rise++} style={{ gap: 14 }}>
+            <Text style={[Type.bodyText15, { color: th.text2 }]}>{canGenerate ? t('recap.empty') : t('ui.noSummaryYet')}</Text>
+            {canGenerate ? (
+              <Button
+                label={t('recap.generate')}
+                height={48}
+                onPress={() => void onGenerate()}
+                disabled={generating}
+                icon="refresh"
+                iconColor={th.onPrimaryBtn}
+              />
+            ) : null}
+          </Rise>
+        ) : null}
 
-        {error ? <Text style={[styles.err, { color: '#E5484D' }]}>{error}</Text> : null}
+        {error ? <Text style={[Type.meta, { color: th.destructive }]}>{error}</Text> : null}
+      </ScrollView>
 
-        <Pressable
-          disabled={generating}
-          onPress={onGenerate}
-          style={[styles.button, { backgroundColor: '#208AEF', opacity: generating ? 0.6 : 1 }]}>
-          {generating ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>{doc ? t('recap.regenerate') : t('recap.generate')}</Text>
-          )}
-        </Pressable>
-
-        <View style={styles.secondaryRow}>
+      {/* Floating regenerate pill on a bottom gradient. */}
+      {canGenerate ? (
+        <View pointerEvents="box-none" style={[styles.floating, { paddingBottom: Math.max(insets.bottom, 20) + 14 }]}>
           <Pressable
-            onPress={() => router.push({ pathname: '/transcript/[id]', params: { id: id ?? '' } })}
-            style={[styles.buttonThird, { backgroundColor: c.backgroundSelected }]}>
-            <Text style={[styles.buttonThirdText, { color: c.text }]}>{t('transcript.open')}</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push({ pathname: '/chat/[id]', params: { id: id ?? '' } })}
-            style={[styles.buttonThird, { backgroundColor: c.backgroundSelected }]}>
-            <Text style={[styles.buttonThirdText, { color: c.text }]}>{t('chat.open')}</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push({ pathname: '/speakers/[id]', params: { id: id ?? '' } })}
-            style={[styles.buttonThird, { backgroundColor: c.backgroundSelected }]}>
-            <Text style={[styles.buttonThirdText, { color: c.text }]}>{t('speakers.open')}</Text>
+            onPress={() => setNotesOpen(true)}
+            disabled={generating}
+            style={[styles.pill, { backgroundColor: th.glass, borderColor: th.line }, th.shadows.float]}>
+            {generating ? <ActivityIndicator color={th.accentText} /> : <Icon name="refresh" size={16} color={th.accentText} strokeWidth={2} />}
+            <Text style={[Type.buttonMini, { color: th.text }]}>{doc ? t('ui.regenerateWithNotes') : t('recap.generate')}</Text>
           </Pressable>
         </View>
+      ) : null}
 
-        {doc ? (
-          <Pressable onPress={onExportMd} style={styles.link}>
-            <Text style={[styles.linkText, { color: c.textSecondary }]}>{t('share.exportMd')}</Text>
-          </Pressable>
-        ) : null}
+      <Sheet visible={notesOpen} onClose={() => setNotesOpen(false)} title={t('ui.notesTitle')}>
+        <Text style={[Type.meta, { color: th.text2 }]}>{t('notes.label')}</Text>
+        <Input value={notes} onChangeText={setNotes} placeholder={t('notes.placeholder')} multiline height={120} style={Type.bodyText} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Chip label={contextName || t('contexts.selectLabel')} size="md" chevron onPress={() => setPickerOpen(true)} />
+          <View style={{ flex: 1 }} />
+          <Button
+            label={doc ? t('ui.regenerate') : t('recap.generate')}
+            height={48}
+            icon="refresh"
+            iconColor={th.onPrimaryBtn}
+            onPress={() => {
+              setNotesOpen(false);
+              void onGenerate();
+            }}
+          />
+        </View>
+      </Sheet>
 
-        <Pressable onPress={() => router.push('/settings')} style={styles.link}>
-          <Text style={[styles.linkText, { color: c.textSecondary }]}>{t('recap.setKey')}</Text>
-        </Pressable>
-      </ScrollView>
+      <ContextPicker visible={pickerOpen} onClose={() => setPickerOpen(false)} selectedId={contextId} onSelect={(cid) => void selectContext(cid)} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  content: { padding: Spacing.four, gap: Spacing.three },
-  h1: { fontSize: 24, fontWeight: '700' },
-  h1Input: { borderBottomWidth: 1, paddingVertical: 2 },
-  meta: { fontSize: 14 },
-  ctxLabel: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.one },
-  ctxRow: { gap: Spacing.two, paddingRight: Spacing.four },
-  ctxChip: { borderRadius: 16, paddingHorizontal: Spacing.three, paddingVertical: 8 },
-  ctxChipText: { fontSize: 14, fontWeight: '500' },
-  card: { borderRadius: 16, padding: Spacing.four },
-  notes: { minHeight: 72, borderRadius: 12, padding: Spacing.three, fontSize: 15, lineHeight: 20, textAlignVertical: 'top' },
-  notesHint: { fontSize: 12, marginTop: 4 },
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    borderRadius: 14,
-    padding: Spacing.three,
-  },
-  bannerFailed: { backgroundColor: '#E5484D14' },
-  bannerTitle: { fontSize: 15, fontWeight: '600' },
-  bannerText: { fontSize: 13, lineHeight: 18 },
-  retry: { borderRadius: 10, paddingHorizontal: Spacing.three, paddingVertical: 8 },
-  retryText: { color: '#fff', fontSize: 14, fontWeight: '600' },
-  cardText: { fontSize: 15, lineHeight: 22 },
-  err: { fontSize: 13 },
-  button: { height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: Spacing.two },
-  secondaryRow: { flexDirection: 'row', gap: Spacing.two },
-  buttonThird: { flex: 1, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  buttonThirdText: { fontSize: 14, fontWeight: '600' },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
-  link: { alignItems: 'center', paddingVertical: Spacing.two },
-  linkText: { fontSize: 14 },
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Layout.screenPadding, height: 52 },
+  content: { paddingHorizontal: Layout.screenPadding, paddingTop: 6, gap: 18 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  banner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1 },
+  version: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, borderWidth: 1 },
+  floating: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: 40 },
+  pill: { height: 48, paddingHorizontal: 20, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

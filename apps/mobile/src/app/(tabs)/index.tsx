@@ -1,39 +1,43 @@
-import { type Recap, dailyQuotaState, formatDuration, startOfDay } from '@ai-recap/core';
-import { Ionicons } from '@expo/vector-icons';
+/**
+ * Ieraksti — the library (HANDOFF.md §5.1). Header with today's date and minutes recorded this month,
+ * search, recordings grouped by day. Processing recordings render as cards with a progress bar;
+ * finished ones as plain rows. Recording starts from the floating tab bar.
+ */
+import type { Recap } from '@ai-recap/core';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View, useColorScheme } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Colors, Spacing } from '@/constants/theme';
-import { type RecapSearchHit, recapsRepo, searchRepo } from '../../db';
+import { type RecapSearchHit, contextsRepo, recapsRepo, searchRepo, usageRepo } from '../../db';
+import { Card, Dot, ProcessingBars, ProgressBar, Rise, SearchField, SectionLabel } from '../../design/components';
+import { clock, dayLabel, longDate, shortDuration, startOfMonth } from '../../design/format';
+import { Layout } from '../../design/tokens';
+import { Type } from '../../design/typography';
+import { useTheme } from '../../design/useTheme';
 import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
-import { processingCoordinator } from '../../processing/coordinator';
 import { isOnboarded } from '../../lib/prefs';
-import { consumeQuota } from '../../purchases/quota';
-import { useCapabilities } from '../../purchases/useCapabilities';
+import { processingCoordinator } from '../../processing/coordinator';
 
-/** Library row: a recap plus, when searching, where it matched and a snippet around the hit. */
 interface Row {
   recap: Recap;
   matchedIn?: RecapSearchHit['matchedIn'];
   snippet?: string;
 }
 
+const PROCESSING = new Set<Recap['status']>(['recorded', 'transcribing', 'transcribed', 'summarizing', 'waitingForNetwork']);
+
 export default function RecapsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-  const scheme = useColorScheme() ?? 'light';
-  const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
+  const th = useTheme();
 
   const [rows, setRows] = useState<Row[]>([]);
   const [query, setQuery] = useState('');
-  const [startedToday, setStartedToday] = useState(0);
-  const caps = useCapabilities();
-  const quota = dailyQuotaState(startedToday, caps.maxRecapsPerDay);
+  const [monthSeconds, setMonthSeconds] = useState(0);
+  const [contextNames, setContextNames] = useState<Record<string, string>>({});
 
-  // Empty query → recent library; otherwise search titles + transcripts + recap content (M4-4).
   const load = useCallback(async (q: string) => {
     try {
       if (q.trim().length > 0) {
@@ -41,43 +45,20 @@ export default function RecapsScreen() {
       } else {
         setRows((await recapsRepo.pageRecaps()).map((recap) => ({ recap })));
       }
+      const ctx = await contextsRepo.listContexts();
+      setContextNames(Object.fromEntries(ctx.map((c) => [c.id, c.name])));
+      setMonthSeconds((await usageRepo.summarizeUsageSince(startOfMonth())).recordingSeconds);
     } catch {
       setRows([]);
-    }
-  }, []);
-
-  const onDelete = useCallback(
-    (recap: Recap) => {
-      Alert.alert(t('home.deleteTitle'), t('home.deleteMessage'), [
-        { text: t('home.cancel'), style: 'cancel' },
-        {
-          text: t('home.delete'),
-          style: 'destructive',
-          onPress: () => {
-            void deleteRecapCompletely(recap.id).then(() => load(query));
-          },
-        },
-      ]);
-    },
-    [t, load, query],
-  );
-
-  const refreshQuota = useCallback(async () => {
-    try {
-      setStartedToday(await recapsRepo.countStartedSince(startOfDay(Date.now())));
-    } catch {
-      setStartedToday(0);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       void load(query);
-      void refreshQuota();
-    }, [load, query, refreshQuota]),
+    }, [load, query]),
   );
 
-  // First launch → onboarding (choose Free / BYOK key / plans). Stored flag, so it shows once.
   useEffect(() => {
     void isOnboarded().then((done) => {
       if (!done) router.push('/onboarding');
@@ -85,135 +66,159 @@ export default function RecapsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Live-refresh the library as the processing coordinator advances recap statuses.
   useEffect(() => processingCoordinator.onChange(() => void load(query)), [load, query]);
 
-  const showLimit = () =>
-    Alert.alert(t('free.limitTitle'), t('free.limitMsg', { max: caps.maxRecapsPerDay ?? 0 }), [
-      { text: t('home.cancel'), style: 'cancel' },
-      { text: t('free.upgrade'), onPress: () => router.push('/paywall') },
-    ]);
+  const onDelete = useCallback(
+    (recap: Recap) => {
+      Alert.alert(t('home.deleteTitle'), t('home.deleteMessage'), [
+        { text: t('home.cancel'), style: 'cancel' },
+        { text: t('home.delete'), style: 'destructive', onPress: () => void deleteRecapCompletely(recap.id).then(() => load(query)) },
+      ]);
+    },
+    [t, load, query],
+  );
 
-  const onStart = async () => {
-    if (!quota.canStart) {
-      showLimit();
-      return;
+  // Group by calendar day (rows arrive newest first).
+  const sections = useMemo(() => {
+    const out: { label: string; rows: Row[] }[] = [];
+    for (const r of rows) {
+      const label = dayLabel(r.recap.startedAt);
+      const last = out[out.length - 1];
+      if (last && last.label === label) last.rows.push(r);
+      else out.push({ label, rows: [r] });
     }
-    // Server-side slot (anti-tamper) when the backend is configured; local count is the UX.
-    const decision = await consumeQuota(caps.maxRecapsPerDay);
-    if (!decision.allowed) {
-      if (decision.startedToday !== null) setStartedToday(decision.startedToday);
-      showLimit();
-      return;
-    }
-    router.push('/recording');
-  };
+    return out;
+  }, [rows]);
+
+  const searching = query.trim().length > 0;
+  let riseIndex = 0;
 
   return (
-    <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={[styles.h1, { color: c.text }]}>{t('app.name')}</Text>
-      </View>
+    <SafeAreaView style={[styles.fill, { backgroundColor: th.bg }]} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+        <Rise index={riseIndex++} style={styles.header}>
+          <View style={{ gap: 2 }}>
+            <Text style={[Type.meta, { color: th.text2 }]}>{longDate(Date.now())}</Text>
+            <Text style={[Type.screenTitle, { color: th.text }]}>{t('tabs.recaps')}</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end', gap: 2, paddingBottom: 4 }}>
+            <Text style={[Type.heroNumber, { color: th.accentText }]}>{shortDuration(monthSeconds)}</Text>
+            <Text style={[Type.caption, { color: th.text2 }]}>{t('ui.recordedThisMonth')}</Text>
+          </View>
+        </Rise>
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => void onStart()}
-        style={[styles.startButton, { backgroundColor: '#208AEF' }]}>
-        <Ionicons name="mic" color="#fff" size={22} />
-        <Text style={styles.startButtonText}>{t('home.startRecap')}</Text>
-      </Pressable>
+        <Rise index={riseIndex++}>
+          <SearchField value={query} onChangeText={setQuery} placeholder={t('home.searchPlaceholder')} />
+        </Rise>
 
-      {quota.max !== null ? (
-        <Text style={[styles.quota, { color: c.textSecondary }]}>
-          {t('free.recapsToday', { used: quota.started, max: quota.max })}
-        </Text>
-      ) : null}
-
-      <TextInput
-        placeholder={t('home.searchPlaceholder')}
-        placeholderTextColor={c.textSecondary}
-        value={query}
-        onChangeText={setQuery}
-        style={[styles.search, { backgroundColor: c.backgroundElement, color: c.text }]}
-      />
-
-      {query.trim().length === 0 ? (
-        <Text style={[styles.sectionLabel, { color: c.textSecondary }]}>{t('home.recent')}</Text>
-      ) : null}
-
-      <FlatList
-        data={rows}
-        keyExtractor={(r) => r.recap.id}
-        contentContainerStyle={styles.listContent}
-        keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={
-          <Text style={[styles.empty, { color: c.textSecondary }]}>
-            {query.trim().length > 0 ? t('home.noResults', { query: query.trim() }) : t('home.empty')}
-          </Text>
-        }
-        renderItem={({ item }) => (
-          <Pressable
-            onPress={() => router.push({ pathname: '/recap/[id]', params: { id: item.recap.id } })}
-            onLongPress={() => onDelete(item.recap)}
-            delayLongPress={400}
-            style={[styles.row, { borderBottomColor: c.backgroundElement }]}>
-            <Text style={[styles.rowTitle, { color: c.text }]} numberOfLines={1}>
-              {item.recap.title || t('recap.untitled')}
+        {rows.length === 0 ? (
+          <Rise index={riseIndex++}>
+            <Text style={[Type.bodyText15, { color: th.text2, textAlign: 'center', marginTop: 32 }]}>
+              {searching ? t('home.noResults', { query: query.trim() }) : t('home.empty')}
             </Text>
-            <Text style={[styles.rowMeta, { color: c.textSecondary }]}>
-              {formatDuration(item.recap.durationSeconds)} · {new Date(item.recap.startedAt).toLocaleDateString()} ·{' '}
-              {t(`status.${item.recap.status}`)}
-            </Text>
-            {item.snippet && item.matchedIn && item.matchedIn !== 'title' ? (
-              <Text style={[styles.rowSnippet, { color: c.textSecondary }]} numberOfLines={2}>
-                <Text style={[styles.rowSnippetLabel, { color: '#208AEF' }]}>
-                  {t(item.matchedIn === 'transcript' ? 'home.matchTranscript' : 'home.matchRecap')} ·{' '}
-                </Text>
-                {item.snippet}
-              </Text>
-            ) : null}
-          </Pressable>
-        )}
-      />
+          </Rise>
+        ) : null}
+
+        {sections.map((section) => (
+          <View key={section.label} style={{ gap: 8 }}>
+            <Rise index={riseIndex++}>
+              <SectionLabel>{section.label}</SectionLabel>
+            </Rise>
+            {section.rows.map((row, i) => {
+              const r = row.recap;
+              const ctxName = r.contextId ? contextNames[r.contextId] : undefined;
+              const processing = PROCESSING.has(r.status) || r.status === 'recording';
+              const failed = r.status === 'transcriptionFailed' || r.status === 'summaryFailed' || r.status === 'uploadFailed';
+              const open = () => router.push({ pathname: '/recap/[id]', params: { id: r.id } });
+              const title = r.title || t('recap.untitled');
+              if (processing || failed) {
+                return (
+                  <Rise key={r.id} index={riseIndex++}>
+                    <Pressable onPress={open} onLongPress={() => onDelete(r)} delayLongPress={400}>
+                      <Card style={{ gap: 10 }}>
+                        <View style={styles.between}>
+                          <View style={styles.statusRow}>
+                            {processing ? <ProcessingBars color={th.accent} /> : null}
+                            <Text style={[Type.captionStrong, { color: failed ? th.destructive : th.accentText }]}>{t(`status.${r.status}`)}</Text>
+                          </View>
+                          <Text style={[Type.meta, { color: th.text2 }]}>{clock(r.startedAt)}</Text>
+                        </View>
+                        <Text style={[Type.body, { color: th.text }]} numberOfLines={2}>
+                          {title}
+                        </Text>
+                        {processing ? <ProgressBar progress={progressFor(r.status)} indeterminate={r.status === 'transcribing' || r.status === 'summarizing'} /> : null}
+                        <View style={styles.metaRow}>
+                          <Text style={[Type.metaStrong, { color: th.text }]}>{shortDuration(r.durationSeconds)}</Text>
+                          {ctxName ? <Text style={[Type.meta, { color: th.text2 }]}>{ctxName}</Text> : null}
+                        </View>
+                      </Card>
+                    </Pressable>
+                  </Rise>
+                );
+              }
+              const isLast = i === section.rows.length - 1;
+              return (
+                <Rise key={r.id} index={riseIndex++}>
+                  <Pressable
+                    onPress={open}
+                    onLongPress={() => onDelete(r)}
+                    delayLongPress={400}
+                    style={({ pressed }) => [styles.row, { borderBottomColor: th.line, borderBottomWidth: isLast ? 0 : 1, opacity: pressed ? 0.6 : 1 }]}>
+                    <Text style={[Type.body, { color: th.text }]} numberOfLines={2}>
+                      {title}
+                    </Text>
+                    <View style={styles.metaRow}>
+                      <Text style={[Type.metaStrong, { color: th.text }]}>{shortDuration(r.durationSeconds)}</Text>
+                      {ctxName ? <Text style={[Type.meta, { color: th.text2 }]}>{ctxName}</Text> : null}
+                      <Text style={[Type.meta, { color: th.text2, marginLeft: 'auto' }]}>{clock(r.startedAt)}</Text>
+                    </View>
+                    {row.snippet && row.matchedIn && row.matchedIn !== 'title' ? (
+                      <Text style={[Type.meta, { color: th.text2 }]} numberOfLines={2}>
+                        <Text style={[Type.metaStrong, { color: th.accentText }]}>
+                          {t(row.matchedIn === 'transcript' ? 'home.matchTranscript' : 'home.matchRecap')}
+                        </Text>
+                        {'  '}
+                        <Dot />
+                        {'  '}
+                        {row.snippet}
+                      </Text>
+                    ) : null}
+                  </Pressable>
+                </Rise>
+              );
+            })}
+          </View>
+        ))}
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
+/** Coarse pipeline progress for the card's bar (real percentages arrive with chunk-level events later). */
+function progressFor(status: Recap['status']): number {
+  switch (status) {
+    case 'recording':
+      return 0.05;
+    case 'recorded':
+    case 'waitingForNetwork':
+      return 0.15;
+    case 'transcribing':
+      return 0.4;
+    case 'transcribed':
+      return 0.7;
+    case 'summarizing':
+      return 0.85;
+    default:
+      return 1;
+  }
+}
+
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  header: { paddingHorizontal: Spacing.four, paddingTop: Spacing.three },
-  h1: { fontSize: 28, fontWeight: '700' },
-  startButton: {
-    marginHorizontal: Spacing.four,
-    marginTop: Spacing.four,
-    height: 56,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-  },
-  startButtonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
-  quota: { textAlign: 'center', marginTop: Spacing.two, fontSize: 13 },
-  search: {
-    marginHorizontal: Spacing.four,
-    marginTop: Spacing.three,
-    height: 44,
-    borderRadius: 12,
-    paddingHorizontal: Spacing.three,
-  },
-  sectionLabel: {
-    marginTop: Spacing.four,
-    marginHorizontal: Spacing.four,
-    fontSize: 13,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  listContent: { paddingHorizontal: Spacing.four, paddingTop: Spacing.two },
-  empty: { marginTop: Spacing.four, fontSize: 15, lineHeight: 22 },
-  row: { paddingVertical: Spacing.three, borderBottomWidth: StyleSheet.hairlineWidth },
-  rowTitle: { fontSize: 17, fontWeight: '600' },
-  rowMeta: { fontSize: 13, marginTop: 2 },
-  rowSnippet: { fontSize: 13, marginTop: 4, lineHeight: 18 },
-  rowSnippetLabel: { fontWeight: '600' },
+  content: { paddingHorizontal: Layout.screenPadding, paddingTop: 12, paddingBottom: Layout.tabBarClearance, gap: 20 },
+  header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  between: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  row: { gap: 6, paddingVertical: 14, paddingHorizontal: 4 },
 });
