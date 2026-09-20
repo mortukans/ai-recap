@@ -23,7 +23,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
 - RevenueCat project "AI Recap": App Store app linked (IAP key + shared secret), products, entitlements `unlimited`/`byok`, offering `default` (`$rc_monthly`, `$rc_lifetime`), webhook → Supabase (test event 200).
 
 **Build & release**
-- EAS Free plan iOS quota exhausted until 2026-10-01. Builds now run on **GitHub Actions macOS runners** via `eas build --local` (no EAS quota) and upload through EAS Submit: `.github/workflows/ios-build.yml`, repo `github.com/mortukans/ai-recap` (private). ~23 min per build, ≈8 builds/month on the free private-repo allowance.
+- EAS Free plan iOS quota exhausted until 2026-10-01. Builds now run on **GitHub Actions macOS runners** via `eas build --local` (no EAS quota) and upload through EAS Submit: `.github/workflows/ios-build.yml`, repo `github.com/mortukans/ai-recap` (**PUBLIC since 2026-09-21** — private-repo Actions minutes ran out; public repos build for free without limit). ~23 min per build.
   - Trigger: `gh workflow run ios-build.yml -f profile=production -f submit=true`
 - EAS env vars (all profiles): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_KEY`.
 
