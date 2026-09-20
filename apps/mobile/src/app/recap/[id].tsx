@@ -154,7 +154,7 @@ export default function RecapDetailScreen() {
       topics: t('recapDoc.topics'),
     };
     const doneTasks = await getDoneTasks(id);
-    await shareRichText(formatRecapHtml(doc, { title, labels, doneTasks }), formatRecapMarkdown(doc, { title }), title || undefined);
+    await shareRichText(formatRecapHtml(doc, { title, labels, doneTasks }), formatRecapMarkdown(doc, { title, timestamps: false }), title || undefined);
   }, [doc, id, title, t]);
 
   // iOS shows only one Modal at a time: close the notes sheet before opening the context picker,

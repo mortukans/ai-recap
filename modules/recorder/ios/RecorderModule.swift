@@ -112,16 +112,24 @@ final class RichTextItem: NSObject, UIActivityItemSource {
     self.plain = plain
   }
 
+  /// The placeholder's type decides which representation apps are offered: an attributed string lets
+  /// Notes / Mail / Pages request rich text; text-only targets (Messages, Notion, Copy) get Markdown.
   func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
-    return plain
+    return attributed
   }
 
   func activityViewController(_ activityViewController: UIActivityViewController, itemForActivityType activityType: UIActivity.ActivityType?) -> Any? {
-    let raw = activityType?.rawValue ?? ""
-    if raw.contains("mobilenotes") || raw.contains("Notes") || raw.contains("MobileMail") || raw.contains("Mail") {
+    let raw = (activityType?.rawValue ?? "").lowercased()
+    let richTargets = ["mobilenotes", "notes", "mobilemail", "mail", "pages", "textedit", "print"]
+    if richTargets.contains(where: { raw.contains($0) }) {
       return attributed
     }
     return plain
+  }
+
+  func activityViewController(_ activityViewController: UIActivityViewController, dataTypeIdentifierForActivityType activityType: UIActivity.ActivityType?) -> String {
+    let raw = (activityType?.rawValue ?? "").lowercased()
+    return raw.contains("notes") || raw.contains("mail") ? "public.rtf" : "public.plain-text"
   }
 
   func activityViewController(_ activityViewController: UIActivityViewController, subjectForActivityType activityType: UIActivity.ActivityType?) -> String {

@@ -8,13 +8,14 @@ import type { RecapDocument } from './recap-document';
 
 export interface RecapShareMeta {
   title?: string;
-}
-
-function refs(timestampRefs: number[]): string {
-  return timestampRefs.length > 0 ? ` ${timestampRefs.map((r) => `[${formatTimestamp(r)}]`).join(' ')}` : '';
+  /** Append [mm:ss] transcript references (useful in .md exports, noise when pasting into notes). Default true. */
+  timestamps?: boolean;
 }
 
 export function formatRecapMarkdown(doc: RecapDocument, meta: RecapShareMeta = {}): string {
+  const withRefs = meta.timestamps !== false;
+  const refs = (timestampRefs: number[]): string =>
+    withRefs && timestampRefs.length > 0 ? ` ${timestampRefs.map((r) => `[${formatTimestamp(r)}]`).join(' ')}` : '';
   const lines: string[] = [];
   const title = doc.title || meta.title || 'Recap';
   lines.push(`# ${title}`, '');
