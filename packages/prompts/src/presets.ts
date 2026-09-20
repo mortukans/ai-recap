@@ -46,7 +46,7 @@ export const PRESET_DEFINITIONS: readonly PresetDefinition[] = [
     summary: 'A personal memo, idea, or reminder.',
     vocabulary: [],
     instructions:
-      'Write a short summary and turn any intentions into action items. Keep it personal and brief; do not invent structure that is not there.',
+      'Write a short summary and turn EVERY intention, to-do or reminder into its own action item — a voice note that lists four things yields four items. Keep it personal and brief; do not invent structure that is not there.',
   },
   {
     key: 'salesCall',

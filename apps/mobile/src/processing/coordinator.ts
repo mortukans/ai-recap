@@ -258,8 +258,12 @@ export class ProcessingCoordinator {
       },
     );
     // Auto-name the recap from the model's title (the user can rename it any time on the recap screen).
+    // Auto-name: the model's title replaces an empty title or the provisional first-words title, but
+    // never a name the user typed.
     const aiTitle = generated?.doc?.title?.trim();
-    if (!recap.title.trim() && aiTitle) {
+    const current = recap.title.trim();
+    const provisional = titleFromTranscript(segments.map((s) => s.text));
+    if (aiTitle && (!current || current === provisional)) {
       await recapsRepo.updateRecap(recap.id, { title: aiTitle });
     }
   }

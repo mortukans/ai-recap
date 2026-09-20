@@ -6,10 +6,28 @@
  */
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { Share } from 'react-native';
+import { Platform, Share } from 'react-native';
+
+import { Recorder } from '@ai-recap/recorder';
 
 export async function shareText(message: string, title?: string): Promise<void> {
   await Share.share(title ? { message, title } : { message });
+}
+
+/**
+ * Share a recap as rich text: Notes/Mail receive formatted headings + lists, everything else gets the
+ * Markdown/plain fallback. Falls back to the plain share sheet where the native helper is unavailable.
+ */
+export async function shareRichText(html: string, plain: string, title?: string): Promise<void> {
+  if (Platform.OS === 'ios') {
+    try {
+      await Recorder.shareRichText(html, plain);
+      return;
+    } catch {
+      /* fall through to plain share */
+    }
+  }
+  await shareText(plain, title);
 }
 
 export async function exportTextFile(

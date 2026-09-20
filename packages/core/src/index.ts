@@ -19,3 +19,4 @@ export * from './search';
 export * from './integrity';
 export * from './playback';
 export * from './title';
+export * from './share-html';

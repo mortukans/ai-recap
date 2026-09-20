@@ -15,6 +15,8 @@ import {
   formatRecapMarkdown,
   isAiRecapError,
   parseRecapDocument,
+  titleFromTranscript,
+  formatRecapHtml,
 } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -38,7 +40,8 @@ import { SummaryBody } from '../../features/recap/SummaryBody';
 import { chunkUri } from '../../features/recap/audioUri';
 import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
 import { ensureTranscript } from '../../features/recap/ensureTranscript';
-import { MARKDOWN, exportTextFile, safeFilename, shareText } from '../../features/share/shareService';
+import { MARKDOWN, exportTextFile, safeFilename, shareRichText } from '../../features/share/shareService';
+import { getDoneTasks } from '../../lib/prefs';
 import { newId } from '../../lib/ids';
 import { getSummaryModel, setDefaultContextId } from '../../lib/prefs';
 import { processingCoordinator } from '../../processing/coordinator';
@@ -141,8 +144,34 @@ export default function RecapDetailScreen() {
   }, [id, draftTitle, title]);
 
   const onShare = useCallback(async () => {
-    if (doc) await shareText(formatRecapMarkdown(doc, { title }), title || undefined);
-  }, [doc, title]);
+    if (!doc || !id) return;
+    const labels = {
+      summary: t('recapDoc.summary'),
+      decisions: t('recapDoc.decisions'),
+      actionItems: t('recapDoc.actionItems'),
+      dates: t('recapDoc.dates'),
+      openQuestions: t('recapDoc.openQuestions'),
+      topics: t('recapDoc.topics'),
+    };
+    const doneTasks = await getDoneTasks(id);
+    await shareRichText(formatRecapHtml(doc, { title, labels, doneTasks }), formatRecapMarkdown(doc, { title }), title || undefined);
+  }, [doc, id, title, t]);
+
+  // iOS shows only one Modal at a time: close the notes sheet before opening the context picker,
+  // and bring the sheet back once a context was picked (or the picker was dismissed).
+  const [reopenNotes, setReopenNotes] = useState(false);
+  const openPickerFromNotes = () => {
+    setNotesOpen(false);
+    setReopenNotes(true);
+    setTimeout(() => setPickerOpen(true), 350);
+  };
+  const closePicker = () => {
+    setPickerOpen(false);
+    if (reopenNotes) {
+      setReopenNotes(false);
+      setTimeout(() => setNotesOpen(true), 350);
+    }
+  };
 
   const onExportMd = useCallback(async () => {
     if (doc) await exportTextFile(`${safeFilename(title)}.md`, formatRecapMarkdown(doc, { title }), MARKDOWN.mime, MARKDOWN.uti);
@@ -202,7 +231,8 @@ export default function RecapDetailScreen() {
         model: route.model,
         extraContext,
       });
-      if (!title && generated.title) {
+      const provisional = titleFromTranscript(segments.map((s) => s.text));
+      if (generated.title && (!title.trim() || title.trim() === provisional)) {
         await recapsRepo.updateRecap(id, { title: generated.title });
         setTitle(generated.title);
       }
@@ -390,7 +420,7 @@ export default function RecapDetailScreen() {
         <Text style={[Type.meta, { color: th.text2 }]}>{t('notes.label')}</Text>
         <Input value={notes} onChangeText={setNotes} placeholder={t('notes.placeholder')} multiline height={120} style={Type.bodyText} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Chip label={contextName || t('contexts.selectLabel')} size="md" chevron onPress={() => setPickerOpen(true)} />
+          <Chip label={contextName || t('contexts.selectLabel')} size="md" chevron onPress={openPickerFromNotes} />
           <View style={{ flex: 1 }} />
           <Button
             label={doc ? t('ui.regenerate') : t('recap.generate')}
@@ -405,7 +435,7 @@ export default function RecapDetailScreen() {
         </View>
       </Sheet>
 
-      <ContextPicker visible={pickerOpen} onClose={() => setPickerOpen(false)} selectedId={contextId} onSelect={(cid) => void selectContext(cid)} />
+      <ContextPicker visible={pickerOpen} onClose={closePicker} selectedId={contextId} onSelect={(cid) => void selectContext(cid)} />
     </SafeAreaView>
   );
 }
