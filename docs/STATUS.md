@@ -35,6 +35,15 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
 6. Settings: everything in Latvian when the phone is Latvian; About shows version (build) and an Account ID.
 7. Watch: still works as before (complication is on a separate branch, not in this build).
 
+## Design system (2026-09-20)
+
+The visual redesign from `design/ai-recap-design-handoff/HANDOFF.md` is implemented for iPhone (React Native) and Apple Watch (SwiftUI):
+- Tokens in `apps/mobile/src/design/tokens.ts` (light default, dark scheme), Newsreader + Hanken Grotesk via `@expo-google-fonts`, line icons in `design/icons.tsx`, UI kit in `design/components.tsx` (Card, Row, Input, Segmented, Chip, Button, Rise motion, waveform, processing bars), floating tab bar with the record button, Lottie files under `assets/lottie/` (lottie-react-native).
+- Screens: Ieraksti (grouped by day, processing cards), Ieraksta (halo, live waveform, context chip), Detail (player card, segmented Kopsavilkums/Transkripts/Jautāt AI, tasks as checkboxes, "Pārģenerēt ar piezīmēm" sheet), Transkripts (two-column, playing highlight, floating player), Konteksti, Jauns konteksts (structured vocabulary), Iestatījumi (plan card, grouped rows, usage tiles, retention segmented). Legacy screens (paywall, chat, speakers, onboarding) use the new palette via the `Colors` shim.
+- Watch: Sākums (breathing Ierakstīt, last-recording card fed by `setWatchLastRecap`), Ieraksta (serif timer, waveform, Pauzēt/Pabeigt), Saglabāts (check pop, auto-dismiss 4 s).
+- Brand icon/splash regenerated from the SVG mark (dark gradient tile; light/dark splash). Live Activity recoloured to amber/ink.
+- Not yet: real mic levels for the waveform (Lottie/placeholder bars instead), Dynamic Type mapping for custom fonts, a redesigned paywall/chat/speakers layout (palette only).
+
 ## Open items — owner: Martins (account/legal)
 
 1. **Paid Apps Agreement** (App Store Connect → Business → Agreements): confirm Legal Entity → DSA trader compliance → accept agreement → banking + tax forms. _Gates every purchase, including sandbox tests._
