@@ -9,6 +9,8 @@ import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useEffect, useState } from 'react';
 import { type GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useTranslation } from 'react-i18next';
+
 import { Card, IconButton, Waveform, waveformFor } from '../../design/components';
 import { Type } from '../../design/typography';
 import { useTheme } from '../../design/useTheme';
@@ -40,6 +42,7 @@ export function RecordingPlayer({
   onTime?: (seconds: number, playing: boolean) => void;
 }) {
   const t = useTheme();
+  const { t: tr } = useTranslation();
   const [index, setIndex] = useState(0);
   const [wantPlay, setWantPlay] = useState(false);
   const [pending, setPending] = useState<{ index: number; offset: number } | null>(null);
@@ -134,7 +137,7 @@ export function RecordingPlayer({
       <View style={styles.bar}>
         <IconButton
           name={playing ? 'pause' : 'play'}
-          accessibilityLabel={playing ? 'Pause' : 'Play'}
+          accessibilityLabel={playing ? tr('recording.pause') : tr('ui.play')}
           onPress={onToggle}
           size={48}
           iconSize={18}
@@ -159,7 +162,7 @@ export function RecordingPlayer({
       <View style={styles.row}>
         <IconButton
           name={playing ? 'pause' : 'play'}
-          accessibilityLabel={playing ? 'Pause' : 'Play'}
+          accessibilityLabel={playing ? tr('recording.pause') : tr('ui.play')}
           onPress={onToggle}
           size={44}
           iconSize={18}

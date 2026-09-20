@@ -27,6 +27,7 @@ export const ARTIFACT_TYPES = [
   'actionItems',
   'managementSummary',
   'personalSummary',
+  'transcript',
   'custom',
 ] as const;
 export type ArtifactType = (typeof ARTIFACT_TYPES)[number];

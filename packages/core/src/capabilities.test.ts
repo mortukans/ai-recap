@@ -4,7 +4,7 @@ import { FREE_CAPABILITIES, NO_ENTITLEMENTS, PAID_RECORDING_MINUTES, resolveCapa
 describe('resolveCapabilities', () => {
   it('returns the Free baseline with no entitlements', () => {
     expect(resolveCapabilities(NO_ENTITLEMENTS)).toEqual(FREE_CAPABILITIES);
-    expect(FREE_CAPABILITIES.maxRecordingMinutes).toBe(15);
+    expect(FREE_CAPABILITIES.maxRecordingMinutes).toBe(90); // TESTING: lifted; restore toBe(15) at launch
     expect(FREE_CAPABILITIES.maxRecapsPerDay).toBeNull(); // TESTING: lifted; restore toBe(5) at launch
   });
 

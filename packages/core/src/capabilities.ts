@@ -25,7 +25,8 @@ export interface Entitlements {
 }
 
 export const FREE_CAPABILITIES: Capabilities = {
-  maxRecordingMinutes: 15,
+  // TESTING: 90-minute recordings on every plan while output quality is tuned (2026-09-21).
+  maxRecordingMinutes: 90,
   // TESTING: daily cap lifted for TestFlight testing (2026-09-19). Restore to 5 before public launch.
   maxRecapsPerDay: null,
   hostedTranscription: true,
@@ -36,7 +37,7 @@ export const FREE_CAPABILITIES: Capabilities = {
   advancedTemplates: false,
 };
 
-export const PAID_RECORDING_MINUTES = 60;
+export const PAID_RECORDING_MINUTES = 90;
 
 export function resolveCapabilities(entitlements: Entitlements): Capabilities {
   let caps: Capabilities = { ...FREE_CAPABILITIES };

@@ -57,7 +57,8 @@ vi.mock('../ai', () => ({
 }));
 
 vi.mock('../security/byok-store', () => ({ getOpenRouterKey: async () => h.state.key }));
-vi.mock('../lib/prefs', () => ({ getSummaryModel: async () => null }));
+vi.mock('../lib/prefs', () => ({
+  getRecapModels: async () => ({}), getSummaryModel: async () => null }));
 vi.mock('../lib/ids', () => ({ newId: () => Math.random().toString(36).slice(2) }));
 
 const { ProcessingCoordinator } = await import('./coordinator');

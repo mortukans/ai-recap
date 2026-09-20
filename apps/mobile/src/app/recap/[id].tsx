@@ -27,7 +27,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { DEFAULT_SUMMARY_MODEL, generateRecap, resolveLLMRoute } from '../../ai';
 import { artifactsRepo, attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
-import { Button, Chip, Dot, IconButton, Input, ProcessingBars, Rise, Segmented } from '../../design/components';
+import { Button, Chip, Dot, Group, IconButton, Input, ProcessingBars, Rise, Row, Segmented } from '../../design/components';
 import { dayAndClock, shortDuration } from '../../design/format';
 import { Icon } from '../../design/icons';
 import { Sheet } from '../../design/Sheet';
@@ -41,9 +41,13 @@ import { chunkUri } from '../../features/recap/audioUri';
 import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
 import { ensureTranscript } from '../../features/recap/ensureTranscript';
 import { MARKDOWN, exportTextFile, safeFilename, shareRichText } from '../../features/share/shareService';
-import { getDoneTasks } from '../../lib/prefs';
 import { newId } from '../../lib/ids';
-import { getSummaryModel, setDefaultContextId } from '../../lib/prefs';
+import { type RecapModels, getDoneTasks, getRecapModels, getSummaryModel, setDefaultContextId, setRecapModels } from '../../lib/prefs';
+import { Colors } from '@/constants/theme';
+import { DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '../../ai';
+import { ModelPicker } from '../../features/settings/ModelPicker';
+import { retranscribe, shortModel } from '../../features/recap/retranscribe';
+import { clock } from '../../design/format';
 import { processingCoordinator } from '../../processing/coordinator';
 
 type Tab = 'summary' | 'transcript' | 'chat';
@@ -85,6 +89,13 @@ export default function RecapDetailScreen() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [seek, setSeek] = useState<SeekRequest | null>(null);
+  // Model experiments (quality tuning): per-recap overrides, picker, compare mode.
+  const [recapModels, setRecapModelsState] = useState<RecapModels>({});
+  const [globalSummaryModel, setGlobalSummaryModel] = useState(DEFAULT_SUMMARY_MODEL);
+  const [models, setModels] = useState<LlmModel[]>([]);
+  const [picker, setPicker] = useState<'summary' | 'transcription' | null>(null);
+  const [compare, setCompare] = useState(false);
+  const [busyLabel, setBusyLabel] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -106,6 +117,8 @@ export default function RecapDetailScreen() {
       const chunks = await chunksRepo.listChunks(id);
       setPlayChunks(chunks.map((ch) => ({ uri: chunkUri(id, ch.relativePath), duration: ch.duration })));
       setIntegrity(recap && recap.status !== 'recording' ? checkRecordingIntegrity(chunks, recap.durationSeconds) : null);
+      setRecapModelsState(await getRecapModels(id));
+      setGlobalSummaryModel((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
       const summaries = (await artifactsRepo.listArtifacts(id)).filter((a) => a.type === 'summary');
       setVersions(summaries);
       const shown = summaries.find((a) => a.id === selectedVersionId) ?? summaries[0] ?? null;
@@ -204,6 +217,35 @@ export default function RecapDetailScreen() {
     if (id) void processingCoordinator.retry(id);
   }, [id]);
 
+  const loadModels = useCallback(async () => {
+    if (models.length > 0) return;
+    try {
+      setModels(await getByokLLMProvider().availableModels());
+    } catch {
+      setError(t('ui.needKeyForModels'));
+    }
+  }, [models.length, t]);
+
+  const openModelPicker = (which: 'summary' | 'transcription') => {
+    void loadModels();
+    setNotesOpen(false);
+    setReopenNotes(true);
+    setTimeout(() => setPicker(which), 350);
+  };
+  const closeModelPicker = () => {
+    setPicker(null);
+    if (reopenNotes) {
+      setReopenNotes(false);
+      setTimeout(() => setNotesOpen(true), 350);
+    }
+  };
+  const pickModel = async (mid: string) => {
+    if (!id) return;
+    const next = picker === 'transcription' ? { ...recapModels, transcriptionModel: mid } : { ...recapModels, summaryModel: mid };
+    setRecapModelsState(next);
+    await setRecapModels(id, next);
+  };
+
   const onGenerate = useCallback(async () => {
     if (!id) return;
     setError(null);
@@ -212,7 +254,7 @@ export default function RecapDetailScreen() {
       const segments = await ensureTranscript(id);
       if (segments.length === 0) throw new AiRecapError({ code: 'transcription/failed', message: t('processing.noTranscript') });
       const context = (await contextsRepo.getContext(contextId ?? presetContextId('workMeeting'))) ?? null;
-      const route = await resolveLLMRoute((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
+      const route = await resolveLLMRoute(recapModels.summaryModel ?? (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
       if (!route) throw new AiRecapError({ code: 'llm/missing-key', message: 'No LLM available.' });
       await attachmentsRepo.setNotes(id, notes, newId);
       const extraContext = await attachmentsRepo.collectExtraContext(id);
@@ -245,7 +287,27 @@ export default function RecapDetailScreen() {
     } finally {
       setGenerating(false);
     }
-  }, [id, title, durationSeconds, contextId, notes, load, t]);
+  }, [id, title, durationSeconds, contextId, notes, load, t, recapModels.summaryModel]);
+
+  /** Quality experiment: transcribe again with the chosen model, then regenerate the recap. */
+  const onRetranscribe = useCallback(async () => {
+    if (!id) return;
+    const model = recapModels.transcriptionModel ?? DEFAULT_TRANSCRIPTION_MODEL;
+    setError(null);
+    setBusyLabel(t('ui.retranscribing', { model: shortModel(model) }));
+    try {
+      await recapsRepo.updateRecapStatus(id, 'transcribing');
+      await retranscribe(id, model);
+      await recapsRepo.updateRecapStatus(id, 'transcribed');
+      await load();
+      await onGenerate();
+    } catch (e) {
+      setError(isAiRecapError(e) && e.code === 'llm/missing-key' ? t('ui.needKeyForModels') : e instanceof Error ? e.message : String(e));
+      await recapsRepo.updateRecapStatus(id, 'transcribed').catch(() => undefined);
+    } finally {
+      setBusyLabel(null);
+    }
+  }, [id, recapModels.transcriptionModel, t, load, onGenerate]);
 
   const onTab = (tab: Tab) => {
     if (!id || tab === 'summary') return;
@@ -365,24 +427,46 @@ export default function RecapDetailScreen() {
           <Rise index={rise++}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
               {versions.map((v, i) => {
-                const selected = (selectedVersionId ?? versions[0]?.id) === v.id;
-                const ctxName = contexts.find((ctx) => ctx.id === v.contextVersion)?.name;
+                const selected = !compare && (selectedVersionId ?? versions[0]?.id) === v.id;
                 return (
                   <Pressable
                     key={v.id}
-                    onPress={() => setSelectedVersionId(v.id)}
+                    onPress={() => {
+                      setCompare(false);
+                      setSelectedVersionId(v.id);
+                    }}
                     style={[styles.version, { backgroundColor: selected ? th.primaryBtn : th.surface, borderColor: th.line }]}>
                     <Text style={[Type.captionStrong, { color: selected ? th.onPrimaryBtn : th.text }]}>
-                      {`#${versions.length - i}${ctxName ? ` · ${ctxName}` : ''}`}
+                      {`#${versions.length - i} · ${shortModel(v.model || '?')}`}
                     </Text>
                   </Pressable>
                 );
               })}
+              <Pressable
+                onPress={() => setCompare((c) => !c)}
+                style={[styles.version, { backgroundColor: compare ? th.accentTint : th.surface, borderColor: compare ? th.accent : th.line }]}>
+                <Text style={[Type.captionStrong, { color: th.accentText }]}>{compare ? t('ui.hideCompare') : t('ui.compare')}</Text>
+              </Pressable>
             </ScrollView>
           </Rise>
         ) : null}
 
-        {doc && id ? (
+        {compare && id ? (
+          <View style={{ gap: 24 }}>
+            {versions.map((v, i) => {
+              const d = parseArtifactContent(v.content);
+              const ctxName = contexts.find((ctx) => ctx.id === v.contextVersion)?.name;
+              return (
+                <View key={v.id} style={[styles.compareCard, { borderColor: th.line, backgroundColor: th.surface }]}>
+                  <Text style={[Type.metaStrong, { color: th.accentText }]}>
+                    {`#${versions.length - i} · ${shortModel(v.model || '?')}${ctxName ? ` · ${ctxName}` : ''} · ${clock(v.createdAt)}`}
+                  </Text>
+                  {d ? <SummaryBody doc={d} recapId={`${id}:${v.id}`} /> : <Text style={[Type.meta, { color: th.text2 }]}>—</Text>}
+                </View>
+              );
+            })}
+          </View>
+        ) : doc && id ? (
           <SummaryBody doc={doc} recapId={id} onSeek={(s) => setSeek({ seconds: s, nonce: Date.now() })} />
         ) : !isBusy ? (
           <Rise index={rise++} style={{ gap: 14 }}>
@@ -400,6 +484,12 @@ export default function RecapDetailScreen() {
           </Rise>
         ) : null}
 
+        {busyLabel ? (
+          <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
+            <ActivityIndicator color={th.accentText} />
+            <Text style={[Type.metaStrong, { color: th.accentText, flex: 1 }]}>{busyLabel}</Text>
+          </View>
+        ) : null}
         {error ? <Text style={[Type.meta, { color: th.destructive }]}>{error}</Text> : null}
       </ScrollView>
 
@@ -417,8 +507,38 @@ export default function RecapDetailScreen() {
       ) : null}
 
       <Sheet visible={notesOpen} onClose={() => setNotesOpen(false)} title={t('ui.notesTitle')}>
+       <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ gap: 14 }} keyboardShouldPersistTaps="handled">
         <Text style={[Type.meta, { color: th.text2 }]}>{t('notes.label')}</Text>
         <Input value={notes} onChangeText={setNotes} placeholder={t('notes.placeholder')} multiline height={120} style={Type.bodyText} />
+        <Text style={[Type.sectionLabel, { color: th.text2 }]}>{t('ui.models')}</Text>
+        <Group>
+          <Row
+            title={t('ui.summaryModelRow')}
+            subtitle={recapModels.summaryModel ?? `${shortModel(globalSummaryModel)} · ${t('ui.defaultModel')}`}
+            onPress={() => openModelPicker('summary')}
+            chevron
+          />
+          <Row
+            title={t('ui.transcriptionModelRow')}
+            subtitle={recapModels.transcriptionModel ?? `${shortModel(DEFAULT_TRANSCRIPTION_MODEL)} · ${t('ui.defaultModel')}`}
+            onPress={() => openModelPicker('transcription')}
+            chevron
+            last
+          />
+        </Group>
+        <Text style={[Type.caption, { color: th.text2 }]}>{t('ui.modelsHint')}</Text>
+        <Button
+          label={t('ui.retranscribe')}
+          variant="secondary"
+          height={48}
+          icon="refresh"
+          iconColor={th.accentText}
+          disabled={generating || busyLabel !== null}
+          onPress={() => {
+            setNotesOpen(false);
+            void onRetranscribe();
+          }}
+        />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Chip label={contextName || t('contexts.selectLabel')} size="md" chevron onPress={openPickerFromNotes} />
           <View style={{ flex: 1 }} />
@@ -433,9 +553,20 @@ export default function RecapDetailScreen() {
             }}
           />
         </View>
+       </ScrollView>
       </Sheet>
 
       <ContextPicker visible={pickerOpen} onClose={closePicker} selectedId={contextId} onSelect={(cid) => void selectContext(cid)} />
+      <ModelPicker
+        visible={picker !== null}
+        title={picker === 'transcription' ? t('ui.transcriptionModelRow') : t('ui.summaryModelRow')}
+        models={models}
+        selectedId={picker === 'transcription' ? recapModels.transcriptionModel ?? DEFAULT_TRANSCRIPTION_MODEL : recapModels.summaryModel ?? globalSummaryModel}
+        requireModality={picker === 'transcription' ? 'audio' : undefined}
+        palette={Colors[th.scheme]}
+        onSelect={(mid) => void pickModel(mid)}
+        onClose={closeModelPicker}
+      />
     </SafeAreaView>
   );
 }
@@ -447,6 +578,7 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   banner: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1 },
   version: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, borderWidth: 1 },
+  compareCard: { gap: 12, padding: 14, borderRadius: 16, borderWidth: 1 },
   floating: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: 40 },
   pill: { height: 48, paddingHorizontal: 20, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

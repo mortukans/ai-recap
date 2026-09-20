@@ -29,6 +29,25 @@ struct ContentView: View {
   }
 }
 
+
+/// Watch UI strings — Latvian when the watch language is Latvian, English otherwise.
+enum L {
+  static var lv: Bool { Locale.current.language.languageCode?.identifier == "lv" }
+  static var record: String { lv ? "Ierakstīt" : "Record" }
+  static var startRecording: String { lv ? "Sākt ierakstu" : "Start recording" }
+  static var last: String { lv ? "Pēdējais" : "Last" }
+  static var recording: String { lv ? "Ieraksts" : "Recording" }
+  static var sendingToPhone: String { lv ? "Sūta uz iPhone" : "Sending to iPhone" }
+  static var paused: String { lv ? "Pauzēts" : "Paused" }
+  static var recordingNow: String { lv ? "Ieraksta" : "Recording" }
+  static var resume: String { lv ? "Turpināt" : "Resume" }
+  static var pause: String { lv ? "Pauzēt" : "Pause" }
+  static var finish: String { lv ? "Pabeigt" : "Finish" }
+  static var saved: String { lv ? "Saglabāts" : "Saved" }
+  static var recapOnPhone: String { lv ? "Kopsavilkums parādīsies iPhone" : "The recap will appear on iPhone" }
+  static var done: String { lv ? "Gatavs" : "Done" }
+}
+
 // MARK: - Palette
 
 enum WatchPalette {
@@ -79,7 +98,7 @@ private struct HomeView: View {
       Button(action: { link.start() }) {
         HStack(spacing: 10) {
           Circle().fill(Color(red: 1, green: 0.969, blue: 0.961)).frame(width: 20, height: 20)
-          Text("Ierakstīt").font(.system(size: 18, weight: .semibold))
+          Text(L.record).font(.system(size: 18, weight: .semibold))
             .foregroundStyle(Color(red: 1, green: 0.969, blue: 0.961))
         }
         .frame(maxWidth: .infinity)
@@ -93,12 +112,12 @@ private struct HomeView: View {
         guard !reduceMotion else { return }
         withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) { breathe = true }
       }
-      .accessibilityLabel("Sākt ierakstu")
+      .accessibilityLabel(L.startRecording)
 
       if let last = link.lastRecap {
         VStack(alignment: .leading, spacing: 4) {
-          Text("Pēdējais · \(last.time)").font(.system(size: 11)).foregroundStyle(WatchPalette.text2)
-          Text(last.title.isEmpty ? "Ieraksts" : last.title)
+          Text("\(L.last) · \(last.time)").font(.system(size: 11)).foregroundStyle(WatchPalette.text2)
+          Text(last.title.isEmpty ? L.recording : last.title)
             .font(.system(size: 13, weight: .medium))
             .lineLimit(1)
           HStack(spacing: 6) {
@@ -117,7 +136,7 @@ private struct HomeView: View {
       } else if link.uploading {
         HStack(spacing: 6) {
           ProcessingBars()
-          Text("Sūta uz iPhone").font(.system(size: 11, weight: .semibold)).foregroundStyle(WatchPalette.amber)
+          Text(L.sendingToPhone).font(.system(size: 11, weight: .semibold)).foregroundStyle(WatchPalette.amber)
         }
       }
       Spacer(minLength: 0)
@@ -158,7 +177,7 @@ private struct RecordingView: View {
     VStack(spacing: 0) {
       HStack(spacing: 6) {
         Circle().fill(WatchPalette.red).frame(width: 7, height: 7).opacity(dotOn ? 1 : 0.35)
-        Text(isPaused ? "Pauzēts" : "Ieraksta").font(.system(size: 11, weight: .semibold)).foregroundStyle(WatchPalette.red)
+        Text(isPaused ? L.paused : L.recordingNow).font(.system(size: 11, weight: .semibold)).foregroundStyle(WatchPalette.red)
       }
       .onAppear {
         guard !reduceMotion else { return }
@@ -195,12 +214,12 @@ private struct RecordingView: View {
           }
           .buttonStyle(.plain)
           .disabled(state == .finishing)
-          .accessibilityLabel(isPaused ? "Turpināt" : "Pauzēt")
+          .accessibilityLabel(isPaused ? L.resume : L.pause)
 
           Button { link.finish() } label: {
             HStack(spacing: 7) {
               Image(systemName: "stop.fill").font(.system(size: 15, weight: .semibold))
-              Text("Pabeigt").font(.system(size: 15, weight: .semibold))
+              Text(L.finish).font(.system(size: 15, weight: .semibold))
             }
             .foregroundStyle(WatchPalette.ink)
             .frame(width: unit * 1.5, height: 48)
@@ -208,7 +227,7 @@ private struct RecordingView: View {
           }
           .buttonStyle(.plain)
           .disabled(state == .finishing)
-          .accessibilityLabel("Pabeigt")
+          .accessibilityLabel(L.finish)
         }
       }
       .frame(height: 48)
@@ -276,7 +295,7 @@ private struct SavedView: View {
       .opacity(pop || reduceMotion ? 1 : 0)
 
       VStack(spacing: 3) {
-        Text("Saglabāts").font(.system(size: 20, weight: .medium, design: .serif))
+        Text(L.saved).font(.system(size: 20, weight: .medium, design: .serif))
         if let saved = link.justSaved {
           Text(saved.subtitle).font(.system(size: 12)).foregroundStyle(WatchPalette.text2)
         }
@@ -285,7 +304,7 @@ private struct SavedView: View {
 
       HStack(spacing: 5) {
         Image(systemName: "iphone").font(.system(size: 11))
-        Text("Kopsavilkums parādīsies iPhone").font(.system(size: 11))
+        Text(L.recapOnPhone).font(.system(size: 11))
       }
       .foregroundStyle(WatchPalette.text2)
       .padding(.top, 10)
@@ -293,7 +312,7 @@ private struct SavedView: View {
       Spacer(minLength: 6)
 
       Button { link.dismissSaved() } label: {
-        Text("Gatavs").font(.system(size: 14, weight: .semibold))
+        Text(L.done).font(.system(size: 14, weight: .semibold))
           .foregroundStyle(WatchPalette.bone)
           .frame(maxWidth: .infinity)
           .frame(height: 44)

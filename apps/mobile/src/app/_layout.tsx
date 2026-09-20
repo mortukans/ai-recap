@@ -1,4 +1,4 @@
-import '../i18n';
+import i18n, { resolveLanguage } from '../i18n';
 
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,6 +11,7 @@ import { useAppFonts } from '../design/fonts';
 import { FontFamily } from '../design/typography';
 import { useTheme } from '../design/useTheme';
 import { startWatchBridge } from '../features/recording/watchBridge';
+import { getAppLanguage } from '../lib/prefs';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -19,6 +20,13 @@ export default function RootLayout() {
   const t = useTheme();
   const { ready } = useBootstrap();
   const fontsReady = useAppFonts();
+
+  useEffect(() => {
+    void getAppLanguage().then((choice) => {
+      const lang = resolveLanguage(choice);
+      if (i18n.language !== lang) void i18n.changeLanguage(lang);
+    });
+  }, []);
 
   useEffect(() => {
     if (ready && fontsReady) {

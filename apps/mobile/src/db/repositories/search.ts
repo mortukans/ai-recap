@@ -5,7 +5,7 @@
  * matching later without touching callers.
  */
 import { type Recap, type RecapStatus, escapeLike, makeSnippet, normalizeQuery } from '@ai-recap/core';
-import { desc, inArray, like, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, like, sql } from 'drizzle-orm';
 import { getDatabase } from '../client';
 import { generatedArtifacts, recaps, transcriptSegments } from '../schema';
 
@@ -67,7 +67,7 @@ export async function searchRecaps(rawQuery: string, limit = 50): Promise<RecapS
     db
       .select({ recapId: generatedArtifacts.recapId, content: generatedArtifacts.content })
       .from(generatedArtifacts)
-      .where(likeEsc(generatedArtifacts.content))
+      .where(and(eq(generatedArtifacts.type, 'summary'), likeEsc(generatedArtifacts.content)))
       .orderBy(desc(generatedArtifacts.createdAt))
       .limit(limit * 2),
   ]);

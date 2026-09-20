@@ -60,12 +60,13 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
     }
     var processing: Bool { ["recorded", "transcribing", "transcribed", "summarizing", "waitingForNetwork"].contains(status) }
     var statusLabel: String {
+      let lv = L.lv
       switch status {
-      case "recorded", "waitingForNetwork": return "Gaida apstrādi"
-      case "transcribing": return "Transkribē"
-      case "transcribed", "summarizing": return "Apkopo"
-      case "ready": return "Gatavs"
-      case "transcriptionFailed", "summaryFailed", "uploadFailed": return "Neizdevās"
+      case "recorded", "waitingForNetwork": return lv ? "Gaida apstrādi" : "Waiting"
+      case "transcribing": return lv ? "Transkribē" : "Transcribing"
+      case "transcribed", "summarizing": return lv ? "Apkopo" : "Summarizing"
+      case "ready": return lv ? "Gatavs" : "Ready"
+      case "transcriptionFailed", "summaryFailed", "uploadFailed": return lv ? "Neizdevās" : "Failed"
       default: return status
       }
     }
@@ -166,13 +167,13 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
     WatchRecorder.requestPermission { [weak self] granted in
       guard let self = self else { return }
       guard granted else {
-        self.lastError = "Allow microphone access for AI Recap on the watch"
+        self.lastError = L.lv ? "Atļauj mikrofonu AI Recap pulkstenī" : "Allow microphone access for AI Recap on the watch"
         self.mode = .remote
         return
       }
       self.recorder.start(recapId: self.localRecapId) { error in
         if let error = error {
-          self.lastError = "Could not record: \(error.localizedDescription)"
+          self.lastError = (L.lv ? "Neizdevās ierakstīt: " : "Could not record: ") + error.localizedDescription
           self.mode = .remote
         } else {
           self.localState = .recording
@@ -270,7 +271,7 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
       if error == nil {
         try? FileManager.default.removeItem(at: fileTransfer.file.fileURL)
       } else {
-        self.lastError = "Transfer to iPhone failed. Retrying."
+        self.lastError = L.lv ? "Pārsūtīšana uz iPhone neizdevās. Mēģina vēlreiz." : "Transfer to iPhone failed. Retrying."
         WCSession.default.transferFile(fileTransfer.file.fileURL, metadata: fileTransfer.file.metadata)
       }
       self.uploading = !session.outstandingFileTransfers.isEmpty

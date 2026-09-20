@@ -26,7 +26,11 @@ import { Type } from '../../design/typography';
 import { useTheme } from '../../design/useTheme';
 import { ModelPicker } from '../../features/settings/ModelPicker';
 import { applyAudioRetention, deleteAllRecordings, formatBytes, getAudioStorageBytes } from '../../features/storage/audioStorage';
+import i18n, { resolveLanguage } from '../../i18n';
 import {
+  type AppLanguage,
+  getAppLanguage,
+  setAppLanguage,
   getAudioRetentionDays,
   getSummaryModel,
   getTranscriptionModel,
@@ -63,6 +67,7 @@ export default function SettingsScreen() {
   const [audioBytes, setAudioBytes] = useState<number | null>(null);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [retentionDays, setRetentionDays] = useState<number | null>(null);
+  const [appLanguage, setAppLanguageState] = useState<AppLanguage>('auto');
 
   const refreshStorage = useCallback(async () => setAudioBytes(await getAudioStorageBytes()), []);
 
@@ -85,6 +90,7 @@ export default function SettingsScreen() {
       setTranscriptionModelState((await getTranscriptionModel()) ?? DEFAULT_TRANSCRIPTION_MODEL);
       setHasOpenAiKey((await getOpenAiKey()) !== null);
       setRetentionDays(await getAudioRetentionDays());
+      setAppLanguageState(await getAppLanguage());
       void refreshStorage();
       usageRepo.summarizeUsageSince(startOfMonth()).then(setUsage).catch(() => undefined);
       if (keyPresent) void loadModels();
@@ -127,10 +133,10 @@ export default function SettingsScreen() {
       const list = await getByokLLMProvider().availableModels();
       setModels(list);
       setKeyVerified(list.length > 0);
-      setTestResult(list.length > 0 ? `OK — ${list.length} models` : 'No models returned');
+      setTestResult(list.length > 0 ? t('ui.testOk', { count: list.length }) : t('ui.noModels'));
     } catch (e) {
       setKeyVerified(false);
-      setTestResult(e instanceof Error ? e.message : 'Connection failed');
+      setTestResult(e instanceof Error ? e.message : t('ui.connectionFailed'));
     } finally {
       setTesting(false);
     }
@@ -199,6 +205,26 @@ export default function SettingsScreen() {
               </View>
             </View>
           </Pressable>
+        </Rise>
+
+        <Rise index={rise++} style={{ gap: 8 }}>
+          <SectionLabel>{t('ui.general')}</SectionLabel>
+          <Card style={{ gap: 10 }}>
+            <Text style={[Type.body, { fontSize: 16, lineHeight: 20, color: th.text }]}>{t('ui.appLanguage')}</Text>
+            <Segmented<AppLanguage>
+              value={appLanguage}
+              onChange={(v) => {
+                setAppLanguageState(v);
+                void setAppLanguage(v);
+                void i18n.changeLanguage(resolveLanguage(v));
+              }}
+              options={[
+                { value: 'auto', label: t('ui.langAuto') },
+                { value: 'lv', label: t('ui.langLv') },
+                { value: 'en', label: t('ui.langEn') },
+              ]}
+            />
+          </Card>
         </Rise>
 
         <Rise index={rise++} style={{ gap: 8 }}>

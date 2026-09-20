@@ -19,6 +19,8 @@ import { type PlayChunk, RecordingPlayer, type SeekRequest } from '../../feature
 import { chunkUri } from '../../features/recap/audioUri';
 import { PLAINTEXT, exportTextFile, safeFilename } from '../../features/share/shareService';
 import { useTranscript } from '../../features/transcript/useTranscript';
+import { type TranscriptVersion, activateTranscriptVersion, listTranscriptVersions, shortModel } from '../../features/recap/retranscribe';
+import { Button } from '../../design/components';
 
 type Tab = 'summary' | 'transcript' | 'chat';
 
@@ -35,11 +37,17 @@ export default function TranscriptScreen() {
   const [playing, setPlaying] = useState(false);
   const [chunks, setChunks] = useState<PlayChunk[]>([]);
   const [seek, setSeek] = useState<SeekRequest | null>(null);
+  const [versions, setVersions] = useState<TranscriptVersion[]>([]);
+  const [viewing, setViewing] = useState<TranscriptVersion | null>(null); // null = live transcript
+  const [compare, setCompare] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       void reload();
-      if (id) void recapsRepo.getRecap(id).then((r) => setTitle(r?.title ?? ''));
+      if (id) {
+        void recapsRepo.getRecap(id).then((r) => setTitle(r?.title ?? ''));
+        void listTranscriptVersions(id).then(setVersions).catch(() => setVersions([]));
+      }
     }, [id, reload]),
   );
 
@@ -82,7 +90,15 @@ export default function TranscriptScreen() {
   };
 
   const q = query.trim().toLowerCase();
-  const rows = q ? segments.filter((s) => s.text.toLowerCase().includes(q)) : segments;
+  const shownSegments = viewing ? viewing.segments : segments;
+  const rows = q ? shownSegments.filter((s) => s.text.toLowerCase().includes(q)) : shownSegments;
+
+  const useVersion = async () => {
+    if (!id || !viewing) return;
+    await activateTranscriptVersion(id, viewing);
+    setViewing(null);
+    await reload();
+  };
 
   // Highlight query hits inside an utterance.
   const renderText = (text: string) => {
@@ -153,12 +169,62 @@ export default function TranscriptScreen() {
       </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 130 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-        {rows.length === 0 ? (
+        {versions.length > 1 ? (
+          <View style={{ gap: 8 }}>
+            <Text style={[Type.sectionLabel, { color: th.text2 }]}>{t('ui.transcriptVersions')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              <Pressable
+                onPress={() => {
+                  setViewing(null);
+                  setCompare(false);
+                }}
+                style={[styles.version, { backgroundColor: !viewing && !compare ? th.primaryBtn : th.surface, borderColor: th.line }]}>
+                <Text style={[Type.captionStrong, { color: !viewing && !compare ? th.onPrimaryBtn : th.text }]}>{t('ui.current')}</Text>
+              </Pressable>
+              {versions.map((v, i) => {
+                const selected = !compare && viewing?.artifact.id === v.artifact.id;
+                return (
+                  <Pressable
+                    key={v.artifact.id}
+                    onPress={() => {
+                      setCompare(false);
+                      setViewing(v);
+                    }}
+                    style={[styles.version, { backgroundColor: selected ? th.primaryBtn : th.surface, borderColor: th.line }]}>
+                    <Text style={[Type.captionStrong, { color: selected ? th.onPrimaryBtn : th.text }]}>{`#${versions.length - i} · ${shortModel(v.artifact.model || '?')}`}</Text>
+                  </Pressable>
+                );
+              })}
+              <Pressable
+                onPress={() => setCompare((c) => !c)}
+                style={[styles.version, { backgroundColor: compare ? th.accentTint : th.surface, borderColor: compare ? th.accent : th.line }]}>
+                <Text style={[Type.captionStrong, { color: th.accentText }]}>{compare ? t('ui.hideCompare') : t('ui.compare')}</Text>
+              </Pressable>
+            </ScrollView>
+            {viewing && !compare ? <Button label={t('ui.useThisVersion')} height={40} onPress={() => void useVersion()} style={{ alignSelf: 'flex-start' }} /> : null}
+          </View>
+        ) : null}
+
+        {compare
+          ? versions.map((v, i) => (
+              <View key={v.artifact.id} style={[styles.compareCard, { borderColor: th.line, backgroundColor: th.surface }]}>
+                <Text style={[Type.metaStrong, { color: th.accentText }]}>{`#${versions.length - i} · ${shortModel(v.artifact.model || '?')}`}</Text>
+                {v.segments.map((seg) => (
+                  <View key={seg.id} style={styles.line}>
+                    <Text style={[Type.caption, styles.tabular, { color: th.text2, width: 44 }]}>{formatTimestamp(seg.startTime)}</Text>
+                    <Text style={[Type.bodyText15, { color: th.text, flex: 1 }]}>{seg.text}</Text>
+                  </View>
+                ))}
+              </View>
+            ))
+          : null}
+
+        {!compare && rows.length === 0 ? (
           <Text style={[Type.bodyText15, { color: th.text2, textAlign: 'center', marginTop: 40 }]}>
             {q ? t('home.noResults', { query: query.trim() }) : t('transcript.empty')}
           </Text>
         ) : null}
-        {rows.map((seg) => {
+        {!compare && rows.map((seg) => {
           const selected = seg.id === selectedId;
           const showSpeaker = seg.speakerLabel !== lastSpeaker || q.length > 0;
           lastSpeaker = seg.speakerLabel;
@@ -201,4 +267,6 @@ const styles = StyleSheet.create({
   tabular: { fontVariant: ['tabular-nums'] },
   utterance: { flex: 1, gap: 4, paddingVertical: 12, paddingHorizontal: 14, marginVertical: -12, marginHorizontal: -14, borderRadius: 14 },
   playerWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: Layout.screenPadding, paddingTop: 14 },
+  version: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, borderWidth: 1 },
+  compareCard: { gap: 10, padding: 14, borderRadius: 16, borderWidth: 1 },
 });

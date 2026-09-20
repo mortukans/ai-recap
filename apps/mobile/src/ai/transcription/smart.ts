@@ -6,7 +6,7 @@
  *   4. otherwise           → Apple on-device (free; English-centric)
  * Keeps the coordinator agnostic of the provider.
  */
-import { getTranscriptionModel } from '../../lib/prefs';
+import { getRecapModels, getTranscriptionModel } from '../../lib/prefs';
 import { getEntitlements } from '../../purchases/entitlements';
 import { getOpenAiKey, getOpenRouterKey } from '../../security/byok-store';
 import type { TranscriptionInput, TranscriptionProvider, TranscriptionResult } from '../types';
@@ -21,7 +21,11 @@ export class SmartTranscriber implements TranscriptionProvider {
 
   async transcribe(input: TranscriptionInput): Promise<TranscriptionResult> {
     let impl: TranscriptionProvider;
-    if (await getOpenAiKey()) {
+    const override = (await getRecapModels(input.recapId)).transcriptionModel;
+    if (override && (await getOpenRouterKey())) {
+      // Per-recap model experiment (quality tuning) — always through OpenRouter.
+      impl = new OpenRouterAudioTranscriber(getOpenRouterKey, async () => override);
+    } else if (await getOpenAiKey()) {
       impl = new OpenAiWhisperTranscriber(getOpenAiKey);
     } else if (await getOpenRouterKey()) {
       impl = new OpenRouterAudioTranscriber(getOpenRouterKey, getTranscriptionModel);

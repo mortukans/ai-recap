@@ -118,3 +118,49 @@ export async function setDoneTasks(recapId: string, indices: number[]): Promise<
     /* non-fatal */
   }
 }
+
+const RECAP_MODELS_PREFIX = 'airecap.pref.recapModels.';
+
+/** Per-recap model overrides for quality experiments (both optional → global defaults apply). */
+export interface RecapModels {
+  summaryModel?: string;
+  transcriptionModel?: string;
+}
+
+export async function getRecapModels(recapId: string): Promise<RecapModels> {
+  try {
+    const raw = await AsyncStorage.getItem(RECAP_MODELS_PREFIX + recapId);
+    const parsed: unknown = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? (parsed as RecapModels) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function setRecapModels(recapId: string, models: RecapModels): Promise<void> {
+  try {
+    await AsyncStorage.setItem(RECAP_MODELS_PREFIX + recapId, JSON.stringify(models));
+  } catch {
+    /* non-fatal */
+  }
+}
+
+const APP_LANGUAGE_KEY = 'airecap.pref.appLanguage';
+export type AppLanguage = 'auto' | 'lv' | 'en';
+
+export async function getAppLanguage(): Promise<AppLanguage> {
+  try {
+    const v = await AsyncStorage.getItem(APP_LANGUAGE_KEY);
+    return v === 'lv' || v === 'en' ? v : 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+
+export async function setAppLanguage(lang: AppLanguage): Promise<void> {
+  try {
+    await AsyncStorage.setItem(APP_LANGUAGE_KEY, lang);
+  } catch {
+    /* non-fatal */
+  }
+}

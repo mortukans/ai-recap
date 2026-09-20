@@ -22,7 +22,7 @@ import {
 import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo, usageRepo } from '../db';
 import { syncUsage } from '../features/usage/syncUsage';
 import { newId } from '../lib/ids';
-import { getSummaryModel } from '../lib/prefs';
+import { getSummaryModel, getRecapModels } from '../lib/prefs';
 import { withRetry } from './backoff';
 
 export class ProcessingCoordinator {
@@ -233,7 +233,8 @@ export class ProcessingCoordinator {
     const segments = await segmentsRepo.listSegments(recap.id);
     const context =
       (await contextsRepo.getContext(recap.contextId ?? presetContextId('workMeeting'))) ?? null;
-    const route = await resolveLLMRoute((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
+    const override = (await getRecapModels(recap.id)).summaryModel;
+    const route = await resolveLLMRoute(override ?? (await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
     if (!route) throw new AiRecapError({ code: 'llm/missing-key', message: 'No LLM available (no key, not Unlimited).' });
     const extraContext = await attachmentsRepo.collectExtraContext(recap.id).catch(() => undefined);
     const generated = await withRetry(
