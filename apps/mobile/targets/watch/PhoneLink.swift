@@ -41,6 +41,8 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
   @Published var reachable = false
   @Published var uploading = false
   @Published var lastError: String?
+  /// Live microphone level 0…1 — from the watch mic (local) or mirrored from the phone (remote).
+  @Published var level: Double = 0
   /// Most recent recap on the phone (for the home card).
   @Published var lastRecap: LastRecap?
   /// Shown right after a recording was saved; auto-dismissed after 4 s.
@@ -81,6 +83,9 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
 
   private override init() {
     super.init()
+    recorder.onLevel = { [weak self] l in
+      DispatchQueue.main.async { self?.level = l }
+    }
     guard WCSession.isSupported() else { return }
     let session = WCSession.default
     session.delegate = self
@@ -254,7 +259,10 @@ final class PhoneLink: NSObject, ObservableObject, WCSessionDelegate {
   }
 
   func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
-    DispatchQueue.main.async { self.apply(message) }
+    DispatchQueue.main.async {
+      if let l = message["level"] as? Double, self.mode == .remote { self.level = l }
+      self.apply(message)
+    }
   }
 
   func session(_ session: WCSession, didFinish fileTransfer: WCSessionFileTransfer, error: Error?) {

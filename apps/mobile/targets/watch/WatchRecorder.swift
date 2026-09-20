@@ -13,6 +13,9 @@ final class WatchRecorder: NSObject, AVAudioRecorderDelegate {
   }
 
   private var recorder: AVAudioRecorder?
+  private var meterTimer: Timer?
+  /// Live input level 0…1 (~15 Hz) while recording.
+  var onLevel: ((Double) -> Void)?
   private(set) var startedAt = Date()
   private var accumulated: TimeInterval = 0 // seconds recorded before the current run
   private var runStart: Date?
@@ -58,8 +61,10 @@ final class WatchRecorder: NSObject, AVAudioRecorderDelegate {
           ]
           let rec = try AVAudioRecorder(url: url, settings: settings)
           rec.delegate = self
+          rec.isMeteringEnabled = true
           guard rec.record() else { throw NSError(domain: "lv.airecap.watch", code: 2) }
           self.recorder = rec
+          self.startMetering()
           self.startedAt = Date()
           self.accumulated = 0
           self.runStart = Date()
@@ -71,9 +76,20 @@ final class WatchRecorder: NSObject, AVAudioRecorderDelegate {
     }
   }
 
+  private func startMetering() {
+    meterTimer?.invalidate()
+    meterTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 15.0, repeats: true) { [weak self] _ in
+      guard let self = self, let rec = self.recorder, rec.isRecording else { return }
+      rec.updateMeters()
+      let db = Double(rec.averagePower(forChannel: 0))
+      self.onLevel?(min(1, max(0, (db + 50) / 50)))
+    }
+  }
+
   func pause() {
     guard let rec = recorder, rec.isRecording else { return }
     rec.pause()
+    onLevel?(0)
     if let s = runStart { accumulated += Date().timeIntervalSince(s) }
     runStart = nil
   }
@@ -87,8 +103,11 @@ final class WatchRecorder: NSObject, AVAudioRecorderDelegate {
     guard let rec = recorder else { return nil }
     if let s = runStart { accumulated += Date().timeIntervalSince(s) }
     runStart = nil
+    meterTimer?.invalidate()
+    meterTimer = nil
     rec.stop()
     recorder = nil
+    onLevel?(0)
     try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     return Result(url: rec.url, durationSeconds: accumulated, startedAt: startedAt)
   }

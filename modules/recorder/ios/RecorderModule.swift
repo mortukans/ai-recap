@@ -10,11 +10,14 @@ public class RecorderModule: Module {
   public func definition() -> ModuleDefinition {
     Name("AiRecapRecorder")
 
-    Events("duration", "chunkClosed", "interrupted", "resumed", "error", "watchCommand", "watchRecordingReceived")
+    Events("duration", "chunkClosed", "interrupted", "resumed", "error", "level", "watchCommand", "watchRecordingReceived")
 
     OnCreate {
       self.engine.onEvent = { [weak self] name, payload in
         self?.sendEvent(name, payload)
+        if name == "level", let level = payload["level"] as? Double {
+          WatchBridge.shared.publishLevel(level) // mirrored to the watch while it remote-controls us
+        }
       }
       // Apple Watch remote control: commands arrive here and are forwarded to JS.
       WatchBridge.shared.onCommand = { [weak self] command in

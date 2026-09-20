@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { contextsRepo } from '../db';
 import { Button, Chip, Dot, LiveIndicator } from '../design/components';
-import { Lottie } from '../design/Lottie';
+import { LiveWaveform, VoiceHalo } from '../design/LiveWaveform';
 import { Layout } from '../design/tokens';
 import { Type } from '../design/typography';
 import { useTheme } from '../design/useTheme';
@@ -27,7 +27,7 @@ export default function RecordingScreen() {
   const router = useRouter();
   const th = useTheme();
   useKeepAwake();
-  const { status, seconds, error, start, pause, resume, finish, chunkCount, contextId, setContext } = useRecording();
+  const { status, seconds, error, start, pause, resume, finish, chunkCount, contextId, setContext, level } = useRecording();
   const caps = useCapabilities();
   const limit = recordingLimitState(seconds, caps.maxRecordingMinutes);
   const autoStopped = useRef(false);
@@ -81,7 +81,7 @@ export default function RecordingScreen() {
     <SafeAreaView style={[styles.fill, { backgroundColor: th.bg }]}>
       {/* Soft amber halo behind the timer. */}
       <View pointerEvents="none" style={styles.halo}>
-        <Lottie name="halo-breathe" style={{ width: 400, height: 400, opacity: isPaused ? 0.06 : 0.12 }} play={!isPaused} />
+        <VoiceHalo level={level} active={status === 'recording'} size={380} />
       </View>
 
       <View style={styles.top}>
@@ -104,7 +104,7 @@ export default function RecordingScreen() {
         </View>
 
         <View style={styles.wave}>
-          <Lottie name="waveform-live" style={{ width: 350, height: 120 }} play={status === 'recording'} />
+          <LiveWaveform level={level} active={status === 'recording'} width={350} height={120} />
         </View>
 
         <View style={styles.meta}>
@@ -140,7 +140,7 @@ export default function RecordingScreen() {
 
 const styles = StyleSheet.create({
   fill: { flex: 1, paddingHorizontal: Layout.screenPadding, paddingBottom: 14 },
-  halo: { position: 'absolute', left: 0, right: 0, top: '28%', alignItems: 'center' },
+  halo: { position: 'absolute', left: 0, right: 0, top: '22%', alignItems: 'center' },
   top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 28 },
   wave: { height: 120, alignItems: 'center', justifyContent: 'center' },

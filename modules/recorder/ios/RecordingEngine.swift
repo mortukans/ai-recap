@@ -171,6 +171,26 @@ final class RecordingEngine {
 
   // MARK: - Capture (runs on writeQueue)
 
+  /// Perceptual input level 0…1 from a buffer (RMS → dBFS → mapped over a 50 dB window).
+  private func level(of buffer: AVAudioPCMBuffer) -> Double {
+    let frames = Int(buffer.frameLength)
+    guard frames > 0 else { return 0 }
+    var sum: Float = 0
+    if let ch = buffer.floatChannelData {
+      let p = ch[0]
+      for i in 0..<frames { sum += p[i] * p[i] }
+    } else if let ch = buffer.int16ChannelData {
+      let p = ch[0]
+      for i in 0..<frames { let v = Float(p[i]) / 32768; sum += v * v }
+    } else {
+      return 0
+    }
+    let rms = sqrt(sum / Float(frames))
+    let db = 20 * log10(max(rms, 1e-7))
+    let norm = (Double(db) + 50) / 50   // -50 dBFS → 0, 0 dBFS → 1
+    return min(1, max(0, norm))
+  }
+
   private func appendBuffer(_ buffer: AVAudioPCMBuffer) {
     guard let file = currentFile, buffer.frameLength > 0 else { return }
     do {
@@ -180,6 +200,7 @@ final class RecordingEngine {
       return
     }
     framesInChunk += buffer.frameLength
+    onEvent?("level", ["level": level(of: buffer)])
 
     // Emit a duration tick at most once per second (total elapsed across chunks).
     let total = accumulatedSeconds + Double(framesInChunk) / fileSampleRate

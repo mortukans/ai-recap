@@ -38,6 +38,21 @@ final class WatchBridge: NSObject, WCSessionDelegate {
     push(sendMessage: true)
   }
 
+  private var lastLevelSent: TimeInterval = 0
+
+  /// Live input level (0…1) for the watch waveform while the phone records. Throttled to ~8 Hz and only
+  /// while the watch is reachable and we are the active recorder.
+  func publishLevel(_ level: Double) {
+    guard (lastState["state"] as? String) == "recording" else { return }
+    let now = Date().timeIntervalSince1970
+    guard now - lastLevelSent >= 0.12 else { return }
+    guard WCSession.isSupported() else { return }
+    let session = WCSession.default
+    guard session.activationState == .activated, session.isReachable else { return }
+    lastLevelSent = now
+    session.sendMessage(["level": level], replyHandler: nil, errorHandler: nil)
+  }
+
   /// Latest recap summary line for the watch home screen (title, pipeline status, start time in ms).
   func publishLastRecap(title: String, status: String, startedAt: Double) {
     lastRecap = ["lastTitle": title, "lastStatus": status, "lastStartedAt": startedAt]

@@ -16,6 +16,11 @@ export interface DurationEvent {
   seconds: number;
 }
 
+/** Live microphone level, 0 (silence) … 1 (full scale), ~12 Hz while recording. */
+export interface LevelEvent {
+  level: number;
+}
+
 export interface ChunkClosedEvent {
   index: number;
   /** Path relative to the recap directory, e.g. "chunks/chunk_0001.m4a". */
@@ -53,6 +58,7 @@ export interface WatchRecordingReceivedEvent {
 
 export interface RecorderEvents {
   duration: DurationEvent;
+  level: LevelEvent;
   chunkClosed: ChunkClosedEvent;
   interrupted: InterruptedEvent;
   resumed: Record<string, never>;

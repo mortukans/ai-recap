@@ -25,6 +25,7 @@ export function useRecording() {
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [chunkCount, setChunkCount] = useState(0);
+  const [level, setLevel] = useState(0);
   const [contextId, setContextIdState] = useState<string | null>(null);
   const recapIdRef = useRef<string | null>(null);
   const secondsRef = useRef(0); // latest duration for callbacks that must not re-create on every tick
@@ -73,6 +74,7 @@ export function useRecording() {
           secondsRef.current = s;
           setSeconds(s);
         }),
+        Recorder.addListener('level', ({ level: l }) => setLevel(l)),
         Recorder.addListener('chunkClosed', (chunk) => {
           setChunkCount((n) => n + 1);
           chunksRepo
@@ -190,5 +192,5 @@ export function useRecording() {
     if (recapIdRef.current) await recapsRepo.updateRecap(recapIdRef.current, { contextId: id }).catch(() => undefined);
   }, []);
 
-  return { status, seconds, error, start, pause, resume, finish, chunkCount, contextId, setContext };
+  return { status, seconds, error, start, pause, resume, finish, chunkCount, contextId, setContext, level };
 }

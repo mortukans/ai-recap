@@ -175,7 +175,7 @@ private struct RecordingView: View {
             .minimumScaleFactor(0.6)
             .lineLimit(1)
         }
-        WaveformBars(active: state == .recording && !reduceMotion)
+        LiveWaveform(level: state == .recording ? link.level : 0, reduceMotion: reduceMotion)
           .frame(height: 36)
       }
 
@@ -222,24 +222,35 @@ private struct RecordingView: View {
   }
 }
 
-/// 24 animated bars (3 pt wide, 3 pt gap) — the "elpojošs vilnis" until real mic levels exist.
-struct WaveformBars: View {
-  let active: Bool
-  @State private var phase = false
-  private let heights: [CGFloat] = [10, 18, 30, 46, 64, 52, 36, 22, 14, 26, 44, 60, 70, 54, 38, 24, 16, 28, 42, 34, 22, 14, 10, 8]
+/// 24 live bars (3 pt wide, 3 pt gap) driven by the microphone level: the newest sample sits in the
+/// middle and older samples fan out to both sides, so speech reads as a moving, symmetric waveform.
+struct LiveWaveform: View {
+  let level: Double
+  let reduceMotion: Bool
+  @State private var history: [Double] = Array(repeating: 0.06, count: 12)
 
   var body: some View {
-    HStack(spacing: 3) {
-      ForEach(Array(heights.enumerated()), id: \.offset) { i, h in
-        RoundedRectangle(cornerRadius: 1.5)
-          .fill(i < 20 ? WatchPalette.amber : WatchPalette.waveIdle)
-          .frame(width: 3, height: h / 2)
-          .scaleEffect(y: active ? (phase ? 1 : 0.25) : 0.35, anchor: .center)
-          .animation(active ? .easeInOut(duration: 0.55).repeatForever(autoreverses: true).delay(Double((i * 7) % 11) / 10) : .default, value: phase)
+    GeometryReader { geo in
+      let h = geo.size.height
+      HStack(spacing: 3) {
+        ForEach(0..<24, id: \.self) { i in
+          let idx = abs(i - 12)
+          let v = idx < history.count ? history[idx] : 0.06
+          let alpha = 1.0 - Double(idx) / 16.0
+          RoundedRectangle(cornerRadius: 1.5)
+            .fill(WatchPalette.amber.opacity(0.35 + 0.65 * alpha))
+            .frame(width: 3, height: max(3, h * CGFloat(0.06 + 0.94 * v)))
+        }
       }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .animation(reduceMotion ? nil : .linear(duration: 0.07), value: history)
     }
-    .onAppear { phase = true }
-    .onChange(of: active) { _, _ in phase.toggle() }
+    .onChange(of: level) { _, l in
+      // Perceptual shaping: emphasise speech range, keep a small floor so silence still breathes.
+      let shaped = pow(min(1, max(0, l)), 0.7)
+      history.insert(max(0.06, shaped), at: 0)
+      if history.count > 12 { history.removeLast() }
+    }
   }
 }
 
