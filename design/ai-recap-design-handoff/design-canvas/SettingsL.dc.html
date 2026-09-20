@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<title>Iestatījumi (gaišs)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;color:#16181D;font-family:'Hanken Grotesk','Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#16181D;text-decoration:none}a:hover{color:#A8661A}
+@keyframes la-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.la-rise{animation:la-rise .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes la-sheen{from{transform:translateX(-120%) skewX(-18deg)}to{transform:translateX(320%) skewX(-18deg)}}
+.la-sheen{animation:la-sheen 3.4s 1s ease-in-out infinite}
+@keyframes la-bar{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+.la-bar{transform-origin:center;animation:la-bar 1.4s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 1280px; position: relative; box-sizing: border-box; padding: 62px 20px 0; display: flex; flex-direction: column; gap: 22px; background: #F4F5F7; overflow: hidden;">
+
+  <h1 class="la-rise" style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 40px; line-height: 1; letter-spacing: -0.02em;">Iestatījumi</h1>
+
+  <div class="la-rise" style="animation-delay: .06s; position: relative; display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 20px; background: #16181D; color: #FFFFFF; overflow: hidden; box-shadow: 0 16px 40px rgba(22,24,29,0.18);">
+    <div class="la-sheen" style="position: absolute; top: -20px; bottom: -20px; left: 0; width: 60px; background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0) 100%);" aria-hidden="true"></div>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 13px; color: #A6A29B;">Plāns</div><div style="font-family: 'Newsreader', Georgia, serif; font-size: 30px; line-height: 1; color: #E9A24A;">Unlimited</div></div>
+      <svg width="44" height="44" viewBox="0 0 64 64" fill="none"><rect class="la-bar" style="animation-delay:0s" x="8" y="21" width="6" height="22" rx="3" fill="#E9A24A"/><rect class="la-bar" style="animation-delay:.15s" x="19" y="12" width="6" height="40" rx="3" fill="#E9A24A"/><rect class="la-bar" style="animation-delay:.3s" x="30" y="6" width="6" height="52" rx="3" fill="#E9A24A"/><rect class="la-bar" style="animation-delay:.45s" x="41" y="17" width="6" height="30" rx="3" fill="#E9A24A"/><circle cx="55" cy="47" r="3.5" fill="#E0432F"/></svg>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.08);"><div style="font-size: 20px; font-weight: 600;">15 min</div><div style="font-size: 12px; color: #A6A29B;">maks. ieraksta ilgums</div></div>
+      <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.08);"><div style="font-size: 20px; font-weight: 600;">Bez limita</div><div style="font-size: 12px; color: #A6A29B;">kopsavilkumi dienā</div></div>
+    </div>
+  </div>
+
+  <div class="la-rise" style="animation-delay: .12s; display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 13px; font-weight: 600; color: #656A73; padding: 0 2px;">AI modeļi · OpenRouter</div>
+    <div style="display: flex; flex-direction: column; border-radius: 18px; background: #FFFFFF; border: 1px solid #E1E4E9; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #E1E4E9;">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 16px; font-weight: 500;">Sava atslēga</div><div style="font-size: 13px; color: #656A73;">Saglabāta Keychain · ••••••••</div></div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #2E7D4F;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"/></svg>Savienots</div>
+      </div>
+      <button type="button" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 0; border-bottom: 1px solid #E1E4E9; background: transparent; color: #16181D; font: inherit; text-align: left; cursor: pointer;">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 16px; font-weight: 500;">Kopsavilkums</div><div style="font-size: 13px; color: #656A73;">openai/gpt-4o-mini</div></div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A8F98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button type="button" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 0; border-bottom: 1px solid #E1E4E9; background: transparent; color: #16181D; font: inherit; text-align: left; cursor: pointer;">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 16px; font-weight: 500;">Transkripcija</div><div style="font-size: 13px; color: #656A73;">google/gemini-2.5-flash · ar audio</div></div>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A8F98" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button type="button" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border: 0; background: transparent; color: #16181D; font: inherit; text-align: left; cursor: pointer;">
+        <div style="display: flex; flex-direction: column; gap: 2px;"><div style="font-size: 16px; font-weight: 500;">OpenAI Whisper</div><div style="font-size: 13px; color: #656A73;">Pēc izvēles · nav pievienots</div></div>
+        <span style="font-size: 14px; font-weight: 600; color: #A8661A;">Pievienot</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="la-rise" style="animation-delay: .18s; display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 13px; font-weight: 600; color: #656A73; padding: 0 2px;">Ierakstīšana</div>
+    <div style="display: flex; flex-direction: column; border-radius: 18px; background: #FFFFFF; border: 1px solid #E1E4E9; overflow: hidden;">
+      <button type="button" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border: 0; border-bottom: 1px solid #E1E4E9; background: transparent; color: #16181D; font: inherit; font-size: 16px; font-weight: 500; cursor: pointer;">Valoda<span style="display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 400; color: #656A73;">Automātiski (LV + EN)<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span></button>
+      <button type="button" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border: 0; border-bottom: 1px solid #E1E4E9; background: transparent; color: #16181D; font: inherit; font-size: 16px; font-weight: 500; cursor: pointer;">Fragmenta ilgums<span style="display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 400; color: #656A73;">60 s<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span></button>
+      <button type="button" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border: 0; background: transparent; color: #16181D; font: inherit; font-size: 16px; font-weight: 500; cursor: pointer;">Audio kvalitāte<span style="display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 400; color: #656A73;">Standarta<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></span></button>
+    </div>
+  </div>
+
+  <div class="la-rise" style="animation-delay: .24s; display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 13px; font-weight: 600; color: #656A73; padding: 0 2px;">Lietojums šomēnes</div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+      <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E1E4E9;"><div style="font-family: 'Newsreader', Georgia, serif; font-size: 26px; line-height: 1;">4</div><div style="font-size: 12px; color: #656A73;">min ierakstīts</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E1E4E9;"><div style="font-family: 'Newsreader', Georgia, serif; font-size: 26px; line-height: 1;">75.7k</div><div style="font-size: 12px; color: #656A73;">AI tokeni</div></div>
+      <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E1E4E9;"><div style="font-family: 'Newsreader', Georgia, serif; font-size: 26px; line-height: 1; color: #A8661A;">€0.01</div><div style="font-size: 12px; color: #656A73;">sava atslēga</div></div>
+    </div>
+  </div>
+
+  <div class="la-rise" style="animation-delay: .30s; display: flex; flex-direction: column; gap: 8px;">
+    <div style="font-size: 13px; font-weight: 600; color: #656A73; padding: 0 2px;">Krātuve un privātums</div>
+    <div style="display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 18px; background: #FFFFFF; border: 1px solid #E1E4E9;">
+      <div style="display: flex; align-items: center; justify-content: space-between;"><div style="font-size: 16px; font-weight: 500;">Audio šajā ierīcē</div><div style="font-size: 15px; color: #656A73;">5.6 MB</div></div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="font-size: 13px; color: #656A73; line-height: 1.4;">Cik ilgi glabāt audio pēc apstrādes. Transkripti un kopsavilkumi paliek vienmēr.</div>
+        <div style="display: flex; height: 40px; padding: 3px; border-radius: 12px; background: #EAECF0;" role="radiogroup">
+          <button type="button" style="flex: 1 1 0; border: 0; border-radius: 9px; background: transparent; color: #656A73; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;">7 d.</button>
+          <button type="button" style="flex: 1 1 0; border: 0; border-radius: 9px; background: transparent; color: #656A73; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;">30 d.</button>
+          <button type="button" style="flex: 1 1 0; border: 0; border-radius: 9px; background: transparent; color: #656A73; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;">90 d.</button>
+          <button type="button" aria-checked="true" role="radio" style="flex: 1 1 0; border: 0; border-radius: 9px; background: #FFFFFF; color: #16181D; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 6px rgba(22,24,29,0.10);">Vienmēr</button>
+        </div>
+      </div>
+    </div>
+    <button type="button" style="height: 48px; margin-top: 4px; border: 0; border-radius: 14px; background: transparent; color: #C4372A; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;">Dzēst visus ierakstus, transkriptus un kopsavilkumus</button>
+  </div>
+
+  <nav style="position: absolute; left: 16px; right: 16px; bottom: 30px; display: flex; align-items: center; gap: 12px;">
+    <div style="flex-grow: 1; display: flex; height: 64px; box-sizing: border-box; padding: 6px; background: rgba(255,255,255,0.92); border: 1px solid #E1E4E9; border-radius: 32px; box-shadow: 0 12px 32px rgba(22,24,29,0.12); backdrop-filter: blur(16px);">
+      <a href="HomeL.dc.html" style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 26px; color: #656A73; font-size: 11px; font-weight: 500;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>Ieraksti</a>
+      <a href="ContextsL.dc.html" style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 26px; color: #656A73; font-size: 11px; font-weight: 500;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/></svg>Konteksti</a>
+      <a href="SettingsL.dc.html" aria-current="page" style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 26px; background: #16181D; color: #FFFFFF; font-size: 11px; font-weight: 600;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E9A24A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/></svg>Iestatījumi</a>
+    </div>
+    <a href="RecordingL.dc.html" aria-label="Sākt ierakstu" style="width: 64px; height: 64px; flex-shrink: 0; border-radius: 32px; background: #E0432F; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 32px rgba(224,67,47,0.30);"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1280}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

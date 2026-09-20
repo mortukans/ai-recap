@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<title>Ieraksti (gaišs)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;color:#16181D;font-family:'Hanken Grotesk','Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#16181D;text-decoration:none}a:hover{color:#A8661A}
+input::placeholder{color:#8A8F98}
+@keyframes la-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.la-rise{animation:la-rise .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes la-shimmer{from{background-position:-160px 0}to{background-position:160px 0}}
+.la-shimmer{background:linear-gradient(90deg,#E9A24A 0%,#F6CE8E 50%,#E9A24A 100%);background-size:160px 100%;animation:la-shimmer 1.6s linear infinite}
+@keyframes la-ring{0%{transform:scale(1);opacity:.45}100%{transform:scale(1.6);opacity:0}}
+.la-ring{animation:la-ring 2.2s ease-out infinite}
+@keyframes la-bar{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+.la-bar{transform-origin:center;animation:la-bar 1.2s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; box-sizing: border-box; padding: 62px 20px 0; display: flex; flex-direction: column; gap: 20px; background: #F4F5F7; overflow: hidden;">
+
+  <div class="la-rise" style="display: flex; align-items: flex-end; justify-content: space-between;">
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 13px; color: #656A73;">Svētdiena, 20. septembris</div>
+      <h1 style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 40px; line-height: 1; letter-spacing: -0.02em;">Ieraksti</h1>
+    </div>
+    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-bottom: 4px;">
+      <div style="font-family: 'Newsreader', Georgia, serif; font-size: 24px; line-height: 1; color: #A8661A;">4 min</div>
+      <div style="font-size: 12px; color: #656A73;">ierakstīts šomēnes</div>
+    </div>
+  </div>
+
+  <label class="la-rise" style="animation-delay: .06s; display: flex; align-items: center; gap: 10px; height: 46px; padding: 0 14px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E1E4E9;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#656A73" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>
+    <input type="search" placeholder="Meklēt ierakstos un kopsavilkumos" style="flex-grow: 1; border: 0; background: transparent; color: #16181D; font: inherit; font-size: 15px; outline: none;">
+  </label>
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div class="la-rise" style="animation-delay: .12s; font-size: 13px; font-weight: 600; color: #656A73; padding: 0 2px;">Šodien</div>
+
+    <a href="DetailL.dc.html" class="la-rise" style="animation-delay: .18s; display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; background: #FFFFFF; border: 1px solid #E1E4E9; box-shadow: 0 8px 24px rgba(22,24,29,0.06);">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; color: #A8661A;">
+          <span style="display: flex; align-items: center; gap: 2px; height: 12px;" aria-hidden="true"><span class="la-bar" style="animation-delay:0s; width: 3px; height: 12px; border-radius: 2px; background: #E9A24A; display: inline-block;"></span><span class="la-bar" style="animation-delay:.2s; width: 3px; height: 12px; border-radius: 2px; background: #E9A24A; display: inline-block;"></span><span class="la-bar" style="animation-delay:.4s; width: 3px; height: 12px; border-radius: 2px; background: #E9A24A; display: inline-block;"></span></span>Transkribē · 38%</div>
+        <div style="font-size: 13px; color: #656A73;">14:32</div>
+      </div>
+      <div style="font-size: 17px; font-weight: 500; line-height: 1.3;">Capital – IT: PIM sinhronizācija ar Sales7</div>
+      <div style="height: 3px; border-radius: 2px; background: #E1E4E9; overflow: hidden;"><div class="la-shimmer" style="width: 38%; height: 3px; border-radius: 2px;"></div></div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #656A73;"><span style="font-weight: 600; color: #16181D;">38 min</span><span>Work Meeting</span></div>
+    </a>
+
+    <a href="DetailL.dc.html" class="la-rise" style="animation-delay: .24s; display: flex; flex-direction: column; gap: 6px; padding: 16px 4px 14px; border-bottom: 1px solid #E1E4E9;">
+      <div style="font-size: 17px; font-weight: 500; line-height: 1.3;">Vajadzētu atcerēties. Tev vajadzētu atcerēties…</div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #656A73;"><span style="font-weight: 600; color: #16181D;">16 s</span><span>Personal Voice Note</span><span style="margin-left: auto;">00:41</span></div>
+    </a>
+
+    <a href="DetailL.dc.html" class="la-rise" style="animation-delay: .30s; display: flex; flex-direction: column; gap: 6px; padding: 14px 4px; border-bottom: 1px solid #E1E4E9;">
+      <div style="font-size: 17px; font-weight: 500; line-height: 1.3;">On my shopping list, I need to…</div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #656A73;"><span style="font-weight: 600; color: #16181D;">25 s</span><span>Personal Voice Note</span><span style="margin-left: auto;">00:39</span></div>
+    </a>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div class="la-rise" style="animation-delay: .36s; font-size: 13px; font-weight: 600; color: #656A73; padding: 0 2px;">Vakar</div>
+    <a href="DetailL.dc.html" class="la-rise" style="animation-delay: .42s; display: flex; flex-direction: column; gap: 6px; padding: 8px 4px 14px; border-bottom: 1px solid #E1E4E9;">
+      <div style="font-size: 17px; font-weight: 500; line-height: 1.3;">Piegādātāja līguma pārskats – nosacījumi un termiņi</div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #656A73;"><span style="font-weight: 600; color: #16181D;">24 min</span><span>Sales Call</span><span style="margin-left: auto;">16:05</span></div>
+    </a>
+    <a href="DetailL.dc.html" class="la-rise" style="animation-delay: .48s; display: flex; flex-direction: column; gap: 6px; padding: 14px 4px; border-bottom: 1px solid #E1E4E9;">
+      <div style="font-size: 17px; font-weight: 500; line-height: 1.3;">Ideja: automātiski marķēt ierakstus pēc kalendāra</div>
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #656A73;"><span style="font-weight: 600; color: #16181D;">1 min</span><span>Personal Voice Note</span><span style="margin-left: auto;">09:12</span></div>
+    </a>
+  </div>
+
+  <nav style="position: absolute; left: 16px; right: 16px; bottom: 30px; display: flex; align-items: center; gap: 12px;">
+    <div style="flex-grow: 1; display: flex; height: 64px; box-sizing: border-box; padding: 6px; background: rgba(255,255,255,0.92); border: 1px solid #E1E4E9; border-radius: 32px; box-shadow: 0 12px 32px rgba(22,24,29,0.12); backdrop-filter: blur(16px);">
+      <a href="HomeL.dc.html" aria-current="page" style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 26px; background: #16181D; color: #FFFFFF; font-size: 11px; font-weight: 600;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#E9A24A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>Ieraksti</a>
+      <a href="ContextsL.dc.html" style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 26px; color: #656A73; font-size: 11px; font-weight: 500;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/></svg>Konteksti</a>
+      <a href="SettingsL.dc.html" style="flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border-radius: 26px; color: #656A73; font-size: 11px; font-weight: 500;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/></svg>Iestatījumi</a>
+    </div>
+    <a href="RecordingL.dc.html" aria-label="Sākt ierakstu" style="position: relative; width: 64px; height: 64px; flex-shrink: 0; border-radius: 32px; background: #E0432F; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 32px rgba(224,67,47,0.30);">
+      <span class="la-ring" style="position: absolute; inset: 0; border-radius: 32px; border: 2px solid #E0432F;" aria-hidden="true"></span>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

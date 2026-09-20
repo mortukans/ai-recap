@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<title>Ieraksta (gaišs)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;color:#16181D;font-family:'Hanken Grotesk','Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#16181D;text-decoration:none}a:hover{color:#A8661A}
+@keyframes rec-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.rec-dot{animation:rec-pulse 1.6s ease-in-out infinite}
+@keyframes la-wave{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+.la-wave{transform-origin:center;animation:la-wave 1.1s ease-in-out infinite}
+@keyframes la-halo{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.08);opacity:1}}
+.la-halo{animation:la-halo 3s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; box-sizing: border-box; padding: 62px 20px 34px; display: flex; flex-direction: column; background: #F4F5F7; overflow: hidden;">
+
+  <div class="la-halo" style="position: absolute; left: 35px; top: 300px; width: 320px; height: 320px; border-radius: 160px; background: radial-gradient(circle, rgba(233,162,74,0.22) 0%, rgba(233,162,74,0) 70%);" aria-hidden="true"></div>
+
+  <div style="position: relative; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #E0432F;"><span class="rec-dot" style="width: 8px; height: 8px; border-radius: 4px; background: #E0432F; display: inline-block;"></span>Ieraksta</div>
+    <button type="button" style="display: flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 18px; background: #FBEFDC; border: 0; color: #A8661A; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">Work Meeting<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+  </div>
+
+  <div style="position: relative; flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;">
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+      <div style="font-family: 'Newsreader', Georgia, serif; font-weight: 300; font-size: 104px; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: #16181D;">04:12</div>
+      <div style="font-size: 13px; color: #656A73;">no 15 min · audio tiek saglabāts nepārtraukti</div>
+    </div>
+
+    <div style="width: 350px; height: 120px; display: flex; align-items: center; justify-content: center; gap: 4px;" aria-hidden="true">
+      <sc-for list="{{bars}}" as="b" hint-placeholder-count="44">
+        <div class="la-wave" style="width: 4px; border-radius: 2px; background: {{b.c}}; height: {{b.h}}px; animation-delay: {{b.d}}s;"></div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; font-size: 13px; color: #656A73;">
+      <span>4 fragmenti nosūtīti</span>
+      <span style="width: 4px; height: 4px; border-radius: 2px; background: #C9CDD4; display: inline-block;"></span>
+      <span>LV + EN</span>
+    </div>
+  </div>
+
+  <div style="position: relative; display: flex; gap: 12px;">
+    <button type="button" style="flex: 1 1 0; height: 64px; border-radius: 32px; background: #FFFFFF; border: 1px solid #E1E4E9; color: #16181D; font: inherit; font-size: 17px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg>Pauzēt</button>
+    <a href="DetailL.dc.html" style="flex: 1.4 1 0; height: 64px; border-radius: 32px; background: #16181D; color: #FFFFFF; font-size: 17px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 12px 32px rgba(22,24,29,0.20);"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg>Pabeigt</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const hs = [8,14,22,36,54,72,88,64,40,26,18,30,48,70,96,110,84,58,34,20,14,24,42,66,90,104,78,52,30,16,10,20,38,60,82,96,70,46,28,14,8,12,18,10];
+    const bars = hs.map((h, i) => ({ h, c: i < 33 ? '#E9A24A' : '#DCC6A2', d: ((i * 7) % 11) / 10 }));
+    return { bars };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-09-20T00:50:00Z" },
+  "title": "AI Recap — Premium Redesign",
+  "launch": { "view": "canvas", "page": "light" },
+  "pages": [
+    { "id": "dark", "name": "v1 — Tumšā (saglabāta)" },
+    { "id": "light", "name": "v2 — Gaišā + animācijas" }
+  ],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1200, "h": 760, "title": "Zīmols — zīme, ikona, krāsas, tipogrāfija", "page": "dark" },
+    "Home.dc.html": { "x": 0, "y": 1180, "w": 390, "h": 844, "title": "Ieraksti", "is_interactive": true, "page": "dark" },
+    "Recording.dc.html": { "x": 470, "y": 1180, "w": 390, "h": 844, "title": "Ieraksta", "is_interactive": true, "page": "dark" },
+    "Detail.dc.html": { "x": 940, "y": 1180, "w": 390, "h": 844, "title": "Ieraksts — kopsavilkums", "is_interactive": true, "page": "dark" },
+    "Transcript.dc.html": { "x": 1410, "y": 1180, "w": 390, "h": 844, "title": "Ieraksts — transkripts", "is_interactive": true, "page": "dark" },
+    "Contexts.dc.html": { "x": 1880, "y": 1180, "w": 390, "h": 844, "title": "Konteksti", "is_interactive": true, "page": "dark" },
+    "NewContext.dc.html": { "x": 2350, "y": 1180, "w": 390, "h": 844, "title": "Jauns konteksts", "is_interactive": true, "page": "dark" },
+    "Settings.dc.html": { "x": 2820, "y": 1180, "w": 390, "h": 1280, "title": "Iestatījumi (pilns ritinājums)", "is_interactive": true, "page": "dark" },
+    "WatchHome.dc.html": { "x": 0, "y": 2880, "w": 416, "h": 496, "title": "Watch — sākums", "is_interactive": true, "page": "dark" },
+    "WatchRecording.dc.html": { "x": 496, "y": 2880, "w": 416, "h": 496, "title": "Watch — ieraksta", "is_interactive": true, "page": "dark" },
+    "WatchSaved.dc.html": { "x": 992, "y": 2880, "w": 416, "h": 496, "title": "Watch — saglabāts", "is_interactive": true, "page": "dark" },
+
+    "BrandL.dc.html": { "x": 0, "y": 0, "w": 1200, "h": 760, "title": "Zīmols (gaišs) — krāsas, kustība", "is_interactive": true, "page": "light" },
+    "HomeL.dc.html": { "x": 0, "y": 1180, "w": 390, "h": 844, "title": "Ieraksti", "is_interactive": true, "page": "light" },
+    "RecordingL.dc.html": { "x": 470, "y": 1180, "w": 390, "h": 844, "title": "Ieraksta", "is_interactive": true, "page": "light" },
+    "DetailL.dc.html": { "x": 940, "y": 1180, "w": 390, "h": 844, "title": "Ieraksts — kopsavilkums", "is_interactive": true, "page": "light" },
+    "TranscriptL.dc.html": { "x": 1410, "y": 1180, "w": 390, "h": 844, "title": "Ieraksts — transkripts", "is_interactive": true, "page": "light" },
+    "ContextsL.dc.html": { "x": 1880, "y": 1180, "w": 390, "h": 844, "title": "Konteksti", "is_interactive": true, "page": "light" },
+    "NewContextL.dc.html": { "x": 2350, "y": 1180, "w": 390, "h": 844, "title": "Jauns konteksts", "is_interactive": true, "page": "light" },
+    "SettingsL.dc.html": { "x": 2820, "y": 1180, "w": 390, "h": 1280, "title": "Iestatījumi (pilns ritinājums)", "is_interactive": true, "page": "light" },
+    "WatchHomeL.dc.html": { "x": 0, "y": 2880, "w": 416, "h": 496, "title": "Watch — sākums", "is_interactive": true, "page": "light" },
+    "WatchRecordingL.dc.html": { "x": 496, "y": 2880, "w": 416, "h": 496, "title": "Watch — ieraksta", "is_interactive": true, "page": "light" },
+    "WatchSavedL.dc.html": { "x": 992, "y": 2880, "w": 416, "h": 496, "title": "Watch — saglabāts", "is_interactive": true, "page": "light" }
+  },
+  "order": [
+    "Main.dc.html", "Home.dc.html", "Recording.dc.html", "Detail.dc.html", "Transcript.dc.html",
+    "Contexts.dc.html", "NewContext.dc.html", "Settings.dc.html",
+    "WatchHome.dc.html", "WatchRecording.dc.html", "WatchSaved.dc.html",
+    "BrandL.dc.html", "HomeL.dc.html", "RecordingL.dc.html", "DetailL.dc.html", "TranscriptL.dc.html",
+    "ContextsL.dc.html", "NewContextL.dc.html", "SettingsL.dc.html",
+    "WatchHomeL.dc.html", "WatchRecordingL.dc.html", "WatchSavedL.dc.html"
+  ],
+  "notes": {
+    "brand": { "x": 0, "y": -300, "text": "Zīmols", "kind": "title1", "maxW": 1200, "page": "dark" },
+    "iphone": { "x": 0, "y": 900, "text": "iPhone", "kind": "title1", "maxW": 3210, "page": "dark" },
+    "watch": { "x": 0, "y": 2600, "text": "Apple Watch", "kind": "title1", "maxW": 1408, "page": "dark" },
+    "brandL": { "x": 0, "y": -300, "text": "Zīmols — gaišā versija", "kind": "title1", "maxW": 1200, "page": "light" },
+    "iphoneL": { "x": 0, "y": 900, "text": "iPhone — spied Play, lai redzētu kustību", "kind": "title1", "maxW": 3210, "page": "light" },
+    "watchL": { "x": 0, "y": 2600, "text": "Apple Watch", "kind": "title1", "maxW": 1408, "page": "light" }
+  },
+  "designSystems": []
+}

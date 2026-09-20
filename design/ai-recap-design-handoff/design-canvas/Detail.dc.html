@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<title>Ieraksts – kopsavilkums</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#15171B;color:#F1EDE6;font-family:'Hanken Grotesk','Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#F1EDE6;text-decoration:none}a:hover{color:#E9A24A}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; box-sizing: border-box; padding: 58px 20px 0; display: flex; flex-direction: column; gap: 18px; background: #15171B; overflow: hidden;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <a href="Home.dc.html" aria-label="Atpakaļ" style="width: 44px; height: 44px; margin-left: -10px; border-radius: 22px; display: flex; align-items: center; justify-content: center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <div style="display: flex; gap: 4px;">
+      <button type="button" aria-label="Eksportēt .md" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: transparent; color: #F1EDE6; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7h14v-7"/></svg></button>
+      <button type="button" aria-label="Vairāk" style="width: 44px; height: 44px; margin-right: -10px; border-radius: 22px; border: 0; background: transparent; color: #F1EDE6; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px;">
+    <h1 style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 30px; line-height: 1.12; letter-spacing: -0.015em; text-wrap: pretty;">Capital – IT: PIM sinhronizācija ar Sales7</h1>
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #A6A29B;">
+      <span>38 min</span><span style="width: 3px; height: 3px; border-radius: 2px; background: #2E333A; display: inline-block;"></span><span>Šodien 14:32</span><span style="width: 3px; height: 3px; border-radius: 2px; background: #2E333A; display: inline-block;"></span><span>2 runātāji</span>
+      <span style="margin-left: auto; padding: 4px 10px; border-radius: 12px; background: #2A2418; color: #E9A24A; font-weight: 600; font-size: 12px;">Work Meeting</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 18px; background: #1D2025; border: 1px solid #2E333A;">
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <button type="button" aria-label="Atskaņot" style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 22px; border: 0; background: #F1EDE6; color: #15171B; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button>
+      <div style="flex-grow: 1; height: 44px; display: flex; align-items: center; gap: 3px;" aria-hidden="true">
+        <sc-for list="{{wave}}" as="w" hint-placeholder-count="52">
+          <div style="width: 3px; border-radius: 2px; height: {{w.h}}px; background: {{w.c}};"></div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #A6A29B; font-variant-numeric: tabular-nums;"><span style="color: #F1EDE6; font-weight: 600;">12:04</span><span>1×</span><span>38:12</span></div>
+  </div>
+
+  <div style="display: flex; height: 40px; padding: 3px; border-radius: 12px; background: #1D2025; border: 1px solid #2E333A;" role="tablist">
+    <button type="button" role="tab" aria-selected="true" style="flex: 1 1 0; border: 0; border-radius: 9px; background: #2E333A; color: #F1EDE6; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">Kopsavilkums</button>
+    <a href="Transcript.dc.html" role="tab" style="flex: 1 1 0; display: flex; align-items: center; justify-content: center; border-radius: 9px; color: #A6A29B; font-size: 14px; font-weight: 500;">Transkripts</a>
+    <button type="button" role="tab" style="flex: 1 1 0; border: 0; border-radius: 9px; background: transparent; color: #A6A29B; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;">Jautāt AI</button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 18px; overflow: hidden;">
+    <p style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-size: 20px; line-height: 1.4; color: #F1EDE6; text-wrap: pretty;">Komanda pārskatīja PIM un Sales7 sinhronizācijas kļūdas un vienojās par labojumu līdz piektdienai. Atvērts jautājums — vai cenas eksportēt no PIM vai atstāt ERP.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 13px; font-weight: 600; color: #A6A29B;">Lēmumi</div>
+      <div style="display: flex; gap: 12px; font-size: 15px; line-height: 1.4;"><span style="width: 6px; height: 6px; margin-top: 7px; flex-shrink: 0; border-radius: 3px; background: #E9A24A; display: inline-block;"></span>Produkta apraksti tiek sinhronizēti tikai no PIM uz Sales7, ne otrādi.</div>
+      <div style="display: flex; gap: 12px; font-size: 15px; line-height: 1.4;"><span style="width: 6px; height: 6px; margin-top: 7px; flex-shrink: 0; border-radius: 3px; background: #E9A24A; display: inline-block;"></span>Nakts sinhronizācija pārcelta uz 03:00, lai nesakristu ar ERP dublēšanu.</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="font-size: 13px; font-weight: 600; color: #A6A29B;">Uzdevumi</div>
+      <label style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 14px; background: #1D2025; border: 1px solid #2E333A; font-size: 15px; line-height: 1.35;"><input type="checkbox" style="width: 20px; height: 20px; margin: 1px 0 0; accent-color: #E9A24A;"><span>Salabot SKU dublikātu kļūdu importā<span style="display: block; font-size: 12px; color: #A6A29B; margin-top: 2px;">Mārtiņš · līdz piektdienai</span></span></label>
+      <label style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: 14px; background: #1D2025; border: 1px solid #2E333A; font-size: 15px; line-height: 1.35;"><input type="checkbox" style="width: 20px; height: 20px; margin: 1px 0 0; accent-color: #E9A24A;"><span>Noskaidrot ar pārdošanu, kur dzīvo cenas<span style="display: block; font-size: 12px; color: #A6A29B; margin-top: 2px;">Runātājs 2 · nākamā sanāksme</span></span></label>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(180deg, rgba(21,23,27,0) 0%, #15171B 55%); display: flex; align-items: flex-end; justify-content: center; padding-bottom: 34px; box-sizing: border-box;">
+    <button type="button" style="height: 48px; padding: 0 20px; border-radius: 24px; border: 1px solid #2E333A; background: rgba(29,32,37,0.96); color: #F1EDE6; font: inherit; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 12px 32px rgba(0,0,0,0.45);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#E9A24A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg>Pārģenerēt ar piezīmēm</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const hs = [6,10,16,24,30,22,14,10,18,28,36,30,20,12,8,14,22,32,38,28,18,10,6,12,20,30,34,24,16,10,8,14,24,32,26,18,12,8,10,18,26,30,22,14,8,6,12,18,14,10,6,4];
+    const played = Math.round(hs.length * 12.07 / 38.2);
+    const wave = hs.map((h, i) => ({ h, c: i < played ? '#E9A24A' : '#3A3F47' }));
+    return { wave };
+  }
+}
+</script>
+</body>
+</html>

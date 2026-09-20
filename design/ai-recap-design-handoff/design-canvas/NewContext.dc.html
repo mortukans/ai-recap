@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<title>Jauns konteksts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#15171B;color:#F1EDE6;font-family:'Hanken Grotesk','Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#F1EDE6;text-decoration:none}a:hover{color:#E9A24A}
+input::placeholder,textarea::placeholder{color:#7F7B73}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; box-sizing: border-box; padding: 58px 20px 0; display: flex; flex-direction: column; gap: 22px; background: #15171B; overflow: hidden;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <a href="Contexts.dc.html" style="height: 44px; margin-left: -6px; padding: 0 6px; display: flex; align-items: center; gap: 2px; color: #A6A29B; font-size: 15px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Atcelt</a>
+    <a href="Contexts.dc.html" style="height: 40px; padding: 0 18px; border-radius: 20px; background: #F1EDE6; color: #15171B; font-size: 15px; font-weight: 600; display: flex; align-items: center;">Saglabāt</a>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <h1 style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;">Jauns konteksts</h1>
+    <p style="margin: 0; font-size: 14px; line-height: 1.45; color: #A6A29B;">Konteksts stāsta AI, kas ir jūsu sanāksmes — terminus, cilvēkus un to, kā rakstīt kopsavilkumu.</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <label style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; font-weight: 600; color: #A6A29B;">Nosaukums</span>
+      <input type="text" value="Capital – IT" style="height: 50px; box-sizing: border-box; padding: 0 16px; border-radius: 14px; background: #1D2025; border: 1px solid #E9A24A; color: #F1EDE6; font: inherit; font-size: 17px; outline: none;">
+    </label>
+
+    <label style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; font-weight: 600; color: #A6A29B;">Kādām sanāksmēm tas paredzēts</span>
+      <input type="text" placeholder="piem., iknedēļas IT sinhronizācija" style="height: 50px; box-sizing: border-box; padding: 0 16px; border-radius: 14px; background: #1D2025; border: 1px solid #2E333A; color: #F1EDE6; font: inherit; font-size: 17px; outline: none;">
+    </label>
+
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;"><label for="vardnica" style="font-size: 13px; font-weight: 600; color: #A6A29B;">Vārdnīca</label><span style="font-size: 12px; color: #A6A29B;">viens termins rindā</span></div>
+      <div style="display: flex; flex-direction: column; border-radius: 14px; background: #1D2025; border: 1px solid #2E333A; overflow: hidden;">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #2E333A; font-size: 15px;"><span style="font-weight: 600; color: #E9A24A; min-width: 56px;">Sales7</span><span style="color: #A6A29B;">iekšējā ERP</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #2E333A; font-size: 15px;"><span style="font-weight: 600; color: #E9A24A; min-width: 56px;">PIM</span><span style="color: #A6A29B;">produktu informācijas pārvaldība</span></div>
+        <textarea id="vardnica" rows="1" placeholder="Termins = skaidrojums" style="padding: 12px 16px; border: 0; background: transparent; color: #F1EDE6; font: inherit; font-size: 15px; resize: none; outline: none;"></textarea>
+      </div>
+    </div>
+
+    <label style="display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; font-weight: 600; color: #A6A29B;">Kā rakstīt kopsavilkumu</span>
+      <textarea rows="4" placeholder="piem., vienmēr izcel lēmumus un uzdevumus ar atbildīgo; raksti latviski, īsi" style="box-sizing: border-box; padding: 14px 16px; border-radius: 14px; background: #1D2025; border: 1px solid #2E333A; color: #F1EDE6; font: inherit; font-size: 16px; line-height: 1.45; resize: none; outline: none;"></textarea>
+    </label>
+  </div>
+
+  <div style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #1F1B14;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E9A24A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+    <div style="font-size: 13px; line-height: 1.45; color: #C9C4BB;">Vārdnīca palīdz arī transkripcijai — Sales7 vairs netiks pierakstīts kā „sales seven".</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

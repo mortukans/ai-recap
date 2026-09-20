@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<title>Jauns konteksts (gaišs)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;color:#16181D;font-family:'Hanken Grotesk','Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#16181D;text-decoration:none}a:hover{color:#A8661A}
+input::placeholder,textarea::placeholder{color:#8A8F98}
+@keyframes la-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.la-rise{animation:la-rise .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes la-glow{0%,100%{box-shadow:0 0 0 0 rgba(233,162,74,0)}50%{box-shadow:0 0 0 4px rgba(233,162,74,.22)}}
+.la-glow{animation:la-glow 2.4s ease-in-out infinite}
+@keyframes la-slide{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.la-slide{animation:la-slide .45s cubic-bezier(.2,.7,.2,1) both}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; box-sizing: border-box; padding: 58px 20px 0; display: flex; flex-direction: column; gap: 22px; background: #F4F5F7; overflow: hidden;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <a href="ContextsL.dc.html" style="height: 44px; margin-left: -6px; padding: 0 6px; display: flex; align-items: center; gap: 2px; color: #656A73; font-size: 15px;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>Atcelt</a>
+    <a href="ContextsL.dc.html" style="height: 40px; padding: 0 18px; border-radius: 20px; background: #16181D; color: #FFFFFF; font-size: 15px; font-weight: 600; display: flex; align-items: center;">Saglabāt</a>
+  </div>
+
+  <div class="la-rise" style="display: flex; flex-direction: column; gap: 6px;">
+    <h1 style="margin: 0; font-family: 'Newsreader', Georgia, serif; font-weight: 500; font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;">Jauns konteksts</h1>
+    <p style="margin: 0; font-size: 14px; line-height: 1.45; color: #656A73;">Konteksts stāsta AI, kas ir jūsu sanāksmes — terminus, cilvēkus un to, kā rakstīt kopsavilkumu.</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <label class="la-rise" style="animation-delay: .06s; display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; font-weight: 600; color: #656A73;">Nosaukums</span>
+      <input class="la-glow" type="text" value="Capital – IT" style="height: 50px; box-sizing: border-box; padding: 0 16px; border-radius: 14px; background: #FFFFFF; border: 1.5px solid #E9A24A; color: #16181D; font: inherit; font-size: 17px; outline: none;">
+    </label>
+
+    <label class="la-rise" style="animation-delay: .12s; display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; font-weight: 600; color: #656A73;">Kādām sanāksmēm tas paredzēts</span>
+      <input type="text" placeholder="piem., iknedēļas IT sinhronizācija" style="height: 50px; box-sizing: border-box; padding: 0 16px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E1E4E9; color: #16181D; font: inherit; font-size: 17px; outline: none;">
+    </label>
+
+    <div class="la-rise" style="animation-delay: .18s; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;"><label for="vardnica" style="font-size: 13px; font-weight: 600; color: #656A73;">Vārdnīca</label><span style="font-size: 12px; color: #656A73;">viens termins rindā</span></div>
+      <div style="display: flex; flex-direction: column; border-radius: 14px; background: #FFFFFF; border: 1px solid #E1E4E9; overflow: hidden;">
+        <div class="la-slide" style="animation-delay: .3s; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #E1E4E9; font-size: 15px;"><span style="font-weight: 600; color: #A8661A; min-width: 56px;">Sales7</span><span style="color: #656A73;">iekšējā ERP</span></div>
+        <div class="la-slide" style="animation-delay: .4s; display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #E1E4E9; font-size: 15px;"><span style="font-weight: 600; color: #A8661A; min-width: 56px;">PIM</span><span style="color: #656A73;">produktu informācijas pārvaldība</span></div>
+        <textarea id="vardnica" rows="1" placeholder="Termins = skaidrojums" style="padding: 12px 16px; border: 0; background: transparent; color: #16181D; font: inherit; font-size: 15px; resize: none; outline: none;"></textarea>
+      </div>
+    </div>
+
+    <label class="la-rise" style="animation-delay: .24s; display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; font-weight: 600; color: #656A73;">Kā rakstīt kopsavilkumu</span>
+      <textarea rows="4" placeholder="piem., vienmēr izcel lēmumus un uzdevumus ar atbildīgo; raksti latviski, īsi" style="box-sizing: border-box; padding: 14px 16px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E1E4E9; color: #16181D; font: inherit; font-size: 16px; line-height: 1.45; resize: none; outline: none;"></textarea>
+    </label>
+  </div>
+
+  <div class="la-rise" style="animation-delay: .32s; display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 14px; background: #FBEFDC;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A8661A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+    <div style="font-size: 13px; line-height: 1.45; color: #5C4A2A;">Vārdnīca palīdz arī transkripcijai — Sales7 vairs netiks pierakstīts kā „sales seven".</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,44 +1,20 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { useTranslation } from 'react-i18next';
-import { useColorScheme } from 'react-native';
 
-import { Colors } from '@/constants/theme';
+import { FloatingTabBar } from '../../design/FloatingTabBar';
+import { useTheme } from '../../design/useTheme';
 
 export default function TabsLayout() {
-  const { t } = useTranslation();
-  const scheme = useColorScheme() ?? 'light';
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-
+  const t = useTheme();
   return (
     <Tabs
+      tabBar={(props) => <FloatingTabBar state={props.state} navigation={props.navigation} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.text,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: { backgroundColor: colors.background },
+        sceneStyle: { backgroundColor: t.bg },
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t('tabs.recaps'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="mic-outline" color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="contexts"
-        options={{
-          title: t('tabs.contexts'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="albums-outline" color={color} size={size} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: t('tabs.settings'),
-          tabBarIcon: ({ color, size }) => <Ionicons name="settings-outline" color={color} size={size} />,
-        }}
-      />
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="contexts" />
+      <Tabs.Screen name="settings" />
     </Tabs>
   );
 }

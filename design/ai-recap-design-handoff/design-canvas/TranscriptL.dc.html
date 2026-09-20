@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<title>Ieraksts – transkripts (gaišs)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7;color:#16181D;font-family:'Hanken Grotesk','Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#16181D;text-decoration:none}a:hover{color:#A8661A}
+input::placeholder{color:#8A8F98}
+@keyframes la-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.la-rise{animation:la-rise .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes la-breathe{0%,100%{background-color:#FBEFDC}50%{background-color:#F6E2C0}}
+.la-breathe{animation:la-breathe 2.4s ease-in-out infinite}
+@keyframes la-eq{0%,100%{transform:scaleY(.4)}50%{transform:scaleY(1)}}
+.la-eq{transform-origin:center;animation:la-eq 1s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; box-sizing: border-box; padding: 58px 20px 0; display: flex; flex-direction: column; gap: 16px; background: #F4F5F7; overflow: hidden;">
+
+  <div style="display: flex; align-items: center; justify-content: space-between;">
+    <a href="DetailL.dc.html" aria-label="Atpakaļ" style="width: 44px; height: 44px; margin-left: -10px; border-radius: 22px; display: flex; align-items: center; justify-content: center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></a>
+    <div style="font-size: 15px; font-weight: 600; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">PIM sinhronizācija ar Sales7</div>
+    <button type="button" aria-label="Eksportēt .md" style="width: 44px; height: 44px; margin-right: -10px; border-radius: 22px; border: 0; background: transparent; color: #16181D; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7h14v-7"/></svg></button>
+  </div>
+
+  <div class="la-rise" style="display: flex; height: 40px; padding: 3px; border-radius: 12px; background: #EAECF0;" role="tablist">
+    <a href="DetailL.dc.html" role="tab" style="flex: 1 1 0; display: flex; align-items: center; justify-content: center; border-radius: 9px; color: #656A73; font-size: 14px; font-weight: 500;">Kopsavilkums</a>
+    <button type="button" role="tab" aria-selected="true" style="flex: 1 1 0; border: 0; border-radius: 9px; background: #FFFFFF; color: #16181D; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 6px rgba(22,24,29,0.10);">Transkripts</button>
+    <button type="button" role="tab" style="flex: 1 1 0; border: 0; border-radius: 9px; background: transparent; color: #656A73; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer;">Jautāt AI</button>
+  </div>
+
+  <div class="la-rise" style="animation-delay: .06s; display: flex; align-items: center; gap: 8px;">
+    <label style="flex-grow: 1; display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E1E4E9;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#656A73" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>
+      <input type="search" placeholder="Meklēt transkriptā" style="flex-grow: 1; border: 0; background: transparent; color: #16181D; font: inherit; font-size: 14px; outline: none;">
+    </label>
+    <button type="button" style="height: 40px; padding: 0 12px; border-radius: 12px; border: 1px solid #E1E4E9; background: #FFFFFF; color: #16181D; font: inherit; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #E9A24A; display: inline-block;"></span><span style="width: 8px; height: 8px; border-radius: 4px; background: #4F86B5; display: inline-block; margin-left: -10px; border: 2px solid #FFFFFF;"></span>Runātāji</button>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 20px; overflow: hidden;">
+    <div class="la-rise" style="animation-delay: .12s; display: flex; gap: 12px;">
+      <div style="width: 44px; flex-shrink: 0; font-size: 12px; color: #656A73; font-variant-numeric: tabular-nums; padding-top: 3px;">11:48</div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 12px; font-weight: 600; color: #A8661A;">Mārtiņš</div>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5;">Importā dublējas SKU, kad PIM atsūta variantu bez galvenā produkta. Tas ir tas, ko Sales7 pēc tam rāda kā divus ierakstus.</p>
+      </div>
+    </div>
+
+    <div class="la-rise" style="animation-delay: .18s; display: flex; gap: 12px;">
+      <div style="width: 44px; flex-shrink: 0; font-size: 12px; color: #16181D; font-weight: 600; font-variant-numeric: tabular-nums; padding-top: 3px; display: flex; flex-direction: column; gap: 6px;">12:04<span style="display: flex; gap: 2px; height: 10px; align-items: center;" aria-hidden="true"><span class="la-eq" style="animation-delay:0s; width: 2px; height: 10px; border-radius: 1px; background: #E9A24A; display: inline-block;"></span><span class="la-eq" style="animation-delay:.2s; width: 2px; height: 10px; border-radius: 1px; background: #E9A24A; display: inline-block;"></span><span class="la-eq" style="animation-delay:.4s; width: 2px; height: 10px; border-radius: 1px; background: #E9A24A; display: inline-block;"></span></span></div>
+      <div class="la-breathe" style="display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; margin: -12px -14px; border-radius: 14px;">
+        <div style="font-size: 12px; font-weight: 600; color: #3A6E9A;">Runātājs 2</div>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5;">Skaidrs. Bet cenas — <mark style="background: #F3D9A6; color: #16181D; border-radius: 3px; padding: 0 2px;">vai tās vispār vajadzētu eksportēt no PIM</mark>? Pārdošana šobrīd labo tās tieši ERP.</p>
+      </div>
+    </div>
+
+    <div class="la-rise" style="animation-delay: .24s; display: flex; gap: 12px;">
+      <div style="width: 44px; flex-shrink: 0; font-size: 12px; color: #656A73; font-variant-numeric: tabular-nums; padding-top: 3px;">12:31</div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 12px; font-weight: 600; color: #A8661A;">Mārtiņš</div>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5;">Labs jautājums. Atstāsim kā atvērtu un noskaidrosim līdz nākamajai sanāksmei. Tikmēr aprakstus sinhronizējam tikai vienā virzienā — no PIM uz Sales7.</p>
+      </div>
+    </div>
+
+    <div class="la-rise" style="animation-delay: .30s; display: flex; gap: 12px;">
+      <div style="width: 44px; flex-shrink: 0; font-size: 12px; color: #656A73; font-variant-numeric: tabular-nums; padding-top: 3px;">13:02</div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-size: 12px; font-weight: 600; color: #3A6E9A;">Runātājs 2</div>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5;">Un nakts sinhronizāciju pārceļam uz trijiem, lai nesakrīt ar dublēšanu.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 20px 34px; box-sizing: border-box; background: linear-gradient(180deg, rgba(244,245,247,0) 0%, #F4F5F7 40%); display: flex; align-items: center; gap: 14px;">
+    <button type="button" aria-label="Pauzēt" style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 24px; border: 0; background: #16181D; color: #FFFFFF; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 12px 32px rgba(22,24,29,0.20);"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg></button>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px;">
+      <div style="height: 3px; border-radius: 2px; background: #E1E4E9; overflow: hidden;"><div style="width: 32%; height: 3px; border-radius: 2px; background: #E9A24A;"></div></div>
+      <div style="display: flex; justify-content: space-between; font-size: 12px; color: #656A73; font-variant-numeric: tabular-nums;"><span style="color: #16181D; font-weight: 600;">12:04</span><span>38:12</span></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

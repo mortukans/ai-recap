@@ -40,7 +40,7 @@ const config: ExpoConfig = {
     package: 'lv.airecap.app',
     predictiveBackGestureEnabled: false,
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: '#15171B',
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -69,9 +69,10 @@ const config: ExpoConfig = {
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#208AEF',
+        backgroundColor: '#F4F5F7',
         image: './assets/images/splash-icon.png',
-        imageWidth: 76,
+        imageWidth: 120,
+        dark: { backgroundColor: '#15171B', image: './assets/images/splash-icon.png' },
       },
     ],
   ],
