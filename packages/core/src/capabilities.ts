@@ -24,11 +24,20 @@ export interface Entitlements {
   byokLifetime: boolean;
 }
 
+/**
+ * LAUNCH SWITCH. `true` while the TestFlight group is tuning quality: no daily cap and 90-minute
+ * recordings on every plan. Flip to `false` before the App Store submission to restore the Product
+ * Plan limits (Free 15 min / 5 per day, paid 60 min). One place, one line — see docs/LAUNCH_CHECKLIST.md.
+ */
+export const TESTING_MODE = true;
+
+const LIMITS = TESTING_MODE
+  ? { freeMinutes: 90, freePerDay: null as number | null, paidMinutes: 90 }
+  : { freeMinutes: 15, freePerDay: 5 as number | null, paidMinutes: 60 };
+
 export const FREE_CAPABILITIES: Capabilities = {
-  // TESTING: 90-minute recordings on every plan while output quality is tuned (2026-09-21).
-  maxRecordingMinutes: 90,
-  // TESTING: daily cap lifted for TestFlight testing (2026-09-19). Restore to 5 before public launch.
-  maxRecapsPerDay: null,
+  maxRecordingMinutes: LIMITS.freeMinutes,
+  maxRecapsPerDay: LIMITS.freePerDay,
   hostedTranscription: true,
   hostedLLM: true, // standard model, basic summary
   byokEnabled: false,
@@ -37,7 +46,7 @@ export const FREE_CAPABILITIES: Capabilities = {
   advancedTemplates: false,
 };
 
-export const PAID_RECORDING_MINUTES = 90;
+export const PAID_RECORDING_MINUTES = LIMITS.paidMinutes;
 
 export function resolveCapabilities(entitlements: Entitlements): Capabilities {
   let caps: Capabilities = { ...FREE_CAPABILITIES };

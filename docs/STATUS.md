@@ -9,7 +9,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
 - Live Activity in the Dynamic Island / Lock Screen; phone-call and AirPods interruption handling.
 - Apple Watch app: remote control when the phone app is open; records on the watch itself otherwise and hands the audio to the phone.
 - Free plan enforced: 15-min recordings, 5 recaps/day (server-verified when online). Paywall with Unlimited + BYOK lifetime (prices appear once Apple's Paid Apps Agreement is active).
-- **Free daily cap (5 recaps/day) temporarily LIFTED and max recording raised to 90 min on all plans for testing** (`FREE_CAPABILITIES`, `PAID_RECORDING_MINUTES`) — restore 5/day and 15/60 min before public launch.
+- **Testing limits** (no daily cap, 90-min recordings on all plans) are behind one switch: `TESTING_MODE` in `packages/core/src/capabilities.ts`. Flip to `false` for the release build (see `docs/LAUNCH_CHECKLIST.md`).
 - **Model experiments (temporary, quality tuning):** in the recap's "Pārģenerēt ar piezīmēm" sheet choose a summary and a transcription model for that recording, re-transcribe, and compare versions (recap + transcript screens keep every version with its model). Remove or hide once the best models are chosen.
 - **App language:** Settings → Lietotne → Valoda (Automātiski / Latviešu / English); watch follows the watch language.
 - Chunk-gap "audio missing" banner, usage accounting (Settings → Usage this month), watch haptics, rough speaker labels.
@@ -81,5 +81,5 @@ The visual redesign from `design/ai-recap-design-handoff/HANDOFF.md` is implemen
 
 ## Reference
 
-- Setup runbook: `docs/BACKEND_SETUP.md` · App Review prep: `docs/APP_REVIEW_NOTES.md` · Tasks: `docs/AI_RECAP_MVP_TASKS.md` · Architecture: `docs/AI_RECAP_TECHNICAL_ARCHITECTURE.md`
+- Launch: `docs/LAUNCH_CHECKLIST.md` · Store texts: `docs/APP_STORE_LISTING.md` · App Review prep: `docs/APP_REVIEW_NOTES.md` · Privacy: `docs/PRIVACY_POLICY.md` · Setup runbook: `docs/BACKEND_SETUP.md` · Tasks: `docs/AI_RECAP_MVP_TASKS.md` · Architecture: `docs/AI_RECAP_TECHNICAL_ARCHITECTURE.md`
 - App Store Connect app id `6813450802` · RevenueCat project `19269c38` · EAS project `77676bfa-…`
