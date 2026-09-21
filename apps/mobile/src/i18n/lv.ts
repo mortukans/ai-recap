@@ -191,6 +191,7 @@ export const lv: TranslationKeys = {
     topics: 'Temati',
   },
   ui: {
+    restart: 'Sākt no jauna',
     play: 'Atskaņot',
     close: 'Aizvērt',
     testOk: 'OK — pieejami {{count}} modeļi',

@@ -3,6 +3,7 @@
  * LV/EN code-switching well. The audio file is uploaded directly from the device with the user's key.
  */
 import { AiRecapError } from '@ai-recap/core';
+import { AUDIO_CHUNK_TIMEOUT_MS, timeoutSignal } from '../http';
 import { chunksRepo } from '../../db';
 import { chunkUri } from '../../features/recap/audioUri';
 import type {
@@ -53,6 +54,7 @@ export class OpenAiWhisperTranscriber implements TranscriptionProvider {
 
       const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
+        signal: timeoutSignal(AUDIO_CHUNK_TIMEOUT_MS),
         headers: { Authorization: `Bearer ${key}` },
         body: form,
       });

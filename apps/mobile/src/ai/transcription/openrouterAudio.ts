@@ -9,6 +9,7 @@ import { AiRecapError } from '@ai-recap/core';
 import { File } from 'expo-file-system';
 
 import { chunksRepo } from '../../db';
+import { AUDIO_CHUNK_TIMEOUT_MS, timeoutSignal } from '../http';
 import { chunkUri } from '../../features/recap/audioUri';
 import type {
   TranscriptionInput,
@@ -110,6 +111,7 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
 
       const res = await fetch(`${BASE_URL}/chat/completions`, {
         method: 'POST',
+        signal: timeoutSignal(AUDIO_CHUNK_TIMEOUT_MS),
         headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', ...ATTRIBUTION },
         body: JSON.stringify({
           model,

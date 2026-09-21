@@ -189,6 +189,7 @@ export const en = {
     topics: 'Topics',
   },
   ui: {
+    restart: 'Restart',
     play: 'Play',
     close: 'Close',
     testOk: 'OK — {{count}} models available',

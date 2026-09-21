@@ -25,6 +25,8 @@ import { newId } from '../lib/ids';
 import { getSummaryModel, getRecapModels } from '../lib/prefs';
 import { withRetry } from './backoff';
 
+const PASS_DEADLINE_MS = 25 * 60_000;
+
 export class ProcessingCoordinator {
   private queue: string[] = [];
   private processing = false;
@@ -90,6 +92,23 @@ export class ProcessingCoordinator {
     await this.enqueue(recapId);
   }
 
+  /**
+   * User-initiated restart of a recap that looks stuck while "busy": rewind to the last resting state
+   * (recorded, or transcribed when a transcript exists) and put it at the front of the queue.
+   */
+  async restart(recapId: string): Promise<void> {
+    const recap = await recapsRepo.getRecap(recapId);
+    if (!recap || recap.status === 'recording') return;
+    const hasTranscript = (await segmentsRepo.listSegments(recapId)).length > 0;
+    const target: Recap['status'] = hasTranscript && ['summarizing', 'transcribed', 'summaryFailed', 'ready'].includes(recap.status) ? 'transcribed' : 'recorded';
+    this.lastErrors.delete(recapId);
+    await recapsRepo.updateRecapStatus(recapId, target);
+    this.queue = this.queue.filter((q) => q !== recapId);
+    this.queue.unshift(recapId);
+    this.notify();
+    void this.pump();
+  }
+
   /** On launch: reset recaps orphaned mid-processing by a crash, then enqueue anything resumable. */
   async recover(): Promise<void> {
     // Recording interrupted by a crash: rebuild from the chunks already persisted on disk (§5.5).
@@ -120,11 +139,34 @@ export class ProcessingCoordinator {
       while (this.queue.length > 0) {
         const id = this.queue[0];
         if (!id) break;
-        await this.processRecap(id).catch(() => undefined);
+        await this.withWatchdog(id, this.processRecap(id)).catch(() => undefined);
         this.queue.shift();
       }
     } finally {
       this.processing = false;
+    }
+  }
+
+  /**
+   * The queue is sequential, so one stalled recap would block every later one. Network calls already
+   * carry their own timeouts; this is the last line of defence: after `PASS_DEADLINE_MS` the recap is
+   * marked failed (Retry stays available) and the queue moves on.
+   */
+  private async withWatchdog(id: string, work: Promise<void>): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<'timeout'>((resolve) => {
+      timer = setTimeout(() => resolve('timeout'), PASS_DEADLINE_MS);
+    });
+    try {
+      const outcome = await Promise.race([work.then(() => 'done' as const), deadline]);
+      if (outcome === 'timeout') {
+        const recap = await recapsRepo.getRecap(id);
+        const stage = recap?.status === 'summarizing' ? 'summary' : 'transcription';
+        this.recordFailure(id, stage, new Error(`Processing exceeded ${Math.round(PASS_DEADLINE_MS / 60000)} min — stopped so other recordings can continue.`));
+        await this.setStatus(id, stage === 'summary' ? 'summaryFailed' : 'transcriptionFailed');
+      }
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
 

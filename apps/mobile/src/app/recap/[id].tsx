@@ -403,6 +403,7 @@ export default function RecapDetailScreen() {
             <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
               <ProcessingBars color={th.accent} />
               <Text style={[Type.metaStrong, { color: th.accentText, flex: 1 }]}>{t(`processing.${status}`, { defaultValue: t(`status.${status}`) })}</Text>
+              <Button label={t('ui.restart')} variant="secondary" height={36} onPress={() => id && void processingCoordinator.restart(id)} style={{ paddingHorizontal: 14 }} />
             </View>
           </Rise>
         ) : null}

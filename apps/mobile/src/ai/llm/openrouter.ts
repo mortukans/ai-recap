@@ -4,6 +4,7 @@
  * Model list is fetched dynamically (never hard-coded). See Product Plan §8.
  */
 import { AiRecapError } from '@ai-recap/core';
+import { LLM_TIMEOUT_MS, MODELS_TIMEOUT_MS, timeoutSignal } from '../http';
 import type { LLMProvider, LlmModel, LlmRequest, LlmResult, LlmStreamChunk } from '../types';
 
 const BASE_URL = 'https://openrouter.ai/api/v1';
@@ -70,7 +71,7 @@ export class OpenRouterLLMProvider implements LLMProvider {
   }
 
   async availableModels(): Promise<LlmModel[]> {
-    const res = await fetch(`${BASE_URL}/models`, { headers: await this.headers() });
+    const res = await fetch(`${BASE_URL}/models`, { headers: await this.headers(), signal: timeoutSignal(MODELS_TIMEOUT_MS) });
     if (!res.ok) {
       throw new AiRecapError({ code: 'llm/failed', message: `OpenRouter /models failed: ${res.status}` });
     }
@@ -86,6 +87,7 @@ export class OpenRouterLLMProvider implements LLMProvider {
   async generate(req: LlmRequest): Promise<LlmResult> {
     const res = await fetch(`${BASE_URL}/chat/completions`, {
       method: 'POST',
+      signal: timeoutSignal(LLM_TIMEOUT_MS),
       headers: await this.headers(),
       body: this.body(req, false),
     });
