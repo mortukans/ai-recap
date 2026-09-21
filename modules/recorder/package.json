@@ -10,7 +10,7 @@
     "react-native": "*"
   },
   "devDependencies": {
-    "expo-modules-core": "~57.0.17",
+    "expo-modules-core": "~57.0.18",
     "typescript": "~6.0.3"
   }
 }

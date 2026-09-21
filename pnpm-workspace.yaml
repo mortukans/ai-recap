@@ -12,4 +12,4 @@ minimumReleaseAgeExclude:
 # Force a single expo version across the workspace so the local native module (modules/recorder)
 # doesn't pull a duplicate expo tree (expo-doctor duplicate-native-module check).
 overrides:
-  expo: ~57.0.22
+  expo: ~57.0.24
