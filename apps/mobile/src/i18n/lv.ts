@@ -191,6 +191,9 @@ export const lv: TranslationKeys = {
     topics: 'Temati',
   },
   ui: {
+    discardTitle: 'Atmest ierakstu?',
+    discardMessage: 'Ieraksts un tā audio tiks dzēsti. To nevar atsaukt.',
+    discard: 'Atmest',
     processingNow: 'Apstrādā',
     stop: 'Apturēt',
     processingStopped: 'Apstrāde apturēta. Atver ierakstu un palaid to no jauna, vai turpini visus.',

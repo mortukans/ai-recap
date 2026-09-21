@@ -7,11 +7,11 @@ import { useKeepAwake } from 'expo-keep-awake';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { contextsRepo } from '../db';
-import { Button, Chip, Dot, LiveIndicator } from '../design/components';
+import { Button, Chip, Dot, IconButton, LiveIndicator } from '../design/components';
 import { LiveWaveform, VoiceHalo } from '../design/LiveWaveform';
 import { Layout } from '../design/tokens';
 import { Type } from '../design/typography';
@@ -27,7 +27,8 @@ export default function RecordingScreen() {
   const router = useRouter();
   const th = useTheme();
   useKeepAwake();
-  const { status, seconds, error, start, pause, resume, finish, chunkCount, contextId, setContext, level } = useRecording();
+  const { status, seconds, error, start, pause, resume, finish, cancel, chunkCount, contextId, setContext, level } = useRecording();
+  const insets = useSafeAreaInsets();
   const caps = useCapabilities();
   const limit = recordingLimitState(seconds, caps.maxRecordingMinutes);
   const autoStopped = useRef(false);
@@ -63,6 +64,19 @@ export default function RecordingScreen() {
     }
   };
 
+  const onCancel = () => {
+    Alert.alert(t('ui.discardTitle'), t('ui.discardMessage'), [
+      { text: t('ui.cancel'), style: 'cancel' },
+      {
+        text: t('ui.discard'),
+        style: 'destructive',
+        onPress: () => {
+          void cancel().then(() => router.back());
+        },
+      },
+    ]);
+  };
+
   useEffect(() => {
     registerRecordingControls({ pause, resume, finish: onFinish });
     return () => registerRecordingControls(null);
@@ -78,19 +92,20 @@ export default function RecordingScreen() {
   }, [limit.shouldStop, isActive]);
 
   return (
-    <SafeAreaView style={[styles.fill, { backgroundColor: th.bg }]}>
+    <SafeAreaView style={[styles.fill, { backgroundColor: th.bg, paddingTop: Math.max(insets.top, 20) + 8 }]} edges={['bottom']}>
       {/* Soft amber halo behind the timer. */}
       <View pointerEvents="none" style={styles.halo}>
         <VoiceHalo level={level} active={status === 'recording'} size={380} />
       </View>
 
       <View style={styles.top}>
-        <LiveIndicator label={isPaused ? t('recording.paused') : t('recording.recording')} />
+        <IconButton name="close" accessibilityLabel={t('ui.discard')} onPress={onCancel} style={{ marginLeft: -10 }} strokeWidth={2} />
         <Chip label={contextName || t('contexts.selectLabel')} chevron size="md" onPress={() => setPickerOpen(true)} />
       </View>
 
       <View style={styles.center}>
-        <View style={{ alignItems: 'center', gap: 6 }}>
+        <View style={{ alignItems: 'center', gap: 10 }}>
+          <LiveIndicator label={isPaused ? t('recording.paused') : t('recording.recording')} />
           <Text style={[Type.timer, { color: th.text }]} maxFontSizeMultiplier={1}>
             {formatTimestamp(seconds)}
           </Text>
@@ -141,7 +156,7 @@ export default function RecordingScreen() {
 const styles = StyleSheet.create({
   fill: { flex: 1, paddingHorizontal: Layout.screenPadding, paddingBottom: 14 },
   halo: { position: 'absolute', left: 0, right: 0, top: '22%', alignItems: 'center' },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12 },
+  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 28 },
   wave: { height: 120, alignItems: 'center', justifyContent: 'center' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 16 },

@@ -189,6 +189,9 @@ export const en = {
     topics: 'Topics',
   },
   ui: {
+    discardTitle: 'Discard recording?',
+    discardMessage: 'The recording and its audio will be deleted. This cannot be undone.',
+    discard: 'Discard',
     processingNow: 'Processing',
     stop: 'Stop',
     processingStopped: 'Processing stopped. Open a recording and run it again, or resume all.',

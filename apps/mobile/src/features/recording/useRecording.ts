@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { chunksRepo, recapsRepo, usageRepo } from '../../db';
 import { newId } from '../../lib/ids';
 import { getDefaultContextId, setDefaultContextId } from '../../lib/prefs';
+import { deleteRecapCompletely } from '../recap/deleteRecap';
 import { reconcileChunksFromManifest } from '../recap/manifest';
 import {
   endRecordingActivity,
@@ -192,5 +193,23 @@ export function useRecording() {
     if (recapIdRef.current) await recapsRepo.updateRecap(recapIdRef.current, { contextId: id }).catch(() => undefined);
   }, []);
 
-  return { status, seconds, error, start, pause, resume, finish, chunkCount, contextId, setContext, level };
+  /** Discard the in-progress recording: stop capture and delete the recap with its audio. */
+  const cancel = useCallback(async (): Promise<void> => {
+    const id = recapIdRef.current;
+    setStatus('finishing');
+    try {
+      await Recorder.finish().catch(() => undefined);
+      if (id) await deleteRecapCompletely(id).catch(() => undefined);
+    } finally {
+      cleanup();
+      void endRecordingActivity();
+      publishWatchState('idle', 0);
+      setStatus('idle');
+      setSeconds(0);
+      secondsRef.current = 0;
+      recapIdRef.current = null;
+    }
+  }, [cleanup]);
+
+  return { status, seconds, error, start, pause, resume, finish, cancel, chunkCount, contextId, setContext, level };
 }
