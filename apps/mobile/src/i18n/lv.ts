@@ -191,6 +191,12 @@ export const lv: TranslationKeys = {
     topics: 'Temati',
   },
   ui: {
+    processingNow: 'Apstrādā',
+    stop: 'Apturēt',
+    processingStopped: 'Apstrāde apturēta. Atver ierakstu un palaid to no jauna, vai turpini visus.',
+    resumeAll: 'Turpināt visus',
+    forceStop: 'Piespiedu apturēt apstrādi',
+    forceStopHint: 'Pārtrauc pašreizējo transkripciju vai kopsavilkumu; ieraksts paliek un to var palaist no jauna.',
     restart: 'Sākt no jauna',
     play: 'Atskaņot',
     close: 'Aizvērt',

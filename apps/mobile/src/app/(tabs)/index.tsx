@@ -37,6 +37,8 @@ export default function RecapsScreen() {
   const [query, setQuery] = useState('');
   const [monthSeconds, setMonthSeconds] = useState(0);
   const [contextNames, setContextNames] = useState<Record<string, string>>({});
+  const [currentId, setCurrentId] = useState<string | null>(processingCoordinator.currentId());
+  const [paused, setPaused] = useState(processingCoordinator.isPaused());
 
   const load = useCallback(async (q: string) => {
     try {
@@ -66,7 +68,16 @@ export default function RecapsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => processingCoordinator.onChange(() => void load(query)), [load, query]);
+  useEffect(
+    () =>
+      processingCoordinator.onChange(() => {
+        setCurrentId(processingCoordinator.currentId());
+        setPaused(processingCoordinator.isPaused());
+        void load(query);
+      }),
+    [load, query],
+  );
+  const currentTitle = rows.find((r) => r.recap.id === currentId)?.recap.title;
 
   const onDelete = useCallback(
     (recap: Recap) => {
@@ -110,6 +121,36 @@ export default function RecapsScreen() {
         <Rise index={riseIndex++}>
           <SearchField value={query} onChangeText={setQuery} placeholder={t('home.searchPlaceholder')} />
         </Rise>
+
+        {currentId ? (
+          <Rise index={riseIndex++}>
+            <View style={[styles.queueBar, { backgroundColor: th.surface, borderColor: th.line }]}>
+              <ProcessingBars color={th.accent} />
+              <View style={{ flex: 1, gap: 1 }}>
+                <Text style={[Type.captionStrong, { color: th.accentText }]}>{t('ui.processingNow')}</Text>
+                <Text style={[Type.meta, { color: th.text }]} numberOfLines={1}>
+                  {currentTitle || t('recap.untitled')}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => void processingCoordinator.forceStop()}
+                accessibilityRole="button"
+                style={[styles.stopBtn, { backgroundColor: th.surface2 }]}>
+                <View style={[styles.stopSquare, { backgroundColor: th.record }]} />
+                <Text style={[Type.buttonMini, { color: th.text }]}>{t('ui.stop')}</Text>
+              </Pressable>
+            </View>
+          </Rise>
+        ) : paused ? (
+          <Rise index={riseIndex++}>
+            <View style={[styles.queueBar, { backgroundColor: th.surface, borderColor: th.line }]}>
+              <Text style={[Type.meta, { color: th.text2, flex: 1 }]}>{t('ui.processingStopped')}</Text>
+              <Pressable onPress={() => void processingCoordinator.resumeAll()} accessibilityRole="button" style={[styles.stopBtn, { backgroundColor: th.primaryBtn }]}>
+                <Text style={[Type.buttonMini, { color: th.onPrimaryBtn }]}>{t('ui.resumeAll')}</Text>
+              </Pressable>
+            </View>
+          </Rise>
+        ) : null}
 
         {rows.length === 0 ? (
           <Rise index={riseIndex++}>
@@ -221,4 +262,7 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   row: { gap: 6, paddingVertical: 14, paddingHorizontal: 4 },
+  queueBar: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingLeft: 14, borderRadius: 14, borderWidth: 1 },
+  stopBtn: { height: 36, paddingHorizontal: 12, borderRadius: 18, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  stopSquare: { width: 10, height: 10, borderRadius: 2 },
 });

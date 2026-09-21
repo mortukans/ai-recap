@@ -38,6 +38,7 @@ import {
   setSummaryModel,
   setTranscriptionModel,
 } from '../../lib/prefs';
+import { processingCoordinator } from '../../processing/coordinator';
 import { useCapabilities } from '../../purchases/useCapabilities';
 import { clearOpenAiKey, clearOpenRouterKey, getOpenAiKey, getOpenRouterKey, setOpenAiKey, setOpenRouterKey } from '../../security/byok-store';
 
@@ -225,6 +226,15 @@ export default function SettingsScreen() {
               ]}
             />
           </Card>
+          <Group>
+            <Row
+              title={t('ui.forceStop')}
+              subtitle={t('ui.forceStopHint')}
+              onPress={() => void processingCoordinator.forceStop()}
+              right={<View style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: th.record }} />}
+              last
+            />
+          </Group>
         </Rise>
 
         <Rise index={rise++} style={{ gap: 8 }}>

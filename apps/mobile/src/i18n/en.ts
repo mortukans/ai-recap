@@ -189,6 +189,12 @@ export const en = {
     topics: 'Topics',
   },
   ui: {
+    processingNow: 'Processing',
+    stop: 'Stop',
+    processingStopped: 'Processing stopped. Open a recording and run it again, or resume all.',
+    resumeAll: 'Resume all',
+    forceStop: 'Force-stop processing',
+    forceStopHint: 'Interrupts the current transcription or recap; the recording stays and can be rerun.',
     restart: 'Restart',
     play: 'Play',
     close: 'Close',

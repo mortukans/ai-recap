@@ -87,7 +87,7 @@ export class OpenRouterLLMProvider implements LLMProvider {
   async generate(req: LlmRequest): Promise<LlmResult> {
     const res = await fetch(`${BASE_URL}/chat/completions`, {
       method: 'POST',
-      signal: timeoutSignal(LLM_TIMEOUT_MS),
+      signal: timeoutSignal(LLM_TIMEOUT_MS, req.signal),
       headers: await this.headers(),
       body: this.body(req, false),
     });

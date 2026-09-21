@@ -24,6 +24,8 @@ export interface GenerateRecapInput {
   provider: LLMProvider;
   model: string;
   extraContext?: string;
+  /** Cancels the model call when the user force-stops processing. */
+  signal?: AbortSignal;
 }
 
 /** Extract a JSON object from model output, tolerating ```json fences or surrounding prose. */
@@ -61,6 +63,7 @@ export async function generateRecap(
     messages,
     responseJsonSchema: RECAP_DOCUMENT_JSON_SCHEMA,
     temperature: 0.3,
+    signal: input.signal,
   });
 
   const doc = parseRecapDocument(extractJson(result.text));

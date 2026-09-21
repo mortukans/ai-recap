@@ -30,6 +30,10 @@ const PASS_DEADLINE_MS = 25 * 60_000;
 export class ProcessingCoordinator {
   private queue: string[] = [];
   private processing = false;
+  /** The recap being worked on right now and the controller that cancels its network calls. */
+  private current: { id: string; controller: AbortController } | null = null;
+  /** Set by forceStop(); nothing runs until the user reruns a recap or resumes. */
+  private paused = false;
   private online = true;
   private netUnsub: (() => void) | null = null;
   private listeners = new Set<() => void>();
@@ -76,8 +80,44 @@ export class ProcessingCoordinator {
   }
 
   async enqueue(recapId: string): Promise<void> {
+    this.paused = false;
     if (!this.queue.includes(recapId)) this.queue.push(recapId);
     await this.pump();
+  }
+
+  /** Id of the recap currently being processed (for the "Apstrādā…" banner), if any. */
+  currentId(): string | null {
+    return this.current?.id ?? null;
+  }
+
+  isPaused(): boolean {
+    return this.paused;
+  }
+
+  /**
+   * Force stop: abort the in-flight network call, rewind the current recap to its last resting
+   * state (so it can be rerun from its screen), drop the rest of the queue and pause. Nothing runs
+   * again until the user reruns a recap (Retry / Restart / Generate) or calls resumeAll().
+   */
+  async forceStop(): Promise<void> {
+    this.paused = true;
+    const stopped = this.current;
+    this.queue = [];
+    stopped?.controller.abort();
+    this.notify();
+  }
+
+  /** Continue processing every recap that is resting mid-pipeline. */
+  async resumeAll(): Promise<void> {
+    this.paused = false;
+    const resumable = await recapsRepo.listByStatuses(['recorded', 'waitingForNetwork', 'transcribed']);
+    for (const r of resumable) if (!this.queue.includes(r.id)) this.queue.push(r.id);
+    this.notify();
+    await this.pump();
+  }
+
+  private isAbort(e: unknown): boolean {
+    return e instanceof Error && (e.name === 'AbortError' || /aborted|stopped/i.test(e.message));
   }
 
   async retry(recapId: string): Promise<void> {
@@ -102,9 +142,11 @@ export class ProcessingCoordinator {
     const hasTranscript = (await segmentsRepo.listSegments(recapId)).length > 0;
     const target: Recap['status'] = hasTranscript && ['summarizing', 'transcribed', 'summaryFailed', 'ready'].includes(recap.status) ? 'transcribed' : 'recorded';
     this.lastErrors.delete(recapId);
+    if (this.current?.id === recapId) this.current.controller.abort(); // cancel the in-flight attempt first
     await recapsRepo.updateRecapStatus(recapId, target);
     this.queue = this.queue.filter((q) => q !== recapId);
     this.queue.unshift(recapId);
+    this.paused = false;
     this.notify();
     void this.pump();
   }
@@ -133,14 +175,22 @@ export class ProcessingCoordinator {
   }
 
   private async pump(): Promise<void> {
-    if (this.processing) return;
+    if (this.processing || this.paused) return;
     this.processing = true;
     try {
-      while (this.queue.length > 0) {
+      while (this.queue.length > 0 && !this.paused) {
         const id = this.queue[0];
         if (!id) break;
-        await this.withWatchdog(id, this.processRecap(id)).catch(() => undefined);
-        this.queue.shift();
+        const controller = new AbortController();
+        this.current = { id, controller };
+        this.notify();
+        try {
+          await this.withWatchdog(id, this.processRecap(id, controller.signal)).catch(() => undefined);
+        } finally {
+          this.current = null;
+          this.notify();
+        }
+        this.queue = this.queue.filter((q) => q !== id);
       }
     } finally {
       this.processing = false;
@@ -175,7 +225,7 @@ export class ProcessingCoordinator {
     this.notify();
   }
 
-  private async processRecap(id: string): Promise<void> {
+  private async processRecap(id: string, signal: AbortSignal): Promise<void> {
     // Advance one recap as far as it can go this pass. `guard` prevents any accidental infinite loop.
     for (let guard = 0; guard < 12; guard++) {
       const recap = await recapsRepo.getRecap(id);
@@ -193,9 +243,13 @@ export class ProcessingCoordinator {
         }
         case 'transcribing': {
           try {
-            await this.doTranscription(recap);
+            await this.doTranscription(recap, signal);
             await this.setStatus(id, 'transcribed');
           } catch (e) {
+            if (this.isAbort(e) || signal.aborted) {
+              await this.setStatus(id, 'recorded'); // force-stopped: rest, rerunnable from the recap screen
+              return;
+            }
             this.recordFailure(id, 'transcription', e);
             await this.setStatus(id, 'transcriptionFailed');
             return;
@@ -211,9 +265,13 @@ export class ProcessingCoordinator {
         }
         case 'summarizing': {
           try {
-            await this.doSummary(recap);
+            await this.doSummary(recap, signal);
             await this.setStatus(id, 'ready');
           } catch (e) {
+            if (this.isAbort(e) || signal.aborted) {
+              await this.setStatus(id, 'transcribed'); // force-stopped: rest, rerunnable from the recap screen
+              return;
+            }
             if (isAiRecapError(e) && e.code === 'llm/missing-key') {
               await this.setStatus(id, 'transcribed');
               return;
@@ -231,11 +289,11 @@ export class ProcessingCoordinator {
     }
   }
 
-  private async doTranscription(recap: Recap): Promise<void> {
+  private async doTranscription(recap: Recap, signal?: AbortSignal): Promise<void> {
     const chunks = await chunksRepo.listChunks(recap.id);
     const result = await withRetry(
-      () => this.transcriber.transcribe({ recapId: recap.id, audioUris: chunks.map((ch) => ch.relativePath) }),
-      { attempts: 3, baseMs: 10_000 },
+      () => this.transcriber.transcribe({ recapId: recap.id, audioUris: chunks.map((ch) => ch.relativePath), signal }),
+      { attempts: 3, baseMs: 10_000, shouldRetry: (e) => !this.isAbort(e) },
     );
     const segments = result.segments.map<TranscriptSegment>((s) => ({
       id: newId(),
@@ -271,7 +329,7 @@ export class ProcessingCoordinator {
       .catch(() => undefined);
   }
 
-  private async doSummary(recap: Recap): Promise<void> {
+  private async doSummary(recap: Recap, signal?: AbortSignal): Promise<void> {
     const segments = await segmentsRepo.listSegments(recap.id);
     const context =
       (await contextsRepo.getContext(recap.contextId ?? presetContextId('workMeeting'))) ?? null;
@@ -293,11 +351,12 @@ export class ProcessingCoordinator {
           provider: route.provider,
           model: route.model,
           extraContext,
+          signal,
         }),
       {
         attempts: 2,
         baseMs: 5_000,
-        shouldRetry: (e) => !(isAiRecapError(e) && e.code === 'llm/missing-key'),
+        shouldRetry: (e) => !(isAiRecapError(e) && e.code === 'llm/missing-key') && !this.isAbort(e),
       },
     );
     // Auto-name the recap from the model's title (the user can rename it any time on the recap screen).

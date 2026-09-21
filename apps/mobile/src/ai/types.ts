@@ -10,6 +10,8 @@ export interface TranscriptionInput {
   /** Local file URIs of the recap's audio chunks (or one concatenated file). */
   audioUris: string[];
   languageHint?: 'auto' | 'lv' | 'en';
+  /** Cancels in-flight network calls when the user force-stops processing. */
+  signal?: AbortSignal;
 }
 
 export interface TranscriptionResultSegment {
@@ -54,6 +56,8 @@ export interface LlmRequest {
   maxOutputTokens?: number;
   /** JSON schema for structured output; providers that support it enable strict JSON mode. */
   responseJsonSchema?: unknown;
+  /** Cancels the request when the user force-stops processing. */
+  signal?: AbortSignal;
 }
 
 export interface LlmStreamChunk {
