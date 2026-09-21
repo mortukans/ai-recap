@@ -4,7 +4,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
 
 ## Where we are
 
-**On the phone (TestFlight 0.0.1 (23) — uploaded 2026-09-22 10:14 UTC, CI run 35584977181: same features as 22 on the bumped Expo patches. Daily cap lifted for testing.)**
+**On the phone (TestFlight 0.0.1 (24) — uploaded 2026-09-22, CI run 35587918493: features of 22 on bumped, de-duplicated Expo packages (expo-doctor 21/21). Daily cap lifted for testing.)**
 - Record → chunked audio → transcribe (Latvian/English via OpenRouter, Apple on-device fallback) → structured AI recap → transcript, speakers, Ask-AI chat, notes-for-AI, search, share/export.
 - Live Activity in the Dynamic Island / Lock Screen; phone-call and AirPods interruption handling.
 - Apple Watch app: remote control when the phone app is open; records on the watch itself otherwise and hands the audio to the phone.
@@ -27,7 +27,7 @@ _Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins M
   - Trigger: `gh workflow run ios-build.yml -f profile=production -f submit=true`
 - EAS env vars (all profiles): `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_KEY`.
 
-## What to test on TestFlight 0.0.1 (23)
+## What to test on TestFlight 0.0.1 (24)
 
 1. Light and dark appearance: porcelain/ink palette, Newsreader titles, Hanken Grotesk text, brand icon and splash.
 2. Floating tab bar with the red record button; pulse ring while idle. Tap it → recording screen with halo, live waveform, context chip (tap to switch context mid-recording).
