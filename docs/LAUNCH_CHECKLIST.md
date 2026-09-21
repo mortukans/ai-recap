@@ -5,7 +5,7 @@ Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is don
 ## A. Product decisions (M)
 - [ ] Final default models (from the per-recording experiments): transcription ______ , summary ______ . → Me: set `DEFAULT_TRANSCRIPTION_MODEL` / `DEFAULT_SUMMARY_MODEL`, hosted `LLM_TIERS`, remove or hide the experiment UI.
 - [ ] Paid recording length: keep 90 min or the plan's 60? → one value in `packages/core/src/capabilities.ts` (`LIMITS.paidMinutes`).
-- [ ] Domain for privacy policy + support (e.g. airecap.lv).
+- [ ] Optional: custom domain (e.g. airecap.lv) for the GitHub Pages site; the github.io URLs work for the App Store meanwhile.
 
 ## B. Code flips before the release build (Me, 10 minutes once A is decided)
 - [ ] `TESTING_MODE = false` in `packages/core/src/capabilities.ts` (restores Free 15 min / 5 per day). Tests adapt automatically.
@@ -24,7 +24,7 @@ Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is don
 - [ ] Listing texts from `docs/APP_STORE_LISTING.md` (LV primary, EN) — M pastes, or Me via the browser session.
 - [ ] Screenshots 6.7" + 6.1" (M captures on device following the shot list; Me can frame/caption them).
 - [ ] App Privacy questionnaire — answers in `docs/APP_REVIEW_NOTES.md`.
-- [ ] Privacy policy hosted at the chosen domain — text in `docs/PRIVACY_POLICY.md` (fill controller + contact).
+- [x] Privacy policy + support page hosted on GitHub Pages: https://mortukans.github.io/ai-recap/ and https://mortukans.github.io/ai-recap/privacy.html (M: fill in controller name + support email in `docs/index.html` / `docs/privacy.html`; a custom domain can be pointed later).
 - [ ] Review notes pasted from `docs/APP_REVIEW_NOTES.md`; IAP review screenshots attached to both products; products attached to version 1.0.0.
 - [ ] Age rating, category, support URL, marketing URL.
 

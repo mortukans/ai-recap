@@ -41,5 +41,5 @@ Each product needs a screenshot of the purchase surface: the paywall (`Settings 
 - [ ] Free caps verified in `FREE_CAPABILITIES` (15 min / 5 per day)
 - [ ] App Privacy answers entered
 - [ ] Screenshots for 6.7" and 6.1" iPhones; Watch screenshots optional
-- [ ] Support URL + privacy policy URL live (domain still to be chosen by Martins; draft text in `docs/PRIVACY_POLICY.md`)
+- [x] Support URL https://mortukans.github.io/ai-recap/ · Privacy policy URL https://mortukans.github.io/ai-recap/privacy.html (placeholders for controller + email still to fill)
 - [ ] Version notes (LV + EN)
