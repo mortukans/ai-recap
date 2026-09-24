@@ -4,6 +4,7 @@
  */
 import { type EventSubscription, requireNativeModule } from 'expo-modules-core';
 import type {
+  AudioFilePart,
   RecordOptions,
   RecordResult,
   RecorderEventName,
@@ -20,6 +21,7 @@ interface NativeRecorder {
   finish(): Promise<RecordResult>;
   addMarker(label: string | null): Promise<void>;
   transcribeFile(uri: string, locale: string): Promise<string>;
+  splitAudioFile?(uri: string, maxSeconds: number): Promise<AudioFilePart[]>;
   setWatchState?(state: WatchRecorderState, startedAt: number, pausedElapsed: number, phoneActive: boolean): Promise<void>;
   setWatchLastRecap?(title: string, status: string, startedAt: number): Promise<void>;
   shareRichText?(html: string, plain: string): Promise<void>;
@@ -65,6 +67,9 @@ export const Recorder = {
   finish: () => native.finish(),
   addMarker: (label: string | null = null) => native.addMarker(label),
   transcribeFile: (uri: string, locale: string) => native.transcribeFile(uri, locale),
+  /** Split one long audio file into ≤ maxSeconds parts; [] when unsupported or not needed. */
+  splitAudioFile: (uri: string, maxSeconds: number): Promise<AudioFilePart[]> =>
+    native.splitAudioFile ? native.splitAudioFile(uri, maxSeconds) : Promise.resolve([]),
   /** Mirror recorder state to a paired Apple Watch (no-op on builds without the bridge). */
   setWatchState: (state: WatchRecorderState, startedAt: number, pausedElapsed: number, phoneActive: boolean) =>
     native.setWatchState

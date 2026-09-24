@@ -99,6 +99,15 @@ public class RecorderModule: Module {
       guard let url = URL(string: uri) else { return "" }
       return try await SpeechTranscription.transcribeFile(url: url, localeId: locale)
     }
+
+    /// Split a long audio file into ≤ maxSeconds .m4a parts next to it. Returns [] when no split is needed.
+    AsyncFunction("splitAudioFile") { (uri: String, maxSeconds: Double) -> [[String: Any]] in
+      guard let url = URL(string: uri) else { return [] }
+      let parts = try await AudioSplitter.split(url: url, maxSeconds: maxSeconds)
+      return parts.map {
+        ["uri": $0.url.absoluteString, "fileName": $0.url.lastPathComponent, "duration": $0.duration, "byteSize": $0.byteSize]
+      }
+    }
   }
 }
 

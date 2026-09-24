@@ -40,6 +40,7 @@ vi.mock('../db', () => ({
   usageRepo: { addUsage: async () => {} },
 }));
 vi.mock('../features/usage/syncUsage', () => ({ syncUsage: async () => 0 }));
+vi.mock('../features/recap/normalizeChunks', () => ({ ensureShortChunks: async () => 0 }));
 
 vi.mock('../ai', () => ({
   SmartTranscriber: class {
@@ -78,7 +79,7 @@ function seed(id: string, status: RecapStatus) {
     title: '',
     startedAt: 0,
     endedAt: null,
-    durationSeconds: 100,
+    durationSeconds: 3, // short: an empty transcript is legitimate silence in these tests
     detectedLanguages: [],
     presetId: null,
     contextId: null,
@@ -212,6 +213,37 @@ describe('ProcessingCoordinator', () => {
     await c.forceStop();
     await run; // resolves right away instead of after the backoff
     expect(h.store.get('i')?.status).toBe('recorded');
+  });
+
+  it('an empty transcript for a real recording fails visibly instead of resting at transcribed', async () => {
+    seed('k', 'recorded');
+    h.store.get('k')!.durationSeconds = 525; // 8:45 watch recording
+    const c = new ProcessingCoordinator(makeTranscriber()); // returns zero segments
+    await c.enqueue('k');
+    expect(h.store.get('k')?.status).toBe('transcriptionFailed');
+    expect(c.getLastError('k')).toMatch(/empty/i);
+  });
+
+  it('a request timeout is a failure, not a silent stop', async () => {
+    seed('l', 'recorded');
+    const timeoutTranscriber = {
+      supportsDiarization: false,
+      runsOnDevice: false,
+      transcribe: vi.fn(async () => {
+        const e = new Error('Aborted');
+        e.name = 'AbortError';
+        throw e;
+      }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+    vi.useFakeTimers();
+    const c = new ProcessingCoordinator(timeoutTranscriber);
+    const p = c.enqueue('l');
+    await vi.runAllTimersAsync();
+    await p;
+    vi.useRealTimers();
+    expect(timeoutTranscriber.transcribe).toHaveBeenCalledTimes(3); // retried, then failed
+    expect(h.store.get('l')?.status).toBe('transcriptionFailed');
   });
 
   it('never deletes the recap on failure (audio invariant)', async () => {

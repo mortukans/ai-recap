@@ -46,6 +46,14 @@ export interface WatchCommandEvent {
 
 export type WatchRecorderState = 'idle' | 'recording' | 'paused' | 'finishing';
 
+/** One piece produced by `Recorder.splitAudioFile`. */
+export interface AudioFilePart {
+  uri: string;
+  fileName: string;
+  duration: number;
+  byteSize: number;
+}
+
 /** A recording captured on the Apple Watch was imported into recap storage. */
 export interface WatchRecordingReceivedEvent {
   recapId: string;

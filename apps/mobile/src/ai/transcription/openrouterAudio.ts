@@ -117,6 +117,8 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
         body: JSON.stringify({
           model,
           temperature: 0,
+          max_tokens: 16_000, // a 60 s chunk is a few hundred tokens of JSON; this only guards against runaway output
+          reasoning: { effort: 'low' }, // thinking models: keep the budget for the transcript, not deliberation
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
             {
@@ -143,7 +145,13 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
       if (json.error?.message) {
         throw new AiRecapError({ code: 'transcription/failed', message: json.error.message });
       }
-      const parsed = parseTranscript(contentToText(json.choices?.[0]?.message?.content), chunk.duration);
+      const text = contentToText(json.choices?.[0]?.message?.content);
+      if (text.trim().length === 0) {
+        // No text at all (truncated by the token budget, refused, or an empty choice): treat as a
+        // transient provider failure so the retry/backoff runs instead of storing an empty transcript.
+        throw new AiRecapError({ code: 'transcription/failed', message: `OpenRouter returned an empty reply for chunk ${chunk.index} (${model}).`, retryable: true });
+      }
+      const parsed = parseTranscript(text, chunk.duration);
       if (parsed.language) languages.add(parsed.language.toLowerCase());
       for (const s of parsed.segments) {
         segments.push({

@@ -20,6 +20,7 @@ import {
   resolveLLMRoute,
 } from '../ai';
 import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo, usageRepo } from '../db';
+import { ensureShortChunks } from '../features/recap/normalizeChunks';
 import { syncUsage } from '../features/usage/syncUsage';
 import { newId } from '../lib/ids';
 import { getProcessingPaused, getRecapModels, getSummaryModel, setProcessingPaused } from '../lib/prefs';
@@ -296,8 +297,9 @@ export class ProcessingCoordinator {
             if (signal.aborted) return;
             await this.setStatus(id, 'transcribed');
           } catch (e) {
-            if (this.isAbort(e) || signal.aborted) return; // force-stopped: forceStop() already rewound to `recorded`
-            this.recordFailure(id, 'transcription', e);
+            if (signal.aborted) return; // force-stopped: forceStop() already rewound to `recorded`
+            this.recordFailure(id, 'transcription', e); // includes request timeouts — never leave it "transcribing"
+
             await this.setStatus(id, 'transcriptionFailed');
             return;
           }
@@ -316,7 +318,7 @@ export class ProcessingCoordinator {
             if (signal.aborted) return;
             await this.setStatus(id, 'ready');
           } catch (e) {
-            if (this.isAbort(e) || signal.aborted) return; // force-stopped: forceStop() already rewound to `transcribed`
+            if (signal.aborted) return; // force-stopped: forceStop() already rewound to `transcribed`
             if (isAiRecapError(e) && e.code === 'llm/missing-key') {
               await this.setStatus(id, 'transcribed');
               return;
@@ -335,11 +337,19 @@ export class ProcessingCoordinator {
   }
 
   private async doTranscription(recap: Recap, signal?: AbortSignal): Promise<void> {
+    // Watch recordings arrive as one long file; transcribe in ≤ 60 s pieces like phone recordings.
+    await ensureShortChunks(recap.id).catch((e) => console.warn('[processing] chunk split skipped:', String(e)));
     const chunks = await chunksRepo.listChunks(recap.id);
     const result = await withRetry(
       () => this.transcriber.transcribe({ recapId: recap.id, audioUris: chunks.map((ch) => ch.relativePath), signal }),
-      { attempts: 3, baseMs: 10_000, shouldRetry: (e) => !this.isAbort(e), signal },
+      // Timeouts are retried; only the user's stop ends the attempts early.
+      { attempts: 3, baseMs: 10_000, shouldRetry: () => !signal?.aborted, signal },
     );
+    if (result.segments.length === 0 && recap.durationSeconds >= 5) {
+      // An empty transcript for a real recording is a failure to surface (Retry), not a resting state:
+      // otherwise the recap sits at "transcribed" forever with nothing to summarize.
+      throw new AiRecapError({ code: 'transcription/failed', message: 'The transcript came back empty (no speech recognized). Try again or choose another transcription model.', retryable: true });
+    }
     const segments = result.segments.map<TranscriptSegment>((s) => ({
       id: newId(),
       recapId: recap.id,
