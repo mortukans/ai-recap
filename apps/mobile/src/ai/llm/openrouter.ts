@@ -5,6 +5,7 @@
  */
 import { AiRecapError } from '@ai-recap/core';
 import { LLM_TIMEOUT_MS, MODELS_TIMEOUT_MS, timeoutSignal } from '../http';
+import { looksLikeSttModel } from '../transcription/sttParse';
 import type { LLMProvider, LlmModel, LlmRequest, LlmResult, LlmStreamChunk } from '../types';
 
 const BASE_URL = 'https://openrouter.ai/api/v1';
@@ -31,8 +32,16 @@ interface ModelsResponse {
     id: string;
     name?: string;
     context_length?: number;
-    architecture?: { input_modalities?: string[] };
+    architecture?: { input_modalities?: string[]; output_modalities?: string[] };
   }[];
+}
+
+/** Ids seen in OpenRouter's speech-to-text listing this session (refreshed by availableModels). */
+const sttIds = new Set<string>();
+
+/** True when `id` should go through /audio/transcriptions rather than chat completions. */
+export function isSttModel(id: string): boolean {
+  return sttIds.has(id) || looksLikeSttModel(id);
 }
 
 export class OpenRouterLLMProvider implements LLMProvider {
@@ -71,17 +80,35 @@ export class OpenRouterLLMProvider implements LLMProvider {
   }
 
   async availableModels(): Promise<LlmModel[]> {
-    const res = await fetch(`${BASE_URL}/models`, { headers: await this.headers(), signal: timeoutSignal(MODELS_TIMEOUT_MS) });
+    const headers = await this.headers();
+    const res = await fetch(`${BASE_URL}/models`, { headers, signal: timeoutSignal(MODELS_TIMEOUT_MS) });
     if (!res.ok) {
       throw new AiRecapError({ code: 'llm/failed', message: `OpenRouter /models failed: ${res.status}` });
     }
     const json = (await res.json()) as ModelsResponse;
-    return (json.data ?? []).map((m) => ({
+    const chat: LlmModel[] = (json.data ?? []).map((m) => ({
       id: m.id,
       name: m.name ?? m.id,
       contextLength: m.context_length,
       inputModalities: m.architecture?.input_modalities,
+      kind: 'chat' as const,
     }));
+    // Dedicated speech-to-text models live in a separate listing (Whisper, MAI-Transcribe, Grok STT, …).
+    // Optional: if it fails the chat list still works.
+    const stt: LlmModel[] = await fetch(`${BASE_URL}/models?output_modalities=transcription`, { headers, signal: timeoutSignal(MODELS_TIMEOUT_MS) })
+      .then(async (r) => (r.ok ? ((await r.json()) as ModelsResponse) : { data: [] }))
+      .then((j) =>
+        (j.data ?? []).map((m) => ({
+          id: m.id,
+          name: `${m.name ?? m.id} · STT`,
+          inputModalities: ['audio'],
+          kind: 'stt' as const,
+        })),
+      )
+      .catch(() => []);
+    for (const m of stt) sttIds.add(m.id);
+    const seen = new Set(chat.map((m) => m.id));
+    return [...chat, ...stt.filter((m) => !seen.has(m.id))];
   }
 
   async generate(req: LlmRequest): Promise<LlmResult> {

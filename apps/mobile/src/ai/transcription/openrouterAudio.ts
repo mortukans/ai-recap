@@ -1,8 +1,8 @@
 /**
- * BYOK transcription through OpenRouter's chat completions API with `input_audio` content parts
- * (OpenRouter has no Whisper-style endpoint). One key covers transcription + recap generation.
- * Default model is Gemini 2.5 Flash — cheap, accepts m4a, and strong on Latvian and LV/EN
- * code-switching. Each recorded chunk (≤ 60 s) is sent base64-encoded and its timestamps are
+ * BYOK transcription through OpenRouter's chat completions API with `input_audio` content parts.
+ * One key covers transcription + recap generation. Default model is Gemini 2.5 Flash Lite — cheap,
+ * accepts m4a, and good on Latvian and LV/EN code-switching. Dedicated speech-to-text models are
+ * routed to `OpenRouterSttTranscriber` (see `isSttModel`). Each recorded chunk (≤ 60 s) is sent base64-encoded and its timestamps are
  * offset onto the recap timeline.
  */
 import { AiRecapError } from '@ai-recap/core';
@@ -11,6 +11,8 @@ import { File } from 'expo-file-system';
 import { chunksRepo } from '../../db';
 import { AUDIO_CHUNK_TIMEOUT_MS, throwIfAborted, timeoutSignal } from '../http';
 import { chunkUri } from '../../features/recap/audioUri';
+import { isSttModel } from '../llm/openrouter';
+import { OpenRouterSttTranscriber } from './openrouterStt';
 import type {
   TranscriptionInput,
   TranscriptionProvider,
@@ -18,7 +20,7 @@ import type {
   TranscriptionResultSegment,
 } from '../types';
 
-export const DEFAULT_TRANSCRIPTION_MODEL = 'google/gemini-2.5-flash';
+export const DEFAULT_TRANSCRIPTION_MODEL = 'google/gemini-2.5-flash-lite';
 
 const BASE_URL = 'https://openrouter.ai/api/v1';
 const ATTRIBUTION = { 'HTTP-Referer': 'https://airecap.lv', 'X-Title': 'AI Recap' };
@@ -105,6 +107,9 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
       throw new AiRecapError({ code: 'transcription/failed', message: 'OpenRouter key not set.' });
     }
     const model = (await this.getModel()) || DEFAULT_TRANSCRIPTION_MODEL;
+    // Dedicated speech-to-text models (Whisper, MAI-Transcribe, Grok STT, …) use OpenRouter's
+    // /audio/transcriptions endpoint; only audio-capable chat models take the JSON prompt below.
+    if (isSttModel(model)) return new OpenRouterSttTranscriber(this.getKey, model).transcribe(input);
 
     const chunks = await chunksRepo.listChunks(input.recapId);
     const segments: TranscriptionResultSegment[] = [];

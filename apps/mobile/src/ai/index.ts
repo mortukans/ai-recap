@@ -6,6 +6,8 @@ export { MockTranscriber } from './transcription/mock';
 export { AppleSpeechTranscriber } from './transcription/appleSpeech';
 export { OpenAiWhisperTranscriber } from './transcription/openaiWhisper';
 export { OpenRouterAudioTranscriber, DEFAULT_TRANSCRIPTION_MODEL } from './transcription/openrouterAudio';
+export { OpenRouterSttTranscriber } from './transcription/openrouterStt';
+export { isSttModel } from './llm/openrouter';
 export { SmartTranscriber } from './transcription/smart';
 export { getByokLLMProvider, getHostedLLMProvider, resolveLLMRoute, DEFAULT_SUMMARY_MODEL, HOSTED_DEFAULT_TIER, type LlmRoute } from './providers';
 export { generateRecap, type GenerateRecapInput } from './recap/generateRecap';

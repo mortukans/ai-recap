@@ -3,7 +3,7 @@
 Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is done or scripted; M items need accounts, legal or a physical device.
 
 ## A. Product decisions (M)
-- [ ] Final default models (from the per-recording experiments): transcription ______ , summary ______ . → Me: set `DEFAULT_TRANSCRIPTION_MODEL` / `DEFAULT_SUMMARY_MODEL`, hosted `LLM_TIERS`, remove or hide the experiment UI.
+- [x] Default models decided 2026-09-25: transcription **google/gemini-2.5-flash-lite**, summary **google/gemini-2.5-flash-lite** (BYOK defaults + hosted `LLM_TIERS` fast/balanced + hosted `TRANSCRIPTION_MODEL`). Hosted functions need a redeploy (`npx supabase functions deploy transcribe recap-generate --no-verify-jwt`). Experiment UI still to remove/hide before release (§B).
 - [ ] Paid recording length: keep 90 min or the plan's 60? → one value in `packages/core/src/capabilities.ts` (`LIMITS.paidMinutes`).
 - [ ] Optional: custom domain (e.g. airecap.lv) for the GitHub Pages site; the github.io URLs work for the App Store meanwhile.
 

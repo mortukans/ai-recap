@@ -83,6 +83,7 @@ export function ModelPicker({ visible, title, models, selectedId, requireModalit
                   <Text style={[styles.rowId, { color: c.textSecondary }]} numberOfLines={1}>
                     {item.id}
                     {item.contextLength ? ` · ${Math.round(item.contextLength / 1000)}k ctx` : ''}
+                    {item.kind === 'stt' ? ' · speech-to-text' : ''}
                   </Text>
                 </View>
                 {selected ? <Ionicons name="checkmark" size={20} color="#208AEF" /> : null}

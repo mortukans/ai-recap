@@ -11,7 +11,7 @@ import { OpenRouterLLMProvider } from './llm/openrouter';
 import type { LLMProvider } from './types';
 
 /** A sensible, cheap, JSON-capable default for recap generation (user-overridable in Settings). */
-export const DEFAULT_SUMMARY_MODEL = 'openai/gpt-4o-mini';
+export const DEFAULT_SUMMARY_MODEL = 'google/gemini-2.5-flash-lite';
 /** Hosted tier used when the user's model preference is a BYOK model id. */
 export const HOSTED_DEFAULT_TIER = 'balanced';
 

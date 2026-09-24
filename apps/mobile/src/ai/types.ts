@@ -42,6 +42,8 @@ export interface LlmModel {
   contextLength?: number;
   /** Accepted input kinds, e.g. ['text', 'image', 'audio'] — used to pick transcription-capable models. */
   inputModalities?: string[];
+  /** 'stt' = dedicated speech-to-text model (OpenRouter /audio/transcriptions); default 'chat'. */
+  kind?: 'chat' | 'stt';
 }
 
 export interface LlmMessage {

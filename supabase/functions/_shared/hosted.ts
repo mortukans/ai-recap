@@ -10,11 +10,11 @@ const ATTRIBUTION = { 'HTTP-Referer': 'https://airecap.lv', 'X-Title': 'AI Recap
 
 /** Hosted tiers hide concrete models from the client; change here without an app release. */
 export const LLM_TIERS: Record<string, string> = {
-  fast: 'openai/gpt-4o-mini',
-  balanced: 'openai/gpt-4o-mini',
+  fast: 'google/gemini-2.5-flash-lite',
+  balanced: 'google/gemini-2.5-flash-lite',
   best: 'anthropic/claude-sonnet-4',
 };
-export const TRANSCRIPTION_MODEL = 'google/gemini-2.5-flash';
+export const TRANSCRIPTION_MODEL = 'google/gemini-2.5-flash-lite';
 
 export function admin(): SupabaseClient {
   return createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
