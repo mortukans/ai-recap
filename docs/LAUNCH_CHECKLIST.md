@@ -4,7 +4,7 @@ Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is don
 
 ## A. Product decisions (M)
 - [x] Default models decided 2026-09-25: transcription **google/gemini-2.5-flash-lite**, summary **google/gemini-2.5-flash-lite** (BYOK defaults + hosted `LLM_TIERS` fast/balanced + hosted `TRANSCRIPTION_MODEL`). Hosted functions redeployed 2026-09-25. Experiment UI still to remove/hide before release (§B).
-- [x] Paid recording length: **90 min** (decided 2026-09-25; `LIMITS.paidMinutes`). Paywall copy updated; ASC IAP descriptions still say "60-min recordings" → M or Me edits them in ASC (Display Name and Description on both products).
+- [x] Paid recording length: **90 min** (decided 2026-09-25; `LIMITS.paidMinutes`). Paywall copy and both ASC IAP descriptions updated to 90-min.
 - [ ] Optional: custom domain (e.g. airecap.lv) for the GitHub Pages site; the github.io URLs work for the App Store meanwhile.
 
 ## B. Code flips before the release build (Me, 10 minutes once A is decided)
@@ -22,11 +22,11 @@ Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is don
 
 ## D. App Store Connect content
 - [x] Listing texts entered in ASC version 1.0 (English U.S.): promo text, description, keywords, support/marketing URL, copyright, review notes, contact name+email. Saved 2026-09-24 incl. contact phone; Sign-in required unchecked. App Information: name `AI Recap – Meeting Recaps`, subtitle, categories Productivity/Business saved.
-- [ ] Screenshots 6.7" + 6.1" (M captures on device following the shot list; Me can frame/caption them).
+- [x] Screenshots: 7 renders from the design canvas uploaded to version 1.0 (iPhone 6.5" slot, 1284×2778; used for all sizes) — 2026-09-25. Device captures can replace them later if App Review asks (`design/store-screenshots/make_shots.py`).
 - [x] App Privacy: policy URL set; 4 data types (Audio Data, User ID, Purchase History, Product Interaction) — App Functionality, not linked, no tracking.
 - [x] Privacy policy + support page hosted on GitHub Pages: https://mortukans.github.io/ai-recap/ and https://mortukans.github.io/ai-recap/privacy.html (M: fill in controller name + support email in `docs/index.html` / `docs/privacy.html`; a custom domain can be pointed later).
 - [x] App review notes pasted (version 1.0, 2026-09-24).
-- [ ] **IAP review screenshot** on each product (M: screenshot of Settings → Plāns paywall with both prices; upload under Review Information → Screenshot on `In-App Purchases → BYOK Lifetime` and `Subscriptions → AI Recap Plans → Unlimited Monthly`). Once both are uploaded, the "In-App Purchases and Subscriptions" section appears on the version page → attach both. Without this, both products stay "Prepare for Submission" and the version cannot include them.
+- [x] IAP review screenshot (paywall render) uploaded to both products; descriptions say 90-min; both added to the **Draft review submission** via "Add for Review" (status Ready for Review). The draft is submitted together with version 1.0 from App Review → Drafts → Submit for Review (NOT yet pressed).
 - [x] Age rating 4+ (global, regional exceptions auto), Content Rights (no third-party content). Category + URLs done.
 - [x] App price Free (USD base, 175 countries) + availability all countries, saved 2026-09-25. Version release: automatic after approval (change to Manual on the version page if you want to pick the day).
 - [x] IAP review notes entered on both products (2026-09-25). Prices verified: Unlimited €19.99/mo (US $17.99), BYOK Lifetime €99.99 base Latvia.
@@ -38,7 +38,7 @@ Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is don
 - [ ] Live Activity buttons, share to Notes, language switch.
 
 ## F. Submit
-- [ ] Add build to version 1.0.0, submit for review. Typical review time 24–48 h.
+- [ ] Select build 1.0.0 (32) on the version page after M's release checks (§E), then App Review → Drafts → Submit for Review (version + both IAPs go together). Typical review time 24–48 h.
 - [ ] After approval: make the repo private again if desired (Actions minutes reset on the 1st; EAS quota also resets).
 
 ## Post-launch backlog
