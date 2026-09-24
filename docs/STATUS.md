@@ -1,6 +1,6 @@
 # AI Recap — project status
 
-_Last updated: 2026-09-25 (App Store Connect launch prep). Owner: Martins Mortukans._
+_Last updated: 2026-09-25 01:45 EEST — **1.0 SUBMITTED TO APP REVIEW** (build 1.0.0 (33) + both IAPs + subscription group). Owner: Martins Mortukans._
 
 ## Where we are
 

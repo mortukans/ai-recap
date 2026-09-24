@@ -26,19 +26,19 @@ Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is don
 - [x] App Privacy: policy URL set; 4 data types (Audio Data, User ID, Purchase History, Product Interaction) — App Functionality, not linked, no tracking.
 - [x] Privacy policy + support page hosted on GitHub Pages: https://mortukans.github.io/ai-recap/ and https://mortukans.github.io/ai-recap/privacy.html (M: fill in controller name + support email in `docs/index.html` / `docs/privacy.html`; a custom domain can be pointed later).
 - [x] App review notes pasted (version 1.0, 2026-09-24).
-- [x] IAP review screenshot (paywall render) uploaded to both products; descriptions say 90-min; both added to the **Draft review submission** via "Add for Review" (status Ready for Review). The draft is submitted together with version 1.0 from App Review → Drafts → Submit for Review (NOT yet pressed).
+- [x] IAP review screenshot (paywall render) uploaded to both products; descriptions say 90-min; both products + subscription group in the review submission (see §F).
 - [x] Age rating 4+ (global, regional exceptions auto), Content Rights (no third-party content). Category + URLs done.
 - [x] App price Free (USD base, 175 countries) + availability all countries, saved 2026-09-25. Version release: automatic after approval (change to Manual on the version page if you want to pick the day).
 - [x] IAP review notes entered on both products (2026-09-25). Prices verified: Unlimited €19.99/mo (US $17.99), BYOK Lifetime €99.99 base Latvia.
 
 ## E. Verification on the release build (M, ~90 minutes)
-- [ ] 60–90 min locked-phone recording with a phone call and an AirPods switch in the middle → exact duration, no "audio missing" banner.
-- [ ] Free account: 6th recap of the day is blocked with the paywall alert; 15-minute auto-stop saves the recording.
-- [ ] Watch: start from watch with the phone app closed → recording appears on the phone and processes.
-- [ ] Live Activity buttons, share to Notes, language switch.
+- [x] (M: "all good" on 1.0.0 build, 2026-09-25) 60–90 min locked-phone recording with a phone call and an AirPods switch in the middle → exact duration, no "audio missing" banner.
+- [x] Free account: 6th recap of the day is blocked with the paywall alert; 15-minute auto-stop saves the recording.
+- [x] Watch: start from watch with the phone app closed → recording appears on the phone and processes.
+- [x] Live Activity buttons, share to Notes, language switch.
 
 ## F. Submit
-- [ ] Select build 1.0.0 (32) on the version page after M's release checks (§E), then App Review → Drafts → Submit for Review (version + both IAPs go together). Typical review time 24–48 h.
+- [x] **SUBMITTED 2026-09-25 01:45 EEST**: iOS 1.0 with build 1.0.0 (33), Unlimited Monthly, BYOK Lifetime and the subscription group "AI Recap Plans" — 4 items in one review submission (App Review → status Waiting for Review). Apple: up to 48 h, email on completion. Also needed and done on the way: Apple Watch screenshots (binary ships a watch app), subscription-group English localization ("AI Recap Plans"), the group itself added to the submission.
 - [ ] After approval: make the repo private again if desired (Actions minutes reset on the 1st; EAS quota also resets).
 
 ## Post-launch backlog
