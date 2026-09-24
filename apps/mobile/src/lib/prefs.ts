@@ -145,6 +145,26 @@ export async function setRecapModels(recapId: string, models: RecapModels): Prom
   }
 }
 
+const PROCESSING_PAUSED_KEY = 'airecap.pref.processingPaused';
+
+/** True after a force-stop: the queue must not restart itself on the next launch. */
+export async function getProcessingPaused(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(PROCESSING_PAUSED_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function setProcessingPaused(paused: boolean): Promise<void> {
+  try {
+    if (paused) await AsyncStorage.setItem(PROCESSING_PAUSED_KEY, '1');
+    else await AsyncStorage.removeItem(PROCESSING_PAUSED_KEY);
+  } catch {
+    /* non-fatal */
+  }
+}
+
 const APP_LANGUAGE_KEY = 'airecap.pref.appLanguage';
 export type AppLanguage = 'auto' | 'lv' | 'en';
 

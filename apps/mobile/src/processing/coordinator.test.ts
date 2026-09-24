@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Shared mutable state, hoisted so the vi.mock factories can safely reference it.
 const h = vi.hoisted(() => ({
   store: new Map<string, { id: string; status: string; [k: string]: unknown }>(),
-  state: { online: true, key: null as string | null, generate: (async () => ({})) as () => Promise<unknown> },
+  state: { online: true, key: null as string | null, pausedPref: false, generate: (async () => ({})) as () => Promise<unknown> },
 }));
 
 vi.mock('@react-native-community/netinfo', () => ({
@@ -58,7 +58,13 @@ vi.mock('../ai', () => ({
 
 vi.mock('../security/byok-store', () => ({ getOpenRouterKey: async () => h.state.key }));
 vi.mock('../lib/prefs', () => ({
-  getRecapModels: async () => ({}), getSummaryModel: async () => null }));
+  getRecapModels: async () => ({}),
+  getSummaryModel: async () => null,
+  getProcessingPaused: async () => h.state.pausedPref,
+  setProcessingPaused: async (v: boolean) => {
+    h.state.pausedPref = v;
+  },
+}));
 vi.mock('../lib/ids', () => ({ newId: () => Math.random().toString(36).slice(2) }));
 
 const { ProcessingCoordinator } = await import('./coordinator');
@@ -98,7 +104,24 @@ describe('ProcessingCoordinator', () => {
     h.store.clear();
     h.state.online = true;
     h.state.key = null;
+    h.state.pausedPref = false;
     h.state.generate = async () => ({});
+  });
+
+  it('a force-stop survives relaunch: recover() rewinds but does not restart the queue', async () => {
+    seed('j', 'transcribing'); // orphaned by a kill while busy
+    h.state.pausedPref = true; // the user force-stopped before the relaunch
+    const transcriber = makeTranscriber();
+    const c = new ProcessingCoordinator(transcriber);
+    await c.recover();
+    await flush();
+    expect(h.store.get('j')?.status).toBe('recorded'); // rewound, not stuck as "transcribing"
+    expect(transcriber.transcribe).not.toHaveBeenCalled(); // and not re-run behind the user's back
+    expect(c.isPaused()).toBe(true);
+
+    await c.enqueue('j'); // explicit Run from the recap → processes and clears the pause
+    expect(h.store.get('j')?.status).toBe('transcribed');
+    expect(h.state.pausedPref).toBe(false);
   });
 
   it('parks an offline recap at waitingForNetwork', async () => {

@@ -22,7 +22,7 @@ import {
 import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo, usageRepo } from '../db';
 import { syncUsage } from '../features/usage/syncUsage';
 import { newId } from '../lib/ids';
-import { getSummaryModel, getRecapModels } from '../lib/prefs';
+import { getProcessingPaused, getRecapModels, getSummaryModel, setProcessingPaused } from '../lib/prefs';
 import { withRetry } from './backoff';
 
 const PASS_DEADLINE_MS = 25 * 60_000;
@@ -88,9 +88,19 @@ export class ProcessingCoordinator {
   }
 
   async enqueue(recapId: string): Promise<void> {
-    this.paused = false;
+    await this.setPaused(false);
     if (!this.queue.includes(recapId)) this.queue.push(recapId);
     await this.pump();
+  }
+
+  /** True while this recap's transcription/summary call is actually in flight (not merely resting). */
+  isActive(recapId: string): boolean {
+    return this.current?.id === recapId;
+  }
+
+  private async setPaused(paused: boolean): Promise<void> {
+    this.paused = paused;
+    await setProcessingPaused(paused);
   }
 
   /** Id of the recap currently being processed (for the "Apstrādā…" banner), if any. */
@@ -108,7 +118,7 @@ export class ProcessingCoordinator {
    * again until the user reruns a recap (Retry / Restart / Generate) or calls resumeAll().
    */
   async forceStop(): Promise<void> {
-    this.paused = true;
+    await this.setPaused(true);
     this.queue = [];
     const stopped = this.current;
     this.current = null;
@@ -132,7 +142,7 @@ export class ProcessingCoordinator {
 
   /** Continue processing every recap that is resting mid-pipeline. */
   async resumeAll(): Promise<void> {
-    this.paused = false;
+    await this.setPaused(false);
     const resumable = await recapsRepo.listByStatuses(['recorded', 'waitingForNetwork', 'transcribed']);
     for (const r of resumable) if (!this.queue.includes(r.id)) this.queue.push(r.id);
     this.notify();
@@ -172,7 +182,7 @@ export class ProcessingCoordinator {
     await recapsRepo.updateRecapStatus(recapId, target);
     this.queue = this.queue.filter((q) => q !== recapId);
     this.queue.unshift(recapId);
-    this.paused = false;
+    await this.setPaused(false);
     this.notify();
     void this.pump();
   }
@@ -190,6 +200,12 @@ export class ProcessingCoordinator {
     }
     for (const r of await recapsRepo.listByStatuses(['summarizing'])) {
       await recapsRepo.updateRecapStatus(r.id, 'transcribed');
+    }
+    // A force-stop survives relaunch: resting recaps stay put until the user runs one or resumes all.
+    if (await getProcessingPaused()) {
+      this.paused = true;
+      this.notify();
+      return;
     }
     const resumable = await recapsRepo.listByStatuses(['recorded', 'waitingForNetwork', 'transcribed']);
     for (const r of resumable) {

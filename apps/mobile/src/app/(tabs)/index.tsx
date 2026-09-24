@@ -11,7 +11,7 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { type RecapSearchHit, contextsRepo, recapsRepo, searchRepo, usageRepo } from '../../db';
-import { Card, Dot, ProcessingBars, ProgressBar, Rise, SearchField, SectionLabel } from '../../design/components';
+import { Button, Card, Dot, ProcessingBars, ProgressBar, Rise, SearchField, SectionLabel } from '../../design/components';
 import { clock, dayLabel, longDate, shortDuration, startOfMonth } from '../../design/format';
 import { Layout } from '../../design/tokens';
 import { Type } from '../../design/typography';
@@ -168,7 +168,11 @@ export default function RecapsScreen() {
             {section.rows.map((row, i) => {
               const r = row.recap;
               const ctxName = r.contextId ? contextNames[r.contextId] : undefined;
-              const processing = PROCESSING.has(r.status) || r.status === 'recording';
+              const pipeline = PROCESSING.has(r.status) || r.status === 'recording';
+              // Resting mid-pipeline (stopped, or waiting for network/key) is not the same as being worked on.
+              const active = pipeline && (currentId === r.id || r.status === 'transcribing' || r.status === 'summarizing' || r.status === 'recording');
+              const resting = pipeline && !active;
+              const processing = pipeline;
               const failed = r.status === 'transcriptionFailed' || r.status === 'summaryFailed' || r.status === 'uploadFailed';
               const open = () => router.push({ pathname: '/recap/[id]', params: { id: r.id } });
               const title = r.title || t('recap.untitled');
@@ -179,18 +183,23 @@ export default function RecapsScreen() {
                       <Card style={{ gap: 10 }}>
                         <View style={styles.between}>
                           <View style={styles.statusRow}>
-                            {processing ? <ProcessingBars color={th.accent} /> : null}
-                            <Text style={[Type.captionStrong, { color: failed ? th.destructive : th.accentText }]}>{t(`status.${r.status}`)}</Text>
+                            {active ? <ProcessingBars color={th.accent} /> : null}
+                            <Text style={[Type.captionStrong, { color: failed ? th.destructive : resting ? th.text2 : th.accentText }]}>
+                              {resting ? (r.status === 'waitingForNetwork' ? t('status.waitingForNetwork') : t('ui.stoppedResting')) : t(`status.${r.status}`)}
+                            </Text>
                           </View>
                           <Text style={[Type.meta, { color: th.text2 }]}>{clock(r.startedAt)}</Text>
                         </View>
                         <Text style={[Type.body, { color: th.text }]} numberOfLines={2}>
                           {title}
                         </Text>
-                        {processing ? <ProgressBar progress={progressFor(r.status)} indeterminate={r.status === 'transcribing' || r.status === 'summarizing'} /> : null}
+                        {active ? <ProgressBar progress={progressFor(r.status)} indeterminate={r.status === 'transcribing' || r.status === 'summarizing'} /> : null}
                         <View style={styles.metaRow}>
                           <Text style={[Type.metaStrong, { color: th.text }]}>{shortDuration(r.durationSeconds)}</Text>
                           {ctxName ? <Text style={[Type.meta, { color: th.text2 }]}>{ctxName}</Text> : null}
+                          {resting ? (
+                            <Button label={t('ui.run')} icon="play" variant="secondary" height={32} onPress={() => void processingCoordinator.enqueue(r.id)} style={{ marginLeft: 'auto', paddingHorizontal: 12 }} />
+                          ) : null}
                         </View>
                       </Card>
                     </Pressable>

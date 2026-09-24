@@ -316,7 +316,10 @@ export default function RecapDetailScreen() {
   };
 
   const isFailed = status === 'transcriptionFailed' || status === 'summaryFailed';
-  const isBusy = status === 'transcribing' || status === 'summarizing' || status === 'recorded' || status === 'waitingForNetwork';
+  const inPipeline = status === 'transcribing' || status === 'summarizing' || status === 'recorded' || status === 'waitingForNetwork';
+  const isActive = inPipeline && ((id ? processingCoordinator.isActive(id) : false) || status === 'transcribing' || status === 'summarizing');
+  const isResting = inPipeline && !isActive; // stopped or waiting — nothing is running for this recap
+  const isBusy = isActive;
   const canGenerate = segmentCount > 0;
   let rise = 0;
 
@@ -403,7 +406,19 @@ export default function RecapDetailScreen() {
             <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
               <ProcessingBars color={th.accent} />
               <Text style={[Type.metaStrong, { color: th.accentText, flex: 1 }]}>{t(`processing.${status}`, { defaultValue: t(`status.${status}`) })}</Text>
+              <Button label={t('ui.stop')} variant="secondary" height={36} onPress={() => void processingCoordinator.forceStop()} style={{ paddingHorizontal: 14 }} />
               <Button label={t('ui.restart')} variant="secondary" height={36} onPress={() => id && void processingCoordinator.restart(id)} style={{ paddingHorizontal: 14 }} />
+            </View>
+          </Rise>
+        ) : null}
+
+        {isResting ? (
+          <Rise index={rise++}>
+            <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
+              <Text style={[Type.metaStrong, { color: th.text2, flex: 1 }]}>
+                {status === 'waitingForNetwork' ? t('processing.waitingForNetwork') : t('ui.stoppedRestingHint')}
+              </Text>
+              <Button label={t('ui.run')} icon="play" variant="primary" height={36} onPress={() => id && void processingCoordinator.enqueue(id)} style={{ paddingHorizontal: 14 }} />
             </View>
           </Rise>
         ) : null}
