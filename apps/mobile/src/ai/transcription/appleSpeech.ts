@@ -9,6 +9,7 @@
 import { Recorder } from '@ai-recap/recorder';
 import { chunksRepo } from '../../db';
 import { chunkUri } from '../../features/recap/audioUri';
+import { throwIfAborted } from '../http';
 import type {
   TranscriptionInput,
   TranscriptionProvider,
@@ -33,6 +34,7 @@ export class AppleSpeechTranscriber implements TranscriptionProvider {
     const segments: TranscriptionResultSegment[] = [];
     let durationSeconds = 0;
     for (const chunk of chunks) {
+      throwIfAborted(input.signal); // a force-stop takes effect at the next chunk (one native request cannot be cancelled)
       durationSeconds = Math.max(durationSeconds, chunk.startOffset + chunk.duration);
       let text = '';
       try {

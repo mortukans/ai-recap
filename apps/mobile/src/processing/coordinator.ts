@@ -27,6 +27,14 @@ import { withRetry } from './backoff';
 
 const PASS_DEADLINE_MS = 25 * 60_000;
 
+/** Resolves when `signal` aborts (never, if it does not). */
+function onAbort(signal: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal.aborted) resolve();
+    else signal.addEventListener('abort', () => resolve(), { once: true });
+  });
+}
+
 export class ProcessingCoordinator {
   private queue: string[] = [];
   private processing = false;
@@ -101,10 +109,25 @@ export class ProcessingCoordinator {
    */
   async forceStop(): Promise<void> {
     this.paused = true;
-    const stopped = this.current;
     this.queue = [];
+    const stopped = this.current;
+    this.current = null;
+    // Abort the in-flight call. The worker may not be cancellable (Apple on-device recognition, a
+    // hung native call), so don't wait for it: rewind the resting state here and detach (pump() races
+    // the pass against its abort signal, and an orphaned pass never writes once its signal is aborted).
     stopped?.controller.abort();
+    await this.rewindBusy();
     this.notify();
+  }
+
+  /** Every recap that looks busy rests at its last stable state: transcribing → recorded, summarizing → transcribed. */
+  private async rewindBusy(): Promise<void> {
+    for (const r of await recapsRepo.listByStatuses(['transcribing'])) {
+      await recapsRepo.updateRecapStatus(r.id, 'recorded');
+    }
+    for (const r of await recapsRepo.listByStatuses(['summarizing'])) {
+      await recapsRepo.updateRecapStatus(r.id, 'transcribed');
+    }
   }
 
   /** Continue processing every recap that is resting mid-pipeline. */
@@ -142,7 +165,10 @@ export class ProcessingCoordinator {
     const hasTranscript = (await segmentsRepo.listSegments(recapId)).length > 0;
     const target: Recap['status'] = hasTranscript && ['summarizing', 'transcribed', 'summaryFailed', 'ready'].includes(recap.status) ? 'transcribed' : 'recorded';
     this.lastErrors.delete(recapId);
-    if (this.current?.id === recapId) this.current.controller.abort(); // cancel the in-flight attempt first
+    if (this.current?.id === recapId) {
+      this.current.controller.abort(); // cancel the in-flight attempt first; pump() moves on without waiting for it
+      this.current = null;
+    }
     await recapsRepo.updateRecapStatus(recapId, target);
     this.queue = this.queue.filter((q) => q !== recapId);
     this.queue.unshift(recapId);
@@ -182,12 +208,18 @@ export class ProcessingCoordinator {
         const id = this.queue[0];
         if (!id) break;
         const controller = new AbortController();
-        this.current = { id, controller };
+        const pass = { id, controller };
+        this.current = pass;
         this.notify();
         try {
-          await this.withWatchdog(id, this.processRecap(id, controller.signal)).catch(() => undefined);
+          // A force-stop/restart aborts the signal; the pass is then abandoned immediately even if the
+          // underlying work cannot be cancelled (it is guarded against writing after abort).
+          await Promise.race([
+            this.withWatchdog(id, this.processRecap(id, controller.signal), controller.signal).catch(() => undefined),
+            onAbort(controller.signal),
+          ]);
         } finally {
-          this.current = null;
+          if (this.current === pass) this.current = null;
           this.notify();
         }
         this.queue = this.queue.filter((q) => q !== id);
@@ -202,14 +234,14 @@ export class ProcessingCoordinator {
    * carry their own timeouts; this is the last line of defence: after `PASS_DEADLINE_MS` the recap is
    * marked failed (Retry stays available) and the queue moves on.
    */
-  private async withWatchdog(id: string, work: Promise<void>): Promise<void> {
+  private async withWatchdog(id: string, work: Promise<void>, signal: AbortSignal): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const deadline = new Promise<'timeout'>((resolve) => {
       timer = setTimeout(() => resolve('timeout'), PASS_DEADLINE_MS);
     });
     try {
       const outcome = await Promise.race([work.then(() => 'done' as const), deadline]);
-      if (outcome === 'timeout') {
+      if (outcome === 'timeout' && !signal.aborted) {
         const recap = await recapsRepo.getRecap(id);
         const stage = recap?.status === 'summarizing' ? 'summary' : 'transcription';
         this.recordFailure(id, stage, new Error(`Processing exceeded ${Math.round(PASS_DEADLINE_MS / 60000)} min — stopped so other recordings can continue.`));
@@ -228,8 +260,9 @@ export class ProcessingCoordinator {
   private async processRecap(id: string, signal: AbortSignal): Promise<void> {
     // Advance one recap as far as it can go this pass. `guard` prevents any accidental infinite loop.
     for (let guard = 0; guard < 12; guard++) {
+      if (signal.aborted) return; // stopped by the user — the coordinator already rewound the status
       const recap = await recapsRepo.getRecap(id);
-      if (!recap) return;
+      if (!recap || signal.aborted) return;
 
       switch (recap.status) {
         case 'recorded':
@@ -244,12 +277,10 @@ export class ProcessingCoordinator {
         case 'transcribing': {
           try {
             await this.doTranscription(recap, signal);
+            if (signal.aborted) return;
             await this.setStatus(id, 'transcribed');
           } catch (e) {
-            if (this.isAbort(e) || signal.aborted) {
-              await this.setStatus(id, 'recorded'); // force-stopped: rest, rerunnable from the recap screen
-              return;
-            }
+            if (this.isAbort(e) || signal.aborted) return; // force-stopped: forceStop() already rewound to `recorded`
             this.recordFailure(id, 'transcription', e);
             await this.setStatus(id, 'transcriptionFailed');
             return;
@@ -266,12 +297,10 @@ export class ProcessingCoordinator {
         case 'summarizing': {
           try {
             await this.doSummary(recap, signal);
+            if (signal.aborted) return;
             await this.setStatus(id, 'ready');
           } catch (e) {
-            if (this.isAbort(e) || signal.aborted) {
-              await this.setStatus(id, 'transcribed'); // force-stopped: rest, rerunnable from the recap screen
-              return;
-            }
+            if (this.isAbort(e) || signal.aborted) return; // force-stopped: forceStop() already rewound to `transcribed`
             if (isAiRecapError(e) && e.code === 'llm/missing-key') {
               await this.setStatus(id, 'transcribed');
               return;
@@ -293,7 +322,7 @@ export class ProcessingCoordinator {
     const chunks = await chunksRepo.listChunks(recap.id);
     const result = await withRetry(
       () => this.transcriber.transcribe({ recapId: recap.id, audioUris: chunks.map((ch) => ch.relativePath), signal }),
-      { attempts: 3, baseMs: 10_000, shouldRetry: (e) => !this.isAbort(e) },
+      { attempts: 3, baseMs: 10_000, shouldRetry: (e) => !this.isAbort(e), signal },
     );
     const segments = result.segments.map<TranscriptSegment>((s) => ({
       id: newId(),
@@ -357,6 +386,7 @@ export class ProcessingCoordinator {
         attempts: 2,
         baseMs: 5_000,
         shouldRetry: (e) => !(isAiRecapError(e) && e.code === 'llm/missing-key') && !this.isAbort(e),
+        signal,
       },
     );
     // Auto-name the recap from the model's title (the user can rename it any time on the recap screen).

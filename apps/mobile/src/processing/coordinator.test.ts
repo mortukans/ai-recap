@@ -149,6 +149,48 @@ describe('ProcessingCoordinator', () => {
     expect(h.store.get('e')?.status).toBe('ready');
   });
 
+  it('forceStop() rewinds a recap whose worker never finishes and frees the queue', async () => {
+    seed('g', 'recorded');
+    seed('h2', 'recorded');
+    // A transcriber that ignores the abort signal and never resolves (e.g. a hung native call).
+    let calls = 0;
+    const hanging = {
+      supportsDiarization: false,
+      runsOnDevice: true,
+      transcribe: vi.fn(() => {
+        calls++;
+        return calls === 1 ? new Promise(() => undefined) : Promise.resolve({ segments: [], detectedLanguages: ['lv'], durationSeconds: 1 });
+      }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+    const c = new ProcessingCoordinator(hanging);
+    const run = c.enqueue('g');
+    await flush();
+    expect(h.store.get('g')?.status).toBe('transcribing');
+    expect(c.currentId()).toBe('g');
+
+    await c.forceStop();
+    expect(h.store.get('g')?.status).toBe('recorded'); // rerunnable, not stuck
+    expect(c.currentId()).toBeNull();
+    expect(c.isPaused()).toBe(true);
+    await run; // pump() returned without waiting for the hung worker
+
+    // Queue is usable again straight away: the next recap goes through with the same coordinator.
+    await c.enqueue('h2');
+    expect(h.store.get('h2')?.status).toBe('transcribed');
+    expect(h.store.get('g')?.status).toBe('recorded'); // the orphaned pass did not write anything
+  });
+
+  it('withRetry stops waiting out a backoff when aborted', async () => {
+    seed('i', 'recorded');
+    const c = new ProcessingCoordinator(makeTranscriber(true)); // fails → 10 s backoff before retry
+    const run = c.enqueue('i');
+    await flush();
+    await c.forceStop();
+    await run; // resolves right away instead of after the backoff
+    expect(h.store.get('i')?.status).toBe('recorded');
+  });
+
   it('never deletes the recap on failure (audio invariant)', async () => {
     vi.useFakeTimers();
     seed('f', 'recorded');
