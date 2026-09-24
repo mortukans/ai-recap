@@ -1,6 +1,6 @@
 # AI Recap — project status
 
-_Last updated: 2026-09-19 02:20 UTC (end of autopilot session). Owner: Martins Mortukans._
+_Last updated: 2026-09-25 (App Store Connect launch prep). Owner: Martins Mortukans._
 
 ## Where we are
 
@@ -60,9 +60,11 @@ The visual redesign from `design/ai-recap-design-handoff/HANDOFF.md` is implemen
 
 ## Open items — owner: Martins (account/legal)
 
-1. **Paid Apps Agreement** (App Store Connect → Business → Agreements): confirm Legal Entity → DSA trader compliance → accept agreement → banking + tax forms. _Gates every purchase, including sandbox tests._
-2. **Sandbox tester** Apple ID (Users and Access → Sandbox → Testers) and sign in on the iPhone (Settings → App Store → Sandbox Account).
-3. After 1–2: buy Unlimited with the sandbox account → Plan row shows "Unlimited", Supabase `entitlements.unlimited_active = true`.
+1. ~~Paid Apps Agreement~~ ACTIVE 2026-09-25 (tax forms + DSA active).
+2. ~~Sandbox tester~~ created and signed in; BYOK Lifetime sandbox purchase verified 2026-09-25 (RevenueCat entitlement `byok` active).
+3. Buy **Unlimited** once with the sandbox account → Plan row shows "Unlimited", Supabase `entitlements.unlimited_active = true`; then record → hosted transcription + recap end to end.
+3b. **IAP review screenshots** — one screenshot of the paywall (Settings → Plāns) with prices; upload to both products in App Store Connect (see `docs/LAUNCH_CHECKLIST.md` §D). Everything else on both products is done (prices, localizations, availability, review notes).
+3c. **App screenshots** 6.7" + 6.1" per the shot list in `docs/APP_STORE_LISTING.md`.
 4. **Watch complication credentials** — one interactive `eas credentials -p ios` run on branch `feat/watch-complication` (see engineering list below), ~2 minutes.
 5. ~~Latvian IAP localizations~~ — not possible: App Store Connect offers no Latvian for in-app purchase metadata (EN stays; app UI is LV/EN).
 
@@ -75,7 +77,7 @@ The visual redesign from `design/ai-recap-design-handoff/HANDOFF.md` is implemen
 - **M5-5** usage accounting BUILT (local records → `usage_events` idempotent sync; provider cost captured; Settings → "Usage this month").
 - Android: recorder (Kotlin foreground service), Play Billing, build/submit.
 - Watch: haptics BUILT.
-- Before public launch: re-check Free caps, IAP review screenshots, privacy labels — draft answers + review notes in `docs/APP_REVIEW_NOTES.md`.
+- Before public launch: flip `TESTING_MODE=false`, hide the model-experiment UI, version 1.0.0 (see `docs/LAUNCH_CHECKLIST.md` §B). ASC done 2026-09-24/25: listing, App Information, App Privacy, age rating, content rights, price Free + availability, IAP review notes.
 - Onboarding BUILT (M5-4).
 - **Watch-face complication** BUILT on branch `feat/watch-complication` (tap on the watch face → watch app opens and starts recording; `targets/watch-widget`, bundle `lv.airecap.app.watchkitapp.recordwidget`, already registered with Apple by CI). Blocked on a **one-time interactive credentials step** (EAS refuses to create a new provisioning profile non-interactively): Martins runs, on that branch, `cd apps/mobile && eas credentials -p ios` → production → set up a provisioning profile for target `AIRecapWatchWidget` (or just `eas build --profile production --platform ios` and cancel once credentials are stored). Then merge the branch and run the CI build. Not on main so TestFlight builds keep working.
 

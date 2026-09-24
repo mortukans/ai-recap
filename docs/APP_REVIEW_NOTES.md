@@ -36,10 +36,10 @@ Each product needs a screenshot of the purchase surface: the paywall (`Settings 
 `ITSAppUsesNonExemptEncryption = false` is set in the Info.plist (standard TLS only).
 
 ## Pre-submission checklist
-- [ ] Paid Apps Agreement active; banking + tax complete
-- [ ] Both IAPs "Ready to Submit" with screenshots; attached to the version
+- [x] Paid Apps Agreement active; banking + tax complete (2026-09-25)
+- [ ] Both IAPs "Ready to Submit" with screenshots; attached to the version (review notes entered 2026-09-25; screenshots pending)
 - [ ] Free caps verified in `FREE_CAPABILITIES` (15 min / 5 per day)
-- [ ] App Privacy answers entered
+- [x] App Privacy answers entered (published 2026-09-25)
 - [ ] Screenshots for 6.7" and 6.1" iPhones; Watch screenshots optional
 - [x] Support URL https://mortukans.github.io/ai-recap/ · Privacy policy URL https://mortukans.github.io/ai-recap/privacy.html (placeholders for controller + email still to fill)
 - [ ] Version notes (LV + EN)
