@@ -21,7 +21,7 @@ Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is don
 - [ ] `eas credentials -p ios` once on branch `feat/watch-complication` → Me merges the watch-face complication.
 
 ## D. App Store Connect content
-- [x] Listing texts entered in ASC version 1.0 (English U.S.): promo text, description, keywords, support/marketing URL, copyright, review notes, contact name+email. **Not saved yet: App Review contact phone number is required (M).** App Information: name `AI Recap – Meeting Recaps`, subtitle, categories Productivity/Business saved.
+- [x] Listing texts entered in ASC version 1.0 (English U.S.): promo text, description, keywords, support/marketing URL, copyright, review notes, contact name+email. Saved 2026-09-24 incl. contact phone; Sign-in required unchecked. App Information: name `AI Recap – Meeting Recaps`, subtitle, categories Productivity/Business saved.
 - [ ] Screenshots 6.7" + 6.1" (M captures on device following the shot list; Me can frame/caption them).
 - [ ] App Privacy questionnaire — answers in `docs/APP_REVIEW_NOTES.md`.
 - [x] Privacy policy + support page hosted on GitHub Pages: https://mortukans.github.io/ai-recap/ and https://mortukans.github.io/ai-recap/privacy.html (M: fill in controller name + support email in `docs/index.html` / `docs/privacy.html`; a custom domain can be pointed later).
