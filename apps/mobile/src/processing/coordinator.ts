@@ -306,9 +306,17 @@ export class ProcessingCoordinator {
           break;
         }
         case 'transcribed': {
-          if ((await resolveLLMRoute(DEFAULT_SUMMARY_MODEL)) === null) return; // rest until a key or Unlimited is available
           const segCount = (await segmentsRepo.listSegments(recap.id)).length;
-          if (segCount === 0) return; // nothing to summarize (unsupported language / silence)
+          if (segCount === 0) {
+            // Older builds stored an empty transcript for a real recording (one long watch chunk → empty
+            // model reply). Running such a recap means transcribing it again, not summarizing nothing.
+            if (recap.durationSeconds >= 5) {
+              await this.setStatus(id, 'recorded');
+              break;
+            }
+            return; // genuinely silent clip: nothing to summarize
+          }
+          if ((await resolveLLMRoute(DEFAULT_SUMMARY_MODEL)) === null) return; // rest until a key or Unlimited is available
           await this.setStatus(id, 'summarizing');
           break;
         }

@@ -319,6 +319,8 @@ export default function RecapDetailScreen() {
   const inPipeline = status === 'transcribing' || status === 'summarizing' || status === 'recorded' || status === 'waitingForNetwork';
   const isActive = inPipeline && ((id ? processingCoordinator.isActive(id) : false) || status === 'transcribing' || status === 'summarizing');
   const isResting = inPipeline && !isActive; // stopped or waiting — nothing is running for this recap
+  // Transcribed with no text for a real recording: the transcription silently failed (older builds). Offer a rerun.
+  const isEmptyTranscript = status === 'transcribed' && segmentCount === 0 && durationSeconds >= 5 && !isActive;
   const isBusy = isActive;
   const canGenerate = segmentCount > 0;
   let rise = 0;
@@ -408,6 +410,15 @@ export default function RecapDetailScreen() {
               <Text style={[Type.metaStrong, { color: th.accentText, flex: 1 }]}>{t(`processing.${status}`, { defaultValue: t(`status.${status}`) })}</Text>
               <Button label={t('ui.stop')} variant="secondary" height={36} onPress={() => void processingCoordinator.forceStop()} style={{ paddingHorizontal: 14 }} />
               <Button label={t('ui.restart')} variant="secondary" height={36} onPress={() => id && void processingCoordinator.restart(id)} style={{ paddingHorizontal: 14 }} />
+            </View>
+          </Rise>
+        ) : null}
+
+        {isEmptyTranscript ? (
+          <Rise index={rise++}>
+            <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
+              <Text style={[Type.metaStrong, { color: th.destructive, flex: 1 }]}>{t('ui.emptyTranscript')}</Text>
+              <Button label={t('ui.restart')} icon="play" variant="primary" height={36} onPress={() => id && void processingCoordinator.restart(id)} style={{ paddingHorizontal: 14 }} />
             </View>
           </Rise>
         ) : null}

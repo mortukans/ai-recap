@@ -4,7 +4,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Shared mutable state, hoisted so the vi.mock factories can safely reference it.
 const h = vi.hoisted(() => ({
   store: new Map<string, { id: string; status: string; [k: string]: unknown }>(),
-  state: { online: true, key: null as string | null, pausedPref: false, generate: (async () => ({})) as () => Promise<unknown> },
+  state: {
+    online: true,
+    key: null as string | null,
+    pausedPref: false,
+    segments: null as unknown[] | null, // null → one fixed segment (see segmentsRepo mock)
+    generate: (async () => ({})) as () => Promise<unknown>,
+  },
 }));
 
 vi.mock('@react-native-community/netinfo', () => ({
@@ -31,9 +37,8 @@ vi.mock('../db', () => ({
   chunksRepo: { listChunks: async () => [] },
   segmentsRepo: {
     replaceSegments: async () => {},
-    listSegments: async () => [
-      { id: 's', recapId: 'x', startTime: 0, endTime: 1, speakerLabel: null, language: 'lv', text: 'hi' },
-    ],
+    listSegments: async () =>
+      h.state.segments ?? [{ id: 's', recapId: 'x', startTime: 0, endTime: 1, speakerLabel: null, language: 'lv', text: 'hi' }],
   },
   contextsRepo: { getContext: async () => null },
   attachmentsRepo: { collectExtraContext: async () => undefined },
@@ -106,7 +111,19 @@ describe('ProcessingCoordinator', () => {
     h.state.online = true;
     h.state.key = null;
     h.state.pausedPref = false;
+    h.state.segments = null;
     h.state.generate = async () => ({});
+  });
+
+  it('a recap left at transcribed with an empty transcript is transcribed again when run', async () => {
+    seed('m', 'transcribed');
+    h.store.get('m')!.durationSeconds = 525;
+    h.state.segments = []; // stored by an older build
+    const transcriber = makeTranscriber(); // still returns nothing → surfaces as a failure with Retry
+    const c = new ProcessingCoordinator(transcriber);
+    await c.enqueue('m');
+    expect(transcriber.transcribe).toHaveBeenCalledTimes(1);
+    expect(h.store.get('m')?.status).toBe('transcriptionFailed');
   });
 
   it('a force-stop survives relaunch: recover() rewinds but does not restart the queue', async () => {

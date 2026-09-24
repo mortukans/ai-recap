@@ -200,6 +200,7 @@ export const en = {
     forceStopHint: 'Interrupts the current transcription or recap; the recording stays and can be rerun.',
     restart: 'Restart',
     stoppedResting: 'Stopped',
+    emptyTranscript: 'The transcript is empty — transcription did not succeed. Run it again.',
     stoppedRestingHint: 'Processing stopped. The recording is saved — run it whenever you like.',
     run: 'Run',
     play: 'Play',

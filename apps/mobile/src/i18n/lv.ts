@@ -202,6 +202,7 @@ export const lv: TranslationKeys = {
     forceStopHint: 'Pārtrauc pašreizējo transkripciju vai kopsavilkumu; ieraksts paliek un to var palaist no jauna.',
     restart: 'Sākt no jauna',
     stoppedResting: 'Apturēts',
+    emptyTranscript: 'Transkripts ir tukšs — transkripcija neizdevās. Palaid to no jauna.',
     stoppedRestingHint: 'Apstrāde apturēta. Ieraksts ir saglabāts — palaid to, kad vēlies.',
     run: 'Palaist',
     play: 'Atskaņot',
