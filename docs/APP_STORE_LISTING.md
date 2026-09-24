@@ -3,8 +3,8 @@
 Paste into App Store Connect → App Information / Version. Character limits are Apple's. Two localizations: **Latvian (primary)** and **English (U.K.)**. Keep the brand name "AI Recap" untranslated.
 
 ## App name (30)
-- LV: `AI Recap – sanāksmju kopsavilkumi`
-- EN: `AI Recap – Meeting Recaps`
+- App Store metadata has no Latvian localization; English (U.S.) is the only locale.
+- Set 2026-09-24: `AI Recap – Meeting Recaps` (plain "AI Recap" is already taken on the App Store).
 
 ## Subtitle (30)
 - LV: `Ieraksti. Transkribē. Atceries.`
