@@ -43,6 +43,7 @@ import { ensureTranscript } from '../../features/recap/ensureTranscript';
 import { MARKDOWN, exportTextFile, safeFilename, shareRichText } from '../../features/share/shareService';
 import { newId } from '../../lib/ids';
 import { type RecapModels, getDoneTasks, getRecapModels, getSummaryModel, setDefaultContextId, setRecapModels } from '../../lib/prefs';
+import { getOpenRouterKey } from '../../security/byok-store';
 import { Colors } from '@/constants/theme';
 import { DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '../../ai';
 import { ModelPicker } from '../../features/settings/ModelPicker';
@@ -96,11 +97,14 @@ export default function RecapDetailScreen() {
   const [picker, setPicker] = useState<'summary' | 'transcription' | null>(null);
   const [compare, setCompare] = useState(false);
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
+  // Per-recording model experiments are a BYOK feature (they call OpenRouter with the user's key).
+  const [hasKey, setHasKey] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
     try {
       const recap = await recapsRepo.getRecap(id);
+      setHasKey((await getOpenRouterKey().catch(() => null)) !== null);
       if (recap) {
         setTitle(recap.title);
         setStartedAt(recap.startedAt);
@@ -537,6 +541,8 @@ export default function RecapDetailScreen() {
        <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ gap: 14 }} keyboardShouldPersistTaps="handled">
         <Text style={[Type.meta, { color: th.text2 }]}>{t('notes.label')}</Text>
         <Input value={notes} onChangeText={setNotes} placeholder={t('notes.placeholder')} multiline height={120} style={Type.bodyText} />
+        {hasKey ? (
+          <>
         <Text style={[Type.sectionLabel, { color: th.text2 }]}>{t('ui.models')}</Text>
         <Group>
           <Row
@@ -566,6 +572,8 @@ export default function RecapDetailScreen() {
             void onRetranscribe();
           }}
         />
+          </>
+        ) : null}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Chip label={contextName || t('contexts.selectLabel')} size="md" chevron onPress={openPickerFromNotes} />
           <View style={{ flex: 1 }} />

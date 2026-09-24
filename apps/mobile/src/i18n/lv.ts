@@ -147,7 +147,7 @@ export const lv: TranslationKeys = {
     legal: 'Abonementi atjaunojas automātiski, kamēr tos neatceļ App Store iestatījumos. Cenas nosaka App Store tavam reģionam.',
     f: {
       hosted: 'Transkripcija un kopsavilkumi iekļauti — nav vajadzīga API atslēga',
-      sixty: 'Ieraksti līdz 60 minūtēm',
+      sixty: 'Ieraksti līdz 90 minūtēm',
       noCap: 'Nav dienas limita',
       export: 'Kopsavilkumu un transkriptu eksports',
       byok: 'Izmanto savu OpenRouter atslēgu (maksā tieši pakalpojumam)',

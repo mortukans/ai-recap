@@ -4,15 +4,15 @@ Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is don
 
 ## A. Product decisions (M)
 - [x] Default models decided 2026-09-25: transcription **google/gemini-2.5-flash-lite**, summary **google/gemini-2.5-flash-lite** (BYOK defaults + hosted `LLM_TIERS` fast/balanced + hosted `TRANSCRIPTION_MODEL`). Hosted functions redeployed 2026-09-25. Experiment UI still to remove/hide before release (§B).
-- [ ] Paid recording length: keep 90 min or the plan's 60? → one value in `packages/core/src/capabilities.ts` (`LIMITS.paidMinutes`).
+- [x] Paid recording length: **90 min** (decided 2026-09-25; `LIMITS.paidMinutes`). Paywall copy updated; ASC IAP descriptions still say "60-min recordings" → M or Me edits them in ASC (Display Name and Description on both products).
 - [ ] Optional: custom domain (e.g. airecap.lv) for the GitHub Pages site; the github.io URLs work for the App Store meanwhile.
 
 ## B. Code flips before the release build (Me, 10 minutes once A is decided)
-- [ ] `TESTING_MODE = false` in `packages/core/src/capabilities.ts` (restores Free 15 min / 5 per day). Tests adapt automatically.
-- [ ] Remove the "AI modeļi šim ierakstam" experiment group from the notes sheet, or gate it behind BYOK.
-- [ ] Version `1.0.0` in `apps/mobile/app.config.ts`; build number keeps auto-incrementing.
-- [ ] Onboarding / paywall copy already states 15 min / 5 per day — verify once more.
-- [ ] `pnpm -r typecheck && pnpm test`, then `gh workflow run ios-build.yml -f profile=production -f submit=true`.
+- [x] `TESTING_MODE = false` (Free 15 min / 5 per day, paid 90 min) — 2026-09-25.
+- [x] Model-experiment group in the notes sheet shown only when an OpenRouter key is stored (BYOK).
+- [x] Version `1.0.0`; build number keeps auto-incrementing.
+- [x] Onboarding / paywall copy: 15 min / 5 per day verified; "up to 90 minutes" on the paywall.
+- [x] Typecheck + tests green; release build triggered 2026-09-25 (first 1.0.0 build).
 
 ## C. Accounts (M)
 - [x] Paid Apps Agreement ACTIVE (2026-09-25); tax forms Active; DSA Active.

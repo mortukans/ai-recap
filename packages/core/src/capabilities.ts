@@ -7,7 +7,7 @@
  */
 
 export interface Capabilities {
-  /** Hard per-recording cap in minutes. Free 15 · paid 60 (launch cap, Product Plan §22). */
+  /** Hard per-recording cap in minutes. Free 15 · paid 90 (launch decision 2026-09-25). */
   maxRecordingMinutes: number;
   /** Max recaps started per day; null = no daily cap. */
   maxRecapsPerDay: number | null;
@@ -25,15 +25,15 @@ export interface Entitlements {
 }
 
 /**
- * LAUNCH SWITCH. `true` while the TestFlight group is tuning quality: no daily cap and 90-minute
- * recordings on every plan. Flip to `false` before the App Store submission to restore the Product
- * Plan limits (Free 15 min / 5 per day, paid 60 min). One place, one line — see docs/LAUNCH_CHECKLIST.md.
+ * LAUNCH SWITCH. `true` lifts every cap for TestFlight quality tuning (no daily cap, 90-minute
+ * recordings on the Free plan too). `false` = store limits: Free 15 min / 5 per day, paid 90 min.
+ * One place, one line — see docs/LAUNCH_CHECKLIST.md.
  */
-export const TESTING_MODE = true;
+export const TESTING_MODE = false;
 
 const LIMITS = TESTING_MODE
   ? { freeMinutes: 90, freePerDay: null as number | null, paidMinutes: 90 }
-  : { freeMinutes: 15, freePerDay: 5 as number | null, paidMinutes: 60 };
+  : { freeMinutes: 15, freePerDay: 5 as number | null, paidMinutes: 90 };
 
 export const FREE_CAPABILITIES: Capabilities = {
   maxRecordingMinutes: LIMITS.freeMinutes,

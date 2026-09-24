@@ -80,14 +80,20 @@ Primary: Productivity. Secondary: Business.
 ## Age rating
 4+ (no objectionable content; AI-generated text from the user's own recordings).
 
-## Screenshots (to capture on a real device, 6.7" and 6.1")
-1. Ieraksti list with a processing card and finished rows (light).
-2. Recording screen mid-sentence with the live waveform and halo.
-3. Recap detail: title, player, Kopsavilkums with decisions + tasks.
-4. Transcript with two speakers and the highlighted playing line.
-5. Watch: Sākums + Ieraksta side by side (optional watch set).
-6. Dark mode variant of 3.
-Caption style: one short line per screenshot in Newsreader on the brand porcelain/ink background; copy for each in `docs/APP_STORE_LISTING.md` once the frames are made.
+## Screenshots — generated 2026-09-25 from the design canvas
+`design/store-screenshots/iphone-6.9/*.png` (1320×2868) and `iphone-6.5/*.png` (1284×2778), rendered by `design/store-screenshots/make_shots.py` (headless Chrome over `design/ai-recap-design-handoff/design-canvas/*.dc.html`, English captions, Newsreader). Re-run the script after a design change.
+
+| # | Screen | Caption |
+|---|---|---|
+| 1 | Ieraksti (light) | Record once. Remember everything. |
+| 2 | Ieraksta (light) | Latvian and English. Even mixed. |
+| 3 | Kopsavilkums (light) | Decisions, tasks, dates. Structured. |
+| 4 | Transkripts (light) | Tap a line. Hear the moment. |
+| 5 | Watch Sākums + Ieraksta | Start from your wrist. |
+| 6 | Konteksti (light) | Contexts that speak your vocabulary. |
+| 7 | Kopsavilkums (dark) | Share it anywhere. Formatting intact. |
+
+IAP review screenshot: `design/store-screenshots/iap-review-paywall-1170x2532.png` (the Uzlabot paywall with both prices). Note: these are design renders, not device captures; if App Review asks for device screenshots, capture the same screens on the phone and replace.
 
 ## Review notes
 See `docs/APP_REVIEW_NOTES.md`.

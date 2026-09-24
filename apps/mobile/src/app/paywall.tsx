@@ -1,7 +1,7 @@
 /**
  * Paywall (MVP task M5-1). Two products, both via RevenueCat/StoreKit:
- *   • Unlimited — monthly subscription: hosted AI, 60-min recordings, no daily cap
- *   • BYOK lifetime — one-time: bring your own OpenRouter key, 60-min recordings, export, advanced templates
+ *   • Unlimited — monthly subscription: hosted AI, 90-min recordings, no daily cap
+ *   • BYOK lifetime — one-time: bring your own OpenRouter key, 90-min recordings, export, advanced templates
  * Prices come from the store (localized), never hard-coded.
  */
 import { Ionicons } from '@expo/vector-icons';

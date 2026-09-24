@@ -10,7 +10,7 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
   name: 'AI Recap',
   slug: 'ai-recap',
-  version: '0.0.1',
+  version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'airecap',

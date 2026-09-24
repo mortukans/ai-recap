@@ -145,7 +145,7 @@ export const en = {
     legal: 'Subscriptions renew automatically until cancelled in your App Store settings. Prices shown are set by the App Store for your region.',
     f: {
       hosted: 'Transcription and recaps included — no API key needed',
-      sixty: 'Recordings up to 60 minutes',
+      sixty: 'Recordings up to 90 minutes',
       noCap: 'No daily limit',
       export: 'Export recaps and transcripts',
       byok: 'Use your own OpenRouter key (pay the provider directly)',
