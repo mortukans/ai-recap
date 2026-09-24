@@ -5,7 +5,7 @@
  * `seekRequest` jumps to a transcript timestamp; `onTime` reports the absolute playhead (~4×/s).
  */
 import { formatTimestamp, locateInChunks } from '@ai-recap/core';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { useEffect, useState } from 'react';
 import { type GestureResponderEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -50,6 +50,13 @@ export function RecordingPlayer({
   const current = chunks[index];
   const player = useAudioPlayer(current ? { uri: current.uri } : null);
   const status = useAudioPlayerStatus(player);
+
+  // expo-audio's default session is "ambient": muted by the ringer switch, so playback seemed silent.
+  // playAndRecord + speaker (playsInSilentMode + allowsRecording) is the same category the recorder
+  // uses, so applying it is harmless even if a recording is running in the background.
+  useEffect(() => {
+    void setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true, interruptionMode: 'doNotMix', shouldRouteThroughEarpiece: false }).catch(() => undefined);
+  }, []);
   const didFinish = status?.didJustFinish ?? false;
   const isLoaded = status?.isLoaded ?? false;
 

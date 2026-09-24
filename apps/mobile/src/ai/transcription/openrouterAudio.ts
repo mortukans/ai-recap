@@ -32,7 +32,7 @@ Split segments at natural pauses (roughly one sentence each) and whenever the sp
 type MessageContent = string | { type?: string; text?: string }[] | undefined;
 
 interface ChatCompletionResponse {
-  choices?: { message?: { content?: MessageContent } }[];
+  choices?: { message?: { content?: MessageContent }; finish_reason?: string | null }[];
   error?: { message?: string };
 }
 
@@ -41,10 +41,15 @@ interface ParsedTranscript {
   segments: { start: number; end: number; text: string; speaker: string | null }[];
 }
 
-/** Lenient JSON extraction — models occasionally wrap output in fences or leading text. */
-function parseTranscript(raw: string, chunkDuration: number): ParsedTranscript {
+/**
+ * Lenient JSON extraction — models occasionally wrap output in fences or leading text.
+ * Returns null when the reply clearly started as our JSON but is not parseable: that is a reply cut
+ * off mid-way (token limit, dropped connection), and must be retried, never stored as transcript text.
+ */
+export function parseTranscript(raw: string, chunkDuration: number): ParsedTranscript | null {
   const trimmed = raw.trim();
   const jsonText = trimmed.startsWith('{') ? trimmed : (trimmed.match(/\{[\s\S]*\}/)?.[0] ?? '');
+  const looksLikeOurJson = /^\s*(```(?:json)?\s*)?\{\s*"(language|segments)"/.test(trimmed);
   try {
     const json = JSON.parse(jsonText) as {
       language?: string | null;
@@ -60,6 +65,7 @@ function parseTranscript(raw: string, chunkDuration: number): ParsedTranscript {
       .filter((s) => s.text.length > 0);
     return { language: json.language ?? null, segments };
   } catch {
+    if (looksLikeOurJson) return null; // truncated JSON → caller retries
     // Not JSON at all: treat the whole reply as one utterance spanning the chunk.
     return trimmed.length > 0
       ? { language: null, segments: [{ start: 0, end: chunkDuration, text: trimmed, speaker: null }] }
@@ -145,13 +151,20 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
       if (json.error?.message) {
         throw new AiRecapError({ code: 'transcription/failed', message: json.error.message });
       }
-      const text = contentToText(json.choices?.[0]?.message?.content);
+      const choice = json.choices?.[0];
+      const text = contentToText(choice?.message?.content);
+      if (choice?.finish_reason === 'length') {
+        throw new AiRecapError({ code: 'transcription/failed', message: `Transcription reply for chunk ${chunk.index} was cut off by the token limit (${model}).`, retryable: true });
+      }
       if (text.trim().length === 0) {
         // No text at all (truncated by the token budget, refused, or an empty choice): treat as a
         // transient provider failure so the retry/backoff runs instead of storing an empty transcript.
         throw new AiRecapError({ code: 'transcription/failed', message: `OpenRouter returned an empty reply for chunk ${chunk.index} (${model}).`, retryable: true });
       }
       const parsed = parseTranscript(text, chunk.duration);
+      if (!parsed) {
+        throw new AiRecapError({ code: 'transcription/failed', message: `Transcription reply for chunk ${chunk.index} was incomplete (${model}); retrying.`, retryable: true });
+      }
       if (parsed.language) languages.add(parsed.language.toLowerCase());
       for (const s of parsed.segments) {
         segments.push({

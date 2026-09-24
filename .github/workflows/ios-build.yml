@@ -67,5 +67,8 @@ jobs:
 
       - name: Submit to TestFlight
         if: ${{ inputs.submit && inputs.profile == 'production' }}
+        timeout-minutes: 15
         working-directory: apps/mobile
-        run: eas submit --platform ios --profile production --path "$RUNNER_TEMP/AIRecap.ipa" --non-interactive
+        # --no-wait: the upload is what matters; Apple's processing status is visible in App Store Connect.
+        # Waiting on it hung until the job timeout (and once got the whole run marked cancelled).
+        run: eas submit --platform ios --profile production --path "$RUNNER_TEMP/AIRecap.ipa" --non-interactive --no-wait
