@@ -8,6 +8,7 @@
  * blocks the app, and it no-ops when the backend is unconfigured.
  */
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 
 import { supabase } from '../api/supabase';
@@ -30,13 +31,14 @@ export function setBreadcrumb(route: string): void {
 }
 
 function deviceEnv(): DeviceEnv {
-  const c = Constants as unknown as { nativeAppVersion?: string | null; nativeBuildVersion?: string | null; deviceName?: string | null };
+  const c = Constants as unknown as { nativeAppVersion?: string | null; nativeBuildVersion?: string | null };
   return {
     appVersion: c.nativeAppVersion ?? Constants.expoConfig?.version ?? null,
     buildNumber: c.nativeBuildVersion ?? null,
     platform: Platform.OS,
-    osVersion: Platform.Version != null ? String(Platform.Version) : null,
-    deviceModel: c.deviceName ?? null,
+    osVersion: Device.osVersion ?? (Platform.Version != null ? String(Platform.Version) : null),
+    // Hardware model ("iPhone 15 Pro"), NOT the user-assigned device name (which can contain a person's name).
+    deviceModel: Device.modelName ?? null,
   };
 }
 
