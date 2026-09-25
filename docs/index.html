@@ -4,24 +4,31 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI Recap – atbalsts / support</title>
+<meta name="description" content="Support and help for AI Recap — the meeting and voice-note recorder with Latvian and English transcription and AI recaps.">
 <style>
-  :root { color-scheme: light dark; }
-  body { margin: 0; background: #F4F5F7; color: #16181D; font: 16px/1.55 -apple-system, "Helvetica Neue", Arial, sans-serif; }
-  @media (prefers-color-scheme: dark) { body { background: #15171B; color: #F1EDE6; } a { color: #E9A24A; } .muted { color: #A6A29B; } .card { background: #1D2025; border-color: #2E333A; } }
+  :root { color-scheme: light dark; --bg:#F4F5F7; --ink:#16181D; --muted:#656A73; --card:#fff; --line:#E1E4E9; --accent:#A8661A; --chip:#FBEFDC; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#15171B; --ink:#F1EDE6; --muted:#A6A29B; --card:#1D2025; --line:#2E333A; --accent:#E9A24A; --chip:#2A2318; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 -apple-system, "Helvetica Neue", Arial, sans-serif; }
+  a { color: var(--accent); }
   main { max-width: 720px; margin: 0 auto; padding: 48px 20px 80px; }
   h1 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; font-size: 40px; line-height: 1; letter-spacing: -0.02em; margin: 0 0 6px; }
-  h2 { font-size: 20px; margin: 32px 0 8px; }
-  .muted { color: #656A73; }
-  .card { background: #fff; border: 1px solid #E1E4E9; border-radius: 18px; padding: 16px 18px; margin: 12px 0; }
+  h2 { font-size: 22px; margin: 40px 0 10px; }
+  h3 { font-size: 16px; margin: 0 0 4px; }
+  .muted { color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; margin: 12px 0; }
+  .card p { margin: 6px 0; }
   .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+  .plans { display: grid; gap: 12px; }
+  .price { color: var(--accent); font-family: Georgia, serif; font-size: 20px; }
   a.btn { display: inline-block; padding: 10px 18px; border-radius: 24px; background: #16181D; color: #fff; text-decoration: none; font-weight: 600; }
   @media (prefers-color-scheme: dark) { a.btn { background: #F1EDE6; color: #15171B; } }
+  .foot { margin-top: 40px; display: flex; gap: 12px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
 <main>
   <div class="brand">
-    <svg width="44" height="44" viewBox="0 0 64 64" fill="none"><rect x="8" y="21" width="6" height="22" rx="3" fill="#E9A24A"/><rect x="19" y="12" width="6" height="40" rx="3" fill="#E9A24A"/><rect x="30" y="6" width="6" height="52" rx="3" fill="#E9A24A"/><rect x="41" y="17" width="6" height="30" rx="3" fill="#E9A24A"/><circle cx="55" cy="47" r="3.5" fill="#E0432F"/></svg>
+    <svg width="44" height="44" viewBox="0 0 64 64" fill="none" aria-hidden="true"><rect x="8" y="21" width="6" height="22" rx="3" fill="#E9A24A"/><rect x="19" y="12" width="6" height="40" rx="3" fill="#E9A24A"/><rect x="30" y="6" width="6" height="52" rx="3" fill="#E9A24A"/><rect x="41" y="17" width="6" height="30" rx="3" fill="#E9A24A"/><circle cx="55" cy="47" r="3.5" fill="#E0432F"/></svg>
     <div><h1>AI Recap</h1><div class="muted">Ieraksti. Transkribē. Atceries. · Record. Transcribe. Remember.</div></div>
   </div>
 
@@ -30,25 +37,68 @@
 
   <h2>Atbalsts · Support</h2>
   <div class="card">
-    <p><strong>E-pasts / Email:</strong> <a href="mailto:[atbalsta e-pasts]">[atbalsta e-pasts]</a></p>
-    <p class="muted">Norādiet lietotnes versiju un Konta ID (Iestatījumi → Par). · Please include the app version and Account ID (Settings → About).</p>
+    <!-- TODO(Martins): replace [support email] with a real, monitored address before launch. -->
+    <p><strong>E-pasts / Email:</strong> <a href="mailto:[support email]">[support email]</a></p>
+    <p class="muted">Rakstiet mums par jebko — kļūdas, ieteikumi, konta dzēšana. Atbildam 2–3 darba dienās.<br>Write to us about anything — bugs, suggestions, account deletion. We reply within 2–3 working days.</p>
+    <p class="muted">Lūdzu, pievienojiet: lietotnes versiju un Konta ID (Iestatījumi → Par), ierīces modeli un īsu aprakstu.<br>Please include: the app version and Account ID (Settings → About), your device model, and a short description.</p>
+  </div>
+
+  <h2>Plāni · Plans</h2>
+  <div class="card plans">
+    <div>
+      <h3>Free <span class="muted">· Bezmaksas</span></h3>
+      <p class="muted">15-minūšu ieraksti, 5 kopsavilkumi dienā, transkripcija ierīcē (Apple runas atpazīšana). · 15-minute recordings, 5 recaps a day, on-device transcription.</p>
+    </div>
+    <div>
+      <h3>Unlimited <span class="price">€19.99 / mēnesī · month</span></h3>
+      <p class="muted">Bez dienas limita, ieraksti līdz 90 min, mūsu AI transkripcija un kopsavilkumi — arī latviešu valodā. Atjaunojas automātiski, atceļams jebkurā laikā. · No daily limit, recordings up to 90 min, our AI transcription and recaps including Latvian. Auto-renews, cancel anytime.</p>
+    </div>
+    <div>
+      <h3>Bring your own key <span class="price">€99.99 · vienreiz · one-time</span></h3>
+      <p class="muted">Izmantojiet savu OpenRouter atslēgu un izvēlieties modeļus paši. Vienreizējs pirkums. · Use your own OpenRouter key and pick the models yourself. One-time purchase.</p>
+    </div>
   </div>
 
   <h2>Biežākie jautājumi · FAQ</h2>
+
   <div class="card">
-    <p><strong>Kur glabājas mani ieraksti?</strong> Tikai jūsu ierīcē, šifrēti. Mēs neredzam audio, transkriptus vai kopsavilkumus.</p>
-    <p class="muted"><strong>Where are my recordings stored?</strong> Only on your device, encrypted. We never see audio, transcripts or recaps.</p>
-  </div>
-  <div class="card">
-    <p><strong>Kā strādā Apple Watch?</strong> Ja iPhone lietotne ir atvērta, pulkstenis vada ierakstu telefonā. Ja nav — pulkstenis ieraksta pats un nosūta audio telefonam.</p>
-    <p class="muted"><strong>How does the Apple Watch work?</strong> With the iPhone app open, the watch controls the phone. Otherwise the watch records itself and hands the audio to the phone.</p>
-  </div>
-  <div class="card">
-    <p><strong>Kā atcelt abonementu?</strong> iPhone Iestatījumi → jūsu vārds → Abonementi → AI Recap.</p>
-    <p class="muted"><strong>How do I cancel a subscription?</strong> iPhone Settings → your name → Subscriptions → AI Recap.</p>
+    <p><strong>Kur glabājas mani ieraksti?</strong> Tikai jūsu ierīcē, šifrētā datubāzē. Mēs neredzam audio, transkriptus vai kopsavilkumus.</p>
+    <p class="muted"><strong>Where are my recordings stored?</strong> Only on your device, in an encrypted database. We never see audio, transcripts or recaps.</p>
   </div>
 
-  <p style="margin-top:32px"><a class="btn" href="privacy.html">Privātuma politika · Privacy Policy</a></p>
+  <div class="card">
+    <p><strong>Kā strādā Apple Watch?</strong> Ja iPhone lietotne ir atvērta, pulkstenis vada ierakstu telefonā. Ja nav — pulkstenis ieraksta pats un pēc tam nosūta audio telefonam apstrādei.</p>
+    <p class="muted"><strong>How does the Apple Watch work?</strong> With the iPhone app open, the watch controls the phone. Otherwise the watch records on its own and hands the audio to the phone for processing.</p>
+  </div>
+
+  <div class="card">
+    <p><strong>Kādās valodās darbojas transkripcija?</strong> Latviešu un angļu, arī jauktas vienā sarunā. Diakritiskās zīmes tiek saglabātas.</p>
+    <p class="muted"><strong>Which languages does transcription support?</strong> Latvian and English, including both mixed in one conversation. Diacritics are preserved.</p>
+  </div>
+
+  <div class="card">
+    <p><strong>Kopsavilkums neparādās vai ieraksts “iestrēdzis”.</strong> Pārliecinieties, ka ir interneta savienojums (Unlimited un sava atslēga izmanto AI serverī). Atveriet ierakstu un pieskarieties <em>Sākt no jauna</em>. Ja transkripts ir tukšs, mēģiniet vēlreiz — reizēm palīdz cits transkripcijas modelis (sava atslēga).</p>
+    <p class="muted"><strong>The recap doesn't appear or a recording seems stuck.</strong> Make sure you have internet (Unlimited and Bring-your-own-key use AI in the cloud). Open the recording and tap <em>Restart</em>. If the transcript is empty, try again — a different transcription model can help (Bring-your-own-key).</p>
+  </div>
+
+  <div class="card">
+    <p><strong>Kā atcelt abonementu?</strong> iPhone Iestatījumi → jūsu vārds → Abonementi → AI Recap → Atcelt. Piekļuve saglabājas līdz perioda beigām.</p>
+    <p class="muted"><strong>How do I cancel a subscription?</strong> iPhone Settings → your name → Subscriptions → AI Recap → Cancel. Access continues until the period ends.</p>
+  </div>
+
+  <div class="card">
+    <p><strong>Kā atgūt pirkumu jaunā ierīcē?</strong> Iestatījumi → Plāns → Atjaunot pirkumus. Pirkumi ir piesaistīti jūsu Apple ID.</p>
+    <p class="muted"><strong>How do I restore a purchase on a new device?</strong> Settings → Plan → Restore Purchases. Purchases are tied to your Apple ID.</p>
+  </div>
+
+  <div class="card">
+    <p><strong>Kā dzēst manus datus?</strong> Lietotnes dzēšana izdzēš visus ierakstus no ierīces. Anonīmos servera ierakstus (plāna statuss, lietojuma skaitītāji) dzēšam pēc pieprasījuma — rakstiet mums, norādot Konta ID (Iestatījumi → Par).</p>
+    <p class="muted"><strong>How do I delete my data?</strong> Deleting the app removes all recordings from your device. We delete the anonymous server records (plan status, usage counters) on request — email us with your Account ID (Settings → About).</p>
+  </div>
+
+  <div class="foot">
+    <a class="btn" href="privacy.html">Privātuma politika · Privacy Policy</a>
+  </div>
 </main>
 </body>
 </html>

@@ -1,9 +1,14 @@
 # iOS build on GitHub's macOS runners using the EAS pipeline locally (`eas build --local`).
 # Uses the EAS project's stored credentials + env vars, but does NOT consume EAS build quota.
-# Submission to TestFlight goes through EAS Submit (free) with the stored App Store Connect key.
+#
+# Submission to TestFlight:
+#   • If the App Store Connect API key secrets are set (ASC_API_KEY_ID / ASC_API_ISSUER_ID /
+#     ASC_API_KEY_BASE64), the build uploads DIRECTLY to Apple with `xcrun altool` — no EAS Submit
+#     queue (which cost ~3 h on the free tier). This is the fast path.
+#   • Otherwise it falls back to EAS Submit (free-tier queue).
 #
 # Trigger: Actions → "iOS build" → Run workflow. Requires repo secret EXPO_TOKEN
-# (expo.dev → Account settings → Access tokens).
+# (expo.dev → Account settings → Access tokens). See docs/CI_DIRECT_UPLOAD.md to enable the fast path.
 name: iOS build
 
 on:
@@ -67,8 +72,27 @@ jobs:
 
       - name: Submit to TestFlight
         if: ${{ inputs.submit && inputs.profile == 'production' }}
-        timeout-minutes: 15
+        timeout-minutes: 25
         working-directory: apps/mobile
-        # --no-wait: the upload is what matters; Apple's processing status is visible in App Store Connect.
-        # Waiting on it hung until the job timeout (and once got the whole run marked cancelled).
-        run: eas submit --platform ios --profile production --path "$RUNNER_TEMP/AIRecap.ipa" --non-interactive --no-wait
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -n "${ASC_API_KEY_ID:-}" ] && [ -n "${ASC_API_ISSUER_ID:-}" ] && [ -n "${ASC_API_KEY_BASE64:-}" ]; then
+            echo "Uploading directly to App Store Connect with altool (no EAS Submit queue)."
+            KEYDIR="$HOME/.appstoreconnect/private_keys"
+            mkdir -p "$KEYDIR"
+            KEYFILE="$KEYDIR/AuthKey_${ASC_API_KEY_ID}.p8"
+            echo "$ASC_API_KEY_BASE64" | base64 --decode > "$KEYFILE"
+            trap 'rm -f "$KEYFILE"' EXIT
+            # --upload-app returns as soon as the binary is accepted; Apple then processes it (a few min),
+            # visible in App Store Connect → TestFlight. No long-poll, so the step can't hang.
+            xcrun altool --upload-app -t ios -f "$RUNNER_TEMP/AIRecap.ipa" \
+              --apiKey "$ASC_API_KEY_ID" --apiIssuer "$ASC_API_ISSUER_ID"
+          else
+            echo "ASC API key secrets not set — falling back to EAS Submit (free-tier queue)."
+            # --no-wait: the upload is what matters; Apple's processing status is visible in App Store Connect.
+            eas submit --platform ios --profile production --path "$RUNNER_TEMP/AIRecap.ipa" --non-interactive --no-wait
+          fi
