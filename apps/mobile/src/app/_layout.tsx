@@ -1,25 +1,33 @@
 import i18n, { resolveLanguage } from '../i18n';
 
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, usePathname } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 
 import { useBootstrap } from '../bootstrap/useBootstrap';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useAppFonts } from '../design/fonts';
 import { FontFamily } from '../design/typography';
 import { useTheme } from '../design/useTheme';
 import { startWatchBridge } from '../features/recording/watchBridge';
+import { installCrashReporting, setBreadcrumb } from '../lib/crash';
 import { getAppLanguage } from '../lib/prefs';
 
 void SplashScreen.preventAutoHideAsync();
+installCrashReporting(); // catch uncaught JS errors from first frame; render errors via ErrorBoundary
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const t = useTheme();
   const { ready } = useBootstrap();
   const fontsReady = useAppFonts();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setBreadcrumb(pathname); // route only (ids stripped), so a later crash report carries a location
+  }, [pathname]);
 
   useEffect(() => {
     void getAppLanguage().then((choice) => {
@@ -49,17 +57,19 @@ export default function RootLayout() {
   };
 
   return (
-    <ThemeProvider value={navTheme}>
-      <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="recording" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
-        <Stack.Screen name="recap/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="transcript/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="context/[id]" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="paywall" options={{ presentation: 'modal', headerShown: true }} />
-        <Stack.Screen name="onboarding" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
-      </Stack>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider value={navTheme}>
+        <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.bg } }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="recording" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
+          <Stack.Screen name="recap/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="transcript/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="context/[id]" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="paywall" options={{ presentation: 'modal', headerShown: true }} />
+          <Stack.Screen name="onboarding" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
+        </Stack>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

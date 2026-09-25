@@ -19,6 +19,10 @@ enable_anonymous_sign_ins = true
 [functions.revenuecat-webhook]
 verify_jwt = false
 
+# Diagnostics may be sent before an anonymous session exists; the anon apikey still gates the gateway.
+[functions.log-error]
+verify_jwt = false
+
 [functions.entitlements]
 verify_jwt = true
 
