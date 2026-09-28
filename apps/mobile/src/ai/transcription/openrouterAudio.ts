@@ -150,6 +150,7 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
         failedChunks += 1;
         failedSeconds += chunk.duration;
         console.warn(`[transcription] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
+        input.onProgress?.(); // a handled skip is still progress
         continue;
       }
 
@@ -163,6 +164,7 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
           text: s.text,
         });
       }
+      input.onProgress?.(); // steady progress keeps the coordinator's stall watchdog from firing
     }
 
     return { segments, detectedLanguages: [...languages], durationSeconds, failedChunks, failedSeconds };

@@ -59,6 +59,7 @@ export class OpenRouterSttTranscriber implements TranscriptionProvider {
         failedChunks += 1;
         failedSeconds += chunk.duration;
         console.warn(`[stt] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
+        input.onProgress?.();
         continue;
       }
 
@@ -73,6 +74,7 @@ export class OpenRouterSttTranscriber implements TranscriptionProvider {
           text: s.text,
         });
       }
+      input.onProgress?.();
     }
 
     return { segments, detectedLanguages: [...languages], durationSeconds, failedChunks, failedSeconds };

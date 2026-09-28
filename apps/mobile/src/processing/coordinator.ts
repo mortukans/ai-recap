@@ -26,7 +26,10 @@ import { newId } from '../lib/ids';
 import { getProcessingPaused, getRecapModels, getSummaryModel, setProcessingPaused, setTranscriptionCoverage } from '../lib/prefs';
 import { withRetry } from './backoff';
 
-const PASS_DEADLINE_MS = 25 * 60_000;
+// The watchdog fires only after this long WITHOUT progress (a heartbeat per chunk resets it), so a
+// legitimately long recording — a 1h40m watch file is ~100 chunks — is never killed for taking time;
+// only a genuinely stuck pass is. Each network call still has its own 120 s timeout underneath.
+const STALL_DEADLINE_MS = 8 * 60_000;
 
 /** Resolves when `signal` aborts (never, if it does not). */
 function onAbort(signal: AbortSignal): Promise<void> {
@@ -48,6 +51,8 @@ export class ProcessingCoordinator {
   private listeners = new Set<() => void>();
   /** Last failure per recap (in-memory) so the UI can explain a *Failed status and offer Retry. */
   private lastErrors = new Map<string, string>();
+  /** Reset by the active watchdog on each unit of progress; a no-op between passes. */
+  private heartbeat: () => void = () => {};
 
   constructor(private readonly transcriber: TranscriptionProvider) {}
 
@@ -247,25 +252,34 @@ export class ProcessingCoordinator {
   }
 
   /**
-   * The queue is sequential, so one stalled recap would block every later one. Network calls already
-   * carry their own timeouts; this is the last line of defence: after `PASS_DEADLINE_MS` the recap is
-   * marked failed (Retry stays available) and the queue moves on.
+   * The queue is sequential, so one stalled recap would block every later one. This is a STALL
+   * watchdog: the deadline is re-armed on every heartbeat (one per transcribed chunk), so it fires
+   * only when a pass makes no progress for `STALL_DEADLINE_MS`, never merely because a recording is
+   * long. Each network call still carries its own 120 s timeout underneath.
    */
   private async withWatchdog(id: string, work: Promise<void>, signal: AbortSignal): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let resolveDeadline: (v: 'timeout') => void = () => {};
     const deadline = new Promise<'timeout'>((resolve) => {
-      timer = setTimeout(() => resolve('timeout'), PASS_DEADLINE_MS);
+      resolveDeadline = resolve;
     });
+    const arm = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => resolveDeadline('timeout'), STALL_DEADLINE_MS);
+    };
+    this.heartbeat = arm; // progress re-arms the deadline
+    arm();
     try {
       const outcome = await Promise.race([work.then(() => 'done' as const), deadline]);
       if (outcome === 'timeout' && !signal.aborted) {
         const recap = await recapsRepo.getRecap(id);
         const stage = recap?.status === 'summarizing' ? 'summary' : 'transcription';
-        this.recordFailure(id, stage, new Error(`Processing exceeded ${Math.round(PASS_DEADLINE_MS / 60000)} min — stopped so other recordings can continue.`));
+        this.recordFailure(id, stage, new Error(`Processing stalled for ${Math.round(STALL_DEADLINE_MS / 60000)} min — stopped so other recordings can continue.`));
         await this.setStatus(id, stage === 'summary' ? 'summaryFailed' : 'transcriptionFailed');
       }
     } finally {
       if (timer) clearTimeout(timer);
+      this.heartbeat = () => {};
     }
   }
 
@@ -346,11 +360,17 @@ export class ProcessingCoordinator {
 
   private async doTranscription(recap: Recap, signal?: AbortSignal): Promise<void> {
     // Watch recordings arrive as one long file; transcribe in ≤ 60 s pieces like phone recordings.
-    await ensureShortChunks(recap.id).catch((e) => console.warn('[processing] chunk split skipped:', String(e)));
+    // Splitting a 100-minute file is itself slow, so it heartbeats the stall watchdog per part.
+    await ensureShortChunks(recap.id, undefined, () => this.heartbeat()).catch((e) => console.warn('[processing] chunk split skipped:', String(e)));
     const chunks = await chunksRepo.listChunks(recap.id);
     // The transcriber retries each chunk and SKIPS ones that keep failing, so a single bad chunk never
     // loses the whole recording. It only throws for a bad key or the user's stop.
-    const result = await this.transcriber.transcribe({ recapId: recap.id, audioUris: chunks.map((ch) => ch.relativePath), signal });
+    const result = await this.transcriber.transcribe({
+      recapId: recap.id,
+      audioUris: chunks.map((ch) => ch.relativePath),
+      signal,
+      onProgress: () => this.heartbeat(),
+    });
     if (result.segments.length === 0 && recap.durationSeconds >= 5) {
       // Nothing at all came back for a real recording — surface it (Retry / another model) rather than
       // resting forever at "transcribed" with nothing to summarize.

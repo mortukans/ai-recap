@@ -301,6 +301,52 @@ describe('ProcessingCoordinator', () => {
     expect(h.store.get('l')?.status).toBe('transcriptionFailed');
   });
 
+  it('a long transcription that keeps making progress is not killed by the watchdog', async () => {
+    vi.useFakeTimers();
+    h.state.key = 'sk-or-xxx';
+    h.state.generate = async () => ({ artifact: {}, doc: {} });
+    seed('w', 'recorded');
+    h.store.get('w')!.durationSeconds = 9000; // 2.5 h
+    const slow = {
+      supportsDiarization: false,
+      runsOnDevice: false,
+      // 40 "chunks" 5 min apart = 200 min total, far past any flat deadline, but a heartbeat every
+      // 5 min keeps the 8-min stall watchdog from firing.
+      transcribe: vi.fn(async (input: { onProgress?: () => void }) => {
+        for (let i = 0; i < 40; i++) {
+          await new Promise((r) => setTimeout(r, 5 * 60_000));
+          input.onProgress?.();
+        }
+        return { segments: [{ startTime: 0, endTime: 1, speakerLabel: null, language: 'lv', text: 'hi' }], detectedLanguages: ['lv'], durationSeconds: 9000 };
+      }),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+    const c = new ProcessingCoordinator(slow);
+    const p = c.enqueue('w');
+    await vi.runAllTimersAsync();
+    await p;
+    vi.useRealTimers();
+    expect(h.store.get('w')?.status).toBe('ready');
+  });
+
+  it('a stalled transcription (no progress) is failed by the watchdog', async () => {
+    vi.useFakeTimers();
+    seed('s2', 'recorded');
+    h.store.get('s2')!.durationSeconds = 600;
+    const stuck = {
+      supportsDiarization: false,
+      runsOnDevice: false,
+      transcribe: vi.fn(() => new Promise(() => undefined)), // never resolves, never heartbeats
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+    const c = new ProcessingCoordinator(stuck);
+    const p = c.enqueue('s2');
+    await vi.advanceTimersByTimeAsync(9 * 60_000); // past the 8-min stall deadline
+    await p;
+    vi.useRealTimers();
+    expect(h.store.get('s2')?.status).toBe('transcriptionFailed');
+  });
+
   it('never deletes the recap on failure (audio invariant)', async () => {
     vi.useFakeTimers();
     seed('f', 'recorded');

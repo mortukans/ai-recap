@@ -16,8 +16,8 @@ export const MAX_CHUNK_SECONDS = 60;
 /** Chunks up to this length are accepted as-is (the recorder's own chunks can run slightly over). */
 const TOLERANCE_SECONDS = 90;
 
-/** Returns the number of chunks that were split. */
-export async function ensureShortChunks(recapId: string, maxSeconds = MAX_CHUNK_SECONDS): Promise<number> {
+/** Returns the number of chunks that were split. `onProgress` heartbeats a caller's stall watchdog. */
+export async function ensureShortChunks(recapId: string, maxSeconds = MAX_CHUNK_SECONDS, onProgress?: () => void): Promise<number> {
   const chunks = await chunksRepo.listChunks(recapId);
   if (!chunks.some((c) => c.duration > TOLERANCE_SECONDS)) return 0;
 
@@ -29,7 +29,9 @@ export async function ensureShortChunks(recapId: string, maxSeconds = MAX_CHUNK_
       next.push(chunk);
       continue;
     }
+    onProgress?.();
     const parts = await Recorder.splitAudioFile(chunkUri(recapId, chunk.relativePath), maxSeconds);
+    onProgress?.();
     if (parts.length < 2) {
       next.push(chunk); // could not split (old native build, corrupt file) — keep the original
       continue;
