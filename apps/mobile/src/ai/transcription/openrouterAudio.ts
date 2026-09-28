@@ -25,6 +25,24 @@ export const DEFAULT_TRANSCRIPTION_MODEL = 'google/gemini-2.5-flash-lite';
 const BASE_URL = 'https://openrouter.ai/api/v1';
 const ATTRIBUTION = { 'HTTP-Referer': 'https://airecap.lv', 'X-Title': 'AI Recap' };
 
+/** Attempts per chunk before it is skipped. Kept small so one bad chunk can't balloon a long recording. */
+export const CHUNK_ATTEMPTS = 3;
+
+/** Marker on an error's `cause` meaning "stop the whole transcription" (auth failure). */
+const FATAL = Symbol('fatal');
+function isFatal(e: unknown): boolean {
+  return e instanceof Error && (e as { cause?: unknown }).cause === FATAL;
+}
+
+/** Delay that rejects early if the user aborts, so a stop is instant. */
+function delay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new Error('aborted'));
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => { clearTimeout(t); reject(new Error('aborted')); }, { once: true });
+  });
+}
+
 const SYSTEM_PROMPT = `You are a precise speech-to-text engine. Transcribe the audio verbatim.
 The speech is usually Latvian, English, or a mix; keep each utterance in its original language with correct diacritics.
 Respond with ONLY a JSON object, no prose, no markdown fences:
@@ -115,61 +133,26 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
     const segments: TranscriptionResultSegment[] = [];
     const languages = new Set<string>();
     let durationSeconds = 0;
+    let failedChunks = 0;
+    let failedSeconds = 0;
 
     for (const chunk of chunks) {
       throwIfAborted(input.signal);
       durationSeconds = Math.max(durationSeconds, chunk.startOffset + chunk.duration);
-      const data = await new File(chunkUri(input.recapId, chunk.relativePath)).base64();
 
-      const res = await fetch(`${BASE_URL}/chat/completions`, {
-        method: 'POST',
-        signal: timeoutSignal(AUDIO_CHUNK_TIMEOUT_MS, input.signal),
-        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', ...ATTRIBUTION },
-        body: JSON.stringify({
-          model,
-          temperature: 0,
-          max_tokens: 16_000, // a 60 s chunk is a few hundred tokens of JSON; this only guards against runaway output
-          reasoning: { effort: 'low' }, // thinking models: keep the budget for the transcript, not deliberation
-          messages: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            {
-              role: 'user',
-              content: [
-                { type: 'text', text: `Transcribe this ${Math.round(chunk.duration)} second recording.` },
-                { type: 'input_audio', input_audio: { data, format: 'm4a' } },
-              ],
-            },
-          ],
-        }),
-      });
-
-      if (!res.ok) {
-        const detail = (await res.text().catch(() => '')).slice(0, 200);
-        throw new AiRecapError({
-          code: 'transcription/failed',
-          message: `OpenRouter transcription ${res.status}: ${detail}`.trim(),
-          retryable: res.status >= 500 || res.status === 429,
-        });
+      let parsed: ParsedTranscript | null = null;
+      try {
+        // Per-chunk retries live here; a chunk that still fails is SKIPPED, never fatal to the recap.
+        parsed = await this.transcribeChunk(chunk, key, model, input);
+      } catch (e) {
+        if (input.signal?.aborted) throw e; // the user stopped — propagate
+        if (isFatal(e)) throw e; // bad key / auth — no point trying the remaining chunks
+        failedChunks += 1;
+        failedSeconds += chunk.duration;
+        console.warn(`[transcription] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
+        continue;
       }
 
-      const json = (await res.json()) as ChatCompletionResponse;
-      if (json.error?.message) {
-        throw new AiRecapError({ code: 'transcription/failed', message: json.error.message });
-      }
-      const choice = json.choices?.[0];
-      const text = contentToText(choice?.message?.content);
-      if (choice?.finish_reason === 'length') {
-        throw new AiRecapError({ code: 'transcription/failed', message: `Transcription reply for chunk ${chunk.index} was cut off by the token limit (${model}).`, retryable: true });
-      }
-      if (text.trim().length === 0) {
-        // No text at all (truncated by the token budget, refused, or an empty choice): treat as a
-        // transient provider failure so the retry/backoff runs instead of storing an empty transcript.
-        throw new AiRecapError({ code: 'transcription/failed', message: `OpenRouter returned an empty reply for chunk ${chunk.index} (${model}).`, retryable: true });
-      }
-      const parsed = parseTranscript(text, chunk.duration);
-      if (!parsed) {
-        throw new AiRecapError({ code: 'transcription/failed', message: `Transcription reply for chunk ${chunk.index} was incomplete (${model}); retrying.`, retryable: true });
-      }
       if (parsed.language) languages.add(parsed.language.toLowerCase());
       for (const s of parsed.segments) {
         segments.push({
@@ -182,6 +165,86 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
       }
     }
 
-    return { segments, detectedLanguages: [...languages], durationSeconds };
+    return { segments, detectedLanguages: [...languages], durationSeconds, failedChunks, failedSeconds };
+  }
+
+  /** One chunk with a couple of quick retries. Throws a fatal error for auth issues; otherwise a
+   *  retryable error the caller skips after these attempts are exhausted. */
+  private async transcribeChunk(
+    chunk: { index: number; relativePath: string; startOffset: number; duration: number },
+    key: string,
+    model: string,
+    input: TranscriptionInput,
+  ): Promise<ParsedTranscript> {
+    const data = await new File(chunkUri(input.recapId, chunk.relativePath)).base64();
+    let last: unknown;
+    for (let attempt = 0; attempt < CHUNK_ATTEMPTS; attempt++) {
+      throwIfAborted(input.signal);
+      try {
+        return await this.requestChunk(chunk, data, key, model, input);
+      } catch (e) {
+        if (input.signal?.aborted || isFatal(e)) throw e;
+        last = e;
+        if (attempt < CHUNK_ATTEMPTS - 1) await delay(2000, input.signal);
+      }
+    }
+    throw last instanceof Error ? last : new Error('chunk transcription failed');
+  }
+
+  private async requestChunk(
+    chunk: { index: number; duration: number },
+    data: string,
+    key: string,
+    model: string,
+    input: TranscriptionInput,
+  ): Promise<ParsedTranscript> {
+    const res = await fetch(`${BASE_URL}/chat/completions`, {
+      method: 'POST',
+      signal: timeoutSignal(AUDIO_CHUNK_TIMEOUT_MS, input.signal),
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', ...ATTRIBUTION },
+      body: JSON.stringify({
+        model,
+        temperature: 0,
+        max_tokens: 16_000, // a 60 s chunk is a few hundred tokens of JSON; this only guards against runaway output
+        reasoning: { effort: 'low' }, // thinking models: keep the budget for the transcript, not deliberation
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: `Transcribe this ${Math.round(chunk.duration)} second recording.` },
+              { type: 'input_audio', input_audio: { data, format: 'm4a' } },
+            ],
+          },
+        ],
+      }),
+    });
+
+    if (!res.ok) {
+      const detail = (await res.text().catch(() => '')).slice(0, 200);
+      throw new AiRecapError({
+        code: 'transcription/failed',
+        message: `OpenRouter transcription ${res.status}: ${detail}`.trim(),
+        retryable: res.status >= 500 || res.status === 429,
+        // 401/403 are auth problems (bad/expired key) — fatal, so we stop rather than burn every chunk.
+        cause: res.status === 401 || res.status === 403 ? FATAL : undefined,
+      });
+    }
+
+    const json = (await res.json()) as ChatCompletionResponse;
+    if (json.error?.message) throw new AiRecapError({ code: 'transcription/failed', message: json.error.message });
+    const choice = json.choices?.[0];
+    const text = contentToText(choice?.message?.content);
+    if (choice?.finish_reason === 'length') {
+      throw new AiRecapError({ code: 'transcription/failed', message: `Transcription reply for chunk ${chunk.index} was cut off by the token limit (${model}).`, retryable: true });
+    }
+    if (text.trim().length === 0) {
+      throw new AiRecapError({ code: 'transcription/failed', message: `OpenRouter returned an empty reply for chunk ${chunk.index} (${model}).`, retryable: true });
+    }
+    const parsed = parseTranscript(text, chunk.duration);
+    if (!parsed) {
+      throw new AiRecapError({ code: 'transcription/failed', message: `Transcription reply for chunk ${chunk.index} was incomplete (${model}).`, retryable: true });
+    }
+    return parsed;
   }
 }

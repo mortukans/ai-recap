@@ -332,6 +332,7 @@ export const en = {
     retry: 'Retry',
     gaps: '{{seconds}} s of audio missing ({{count}} gap). Playback and transcript may skip.',
     gaps_plural: '{{seconds}} s of audio missing ({{count}} gaps). Playback and transcript may skip.',
+    partialTranscript: 'About {{seconds}} s of this recording could not be transcribed; the recap covers the rest.',
     noKey: 'Add an OpenRouter key in Settings to generate the recap.',
     noTranscript: 'No transcript yet — wait for transcription to finish or tap Retry.',
   },

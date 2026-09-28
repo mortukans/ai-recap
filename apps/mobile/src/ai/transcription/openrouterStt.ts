@@ -34,21 +34,32 @@ export class OpenRouterSttTranscriber implements TranscriptionProvider {
     const segments: TranscriptionResultSegment[] = [];
     const languages = new Set<string>();
     let durationSeconds = 0;
+    let failedChunks = 0;
+    let failedSeconds = 0;
     // Providers that reject verbose_json fall back to plain json for the rest of this recording.
     let verbose = true;
 
     for (const chunk of chunks) {
       throwIfAborted(input.signal);
       durationSeconds = Math.max(durationSeconds, chunk.startOffset + chunk.duration);
-      const data = await new File(chunkUri(input.recapId, chunk.relativePath)).base64();
 
-      let json = await this.request(key, data, input, verbose);
-      if (json === 'unsupported-format' && verbose) {
-        verbose = false;
-        json = await this.request(key, data, input, false);
-      }
-      if (json === 'unsupported-format') {
-        throw new AiRecapError({ code: 'transcription/failed', message: `${this.model} rejected the transcription request format.` });
+      let json: SttResponse;
+      try {
+        const data = await new File(chunkUri(input.recapId, chunk.relativePath)).base64();
+        let r = await this.request(key, data, input, verbose);
+        if (r === 'unsupported-format' && verbose) {
+          verbose = false; // this provider has no verbose_json; drop it for the rest of the recording
+          r = await this.request(key, data, input, false);
+        }
+        if (r === 'unsupported-format') throw new AiRecapError({ code: 'transcription/failed', message: `${this.model} rejected the request format.` });
+        json = r;
+      } catch (e) {
+        if (input.signal?.aborted) throw e; // user stop → propagate
+        // A single chunk failing must not lose the whole recording — skip it and carry on.
+        failedChunks += 1;
+        failedSeconds += chunk.duration;
+        console.warn(`[stt] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
+        continue;
       }
 
       const lang = normalizeSttLanguage(json.language);
@@ -64,7 +75,7 @@ export class OpenRouterSttTranscriber implements TranscriptionProvider {
       }
     }
 
-    return { segments, detectedLanguages: [...languages], durationSeconds };
+    return { segments, detectedLanguages: [...languages], durationSeconds, failedChunks, failedSeconds };
   }
 
   private async request(key: string, data: string, input: TranscriptionInput, verbose: boolean): Promise<SttResponse | 'unsupported-format'> {

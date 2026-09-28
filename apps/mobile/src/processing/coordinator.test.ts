@@ -70,6 +70,7 @@ vi.mock('../lib/prefs', () => ({
   setProcessingPaused: async (v: boolean) => {
     h.state.pausedPref = v;
   },
+  setTranscriptionCoverage: async () => {},
 }));
 vi.mock('../lib/ids', () => ({ newId: () => Math.random().toString(36).slice(2) }));
 
@@ -222,14 +223,54 @@ describe('ProcessingCoordinator', () => {
     expect(h.store.get('g')?.status).toBe('recorded'); // the orphaned pass did not write anything
   });
 
-  it('withRetry stops waiting out a backoff when aborted', async () => {
+  it('force-stop during transcription leaves the recap rerunnable', async () => {
     seed('i', 'recorded');
-    const c = new ProcessingCoordinator(makeTranscriber(true)); // fails → 10 s backoff before retry
+    // A transcriber that only settles when the abort signal fires (like a long in-flight upload).
+    const hanging = {
+      supportsDiarization: false,
+      runsOnDevice: false,
+      transcribe: vi.fn(
+        (input: { signal?: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            input.signal?.addEventListener('abort', () => {
+              const e = new Error('aborted');
+              e.name = 'AbortError';
+              reject(e);
+            });
+          }),
+      ),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+    const c = new ProcessingCoordinator(hanging);
     const run = c.enqueue('i');
     await flush();
+    expect(h.store.get('i')?.status).toBe('transcribing');
     await c.forceStop();
-    await run; // resolves right away instead of after the backoff
-    expect(h.store.get('i')?.status).toBe('recorded');
+    await run;
+    expect(h.store.get('i')?.status).toBe('recorded'); // rewound by forceStop, rerunnable
+  });
+
+  it('a partial transcript (some chunks skipped) still produces a recap', async () => {
+    h.state.key = 'sk-or-xxx';
+    h.state.generate = async () => ({ artifact: {}, doc: {} });
+    seed('p', 'recorded');
+    h.store.get('p')!.durationSeconds = 600;
+    const partial = {
+      supportsDiarization: false,
+      runsOnDevice: false,
+      transcribe: vi.fn(async () => ({
+        segments: [{ startTime: 0, endTime: 2, speakerLabel: null, language: 'lv', text: 'hi' }],
+        detectedLanguages: ['lv'],
+        durationSeconds: 600,
+        failedChunks: 2,
+        failedSeconds: 120,
+      })),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any;
+    const c = new ProcessingCoordinator(partial);
+    await c.enqueue('p');
+    expect(partial.transcribe).toHaveBeenCalledTimes(1); // no whole-transcript retry loop anymore
+    expect(h.store.get('p')?.status).toBe('ready');
   });
 
   it('an empty transcript for a real recording fails visibly instead of resting at transcribed', async () => {
@@ -241,25 +282,22 @@ describe('ProcessingCoordinator', () => {
     expect(c.getLastError('k')).toMatch(/empty/i);
   });
 
-  it('a request timeout is a failure, not a silent stop', async () => {
+  it('a transcriber that throws (e.g. exhausted timeouts) fails visibly, not silently', async () => {
     seed('l', 'recorded');
-    const timeoutTranscriber = {
+    h.store.get('l')!.durationSeconds = 600;
+    // Per-chunk retries now live inside the transcriber; the coordinator calls it once. If it still
+    // throws, the recap must land in transcriptionFailed (Retry), never a silent stop.
+    const failing = {
       supportsDiarization: false,
       runsOnDevice: false,
       transcribe: vi.fn(async () => {
-        const e = new Error('Aborted');
-        e.name = 'AbortError';
-        throw e;
+        throw new Error('all chunks failed');
       }),
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
-    vi.useFakeTimers();
-    const c = new ProcessingCoordinator(timeoutTranscriber);
-    const p = c.enqueue('l');
-    await vi.runAllTimersAsync();
-    await p;
-    vi.useRealTimers();
-    expect(timeoutTranscriber.transcribe).toHaveBeenCalledTimes(3); // retried, then failed
+    const c = new ProcessingCoordinator(failing);
+    await c.enqueue('l');
+    expect(failing.transcribe).toHaveBeenCalledTimes(1); // no whole-transcript retry loop
     expect(h.store.get('l')?.status).toBe('transcriptionFailed');
   });
 

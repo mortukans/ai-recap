@@ -23,7 +23,7 @@ import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo, us
 import { ensureShortChunks } from '../features/recap/normalizeChunks';
 import { syncUsage } from '../features/usage/syncUsage';
 import { newId } from '../lib/ids';
-import { getProcessingPaused, getRecapModels, getSummaryModel, setProcessingPaused } from '../lib/prefs';
+import { getProcessingPaused, getRecapModels, getSummaryModel, setProcessingPaused, setTranscriptionCoverage } from '../lib/prefs';
 import { withRetry } from './backoff';
 
 const PASS_DEADLINE_MS = 25 * 60_000;
@@ -348,16 +348,19 @@ export class ProcessingCoordinator {
     // Watch recordings arrive as one long file; transcribe in ≤ 60 s pieces like phone recordings.
     await ensureShortChunks(recap.id).catch((e) => console.warn('[processing] chunk split skipped:', String(e)));
     const chunks = await chunksRepo.listChunks(recap.id);
-    const result = await withRetry(
-      () => this.transcriber.transcribe({ recapId: recap.id, audioUris: chunks.map((ch) => ch.relativePath), signal }),
-      // Timeouts are retried; only the user's stop ends the attempts early.
-      { attempts: 3, baseMs: 10_000, shouldRetry: () => !signal?.aborted, signal },
-    );
+    // The transcriber retries each chunk and SKIPS ones that keep failing, so a single bad chunk never
+    // loses the whole recording. It only throws for a bad key or the user's stop.
+    const result = await this.transcriber.transcribe({ recapId: recap.id, audioUris: chunks.map((ch) => ch.relativePath), signal });
     if (result.segments.length === 0 && recap.durationSeconds >= 5) {
-      // An empty transcript for a real recording is a failure to surface (Retry), not a resting state:
-      // otherwise the recap sits at "transcribed" forever with nothing to summarize.
+      // Nothing at all came back for a real recording — surface it (Retry / another model) rather than
+      // resting forever at "transcribed" with nothing to summarize.
       throw new AiRecapError({ code: 'transcription/failed', message: 'The transcript came back empty (no speech recognized). Try again or choose another transcription model.', retryable: true });
     }
+    // Remember how much couldn't be transcribed, so the recap screen can note the gap (partial success).
+    await setTranscriptionCoverage(recap.id, {
+      failedSeconds: Math.round(result.failedSeconds ?? 0),
+      failedChunks: result.failedChunks ?? 0,
+    }).catch(() => undefined);
     const segments = result.segments.map<TranscriptSegment>((s) => ({
       id: newId(),
       recapId: recap.id,
