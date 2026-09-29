@@ -23,6 +23,11 @@ import {
 } from '../ai';
 import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo, usageRepo } from '../db';
 import { ensureShortChunks } from '../features/recap/normalizeChunks';
+import {
+  endProcessingActivity,
+  endStaleProcessingActivities,
+  syncProcessingActivity,
+} from '../features/recap/processingLiveActivity';
 import { clearResume } from '../features/recap/transcriptResume';
 import { syncUsage } from '../features/usage/syncUsage';
 import { newId } from '../lib/ids';
@@ -247,6 +252,8 @@ export class ProcessingCoordinator {
     // Hold background time so a pass keeps running for the extra minutes iOS grants after the app is
     // backgrounded; released as soon as the queue drains. Resumable transcription covers the rest.
     void Recorder.beginBackgroundTask();
+    // Clear any island left behind by a crash/kill before showing progress for this run.
+    void endStaleProcessingActivities();
     try {
       while (this.queue.length > 0 && !this.paused) {
         const id = this.queue[0];
@@ -265,6 +272,7 @@ export class ProcessingCoordinator {
         } finally {
           if (this.current === pass) this.current = null;
           if (this.progress?.id === id) this.progress = null;
+          void endProcessingActivity(); // this pass is done/failed/stopped — drop the island
           this.notify();
         }
         this.queue = this.queue.filter((q) => q !== id);
@@ -396,6 +404,7 @@ export class ProcessingCoordinator {
       onProgress: (done, total) => {
         this.heartbeat();
         this.progress = { id: recap.id, phase: 'transcribing', done, total };
+        void syncProcessingActivity({ id: recap.id, phase: 'transcribing', done, total, title: recap.title });
         this.notify();
       },
     });
@@ -451,6 +460,7 @@ export class ProcessingCoordinator {
     // and surface it as active work (Dynamic Island + in-app progress).
     this.heartbeat();
     this.progress = { id: recap.id, phase: 'summarizing', done: 0, total: 0 };
+    void syncProcessingActivity({ id: recap.id, phase: 'summarizing', done: 0, total: 0, title: recap.title });
     this.notify();
     const segments = await segmentsRepo.listSegments(recap.id);
     const context =

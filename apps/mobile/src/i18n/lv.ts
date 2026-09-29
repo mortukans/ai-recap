@@ -351,6 +351,12 @@ export const lv: TranslationKeys = {
     summaryFailed: 'Apkopošana neizdevās',
     uploadFailed: 'Augšupielāde neizdevās',
   },
+  // Dynamic Island / bloķēšanas ekrāna Live Activity, kas redzama, kamēr ieraksts tiek apstrādāts.
+  island: {
+    transcribing: 'Transkribē…',
+    summarizing: 'Veido kopsavilkumu…',
+    untitled: 'Tavs ieraksts',
+  },
 };
 
 export default lv;

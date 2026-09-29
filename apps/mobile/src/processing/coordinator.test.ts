@@ -20,12 +20,21 @@ vi.mock('@react-native-community/netinfo', () => ({
   },
 }));
 
-// react-native ships Flow syntax that the node test runner can't parse; the coordinator only needs AppState.
+// react-native ships Flow syntax that the node test runner can't parse; the coordinator only needs
+// AppState and Platform (the latter via the processing Live Activity bridge, mocked out below anyway).
 vi.mock('react-native', () => ({
-  AppState: { addEventListener: () => ({ remove: () => undefined }) },
+  AppState: { addEventListener: () => ({ remove: () => undefined }), currentState: 'active' },
+  Platform: { OS: 'ios' },
 }));
 
 vi.mock('../features/recap/transcriptResume', () => ({ clearResume: async () => undefined }));
+
+// The Live Activity bridge pulls in @expo/ui native code; stub it so the coordinator's progress calls are no-ops.
+vi.mock('../features/recap/processingLiveActivity', () => ({
+  syncProcessingActivity: async () => undefined,
+  endProcessingActivity: async () => undefined,
+  endStaleProcessingActivities: async () => undefined,
+}));
 
 vi.mock('@ai-recap/recorder', () => ({ Recorder: { beginBackgroundTask: async () => undefined, endBackgroundTask: async () => undefined } }));
 

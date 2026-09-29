@@ -349,6 +349,12 @@ export const en = {
     summaryFailed: 'Summary failed',
     uploadFailed: 'Upload failed',
   },
+  // Dynamic Island / Lock Screen Live Activity shown while a recording is being processed.
+  island: {
+    transcribing: 'Transcribing…',
+    summarizing: 'Creating recap…',
+    untitled: 'Your recording',
+  },
 };
 
 export type TranslationKeys = typeof en;
