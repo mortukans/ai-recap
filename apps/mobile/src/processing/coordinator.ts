@@ -10,6 +10,7 @@
  */
 import { AiRecapError, type Recap, type TranscriptSegment, isAiRecapError, retryTarget, titleFromTranscript } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
+import { Recorder } from '@ai-recap/recorder';
 import NetInfo from '@react-native-community/netinfo';
 import { AppState, type NativeEventSubscription } from 'react-native';
 
@@ -56,6 +57,8 @@ export class ProcessingCoordinator {
   private lastErrors = new Map<string, string>();
   /** Reset by the active watchdog on each unit of progress; a no-op between passes. */
   private heartbeat: () => void = () => {};
+  /** Live transcription progress for the recap being processed (chunks done / total), for the UI. */
+  private progress: { id: string; done: number; total: number } | null = null;
 
   constructor(private readonly transcriber: TranscriptionProvider) {}
 
@@ -126,6 +129,11 @@ export class ProcessingCoordinator {
 
   isPaused(): boolean {
     return this.paused;
+  }
+
+  /** Transcription progress for this recap while it is being transcribed, else null. */
+  transcriptionProgress(recapId: string): { done: number; total: number } | null {
+    return this.progress && this.progress.id === recapId ? { done: this.progress.done, total: this.progress.total } : null;
   }
 
   /**
@@ -235,6 +243,9 @@ export class ProcessingCoordinator {
   private async pump(): Promise<void> {
     if (this.processing || this.paused) return;
     this.processing = true;
+    // Hold background time so a pass keeps running for the extra minutes iOS grants after the app is
+    // backgrounded; released as soon as the queue drains. Resumable transcription covers the rest.
+    void Recorder.beginBackgroundTask();
     try {
       while (this.queue.length > 0 && !this.paused) {
         const id = this.queue[0];
@@ -252,12 +263,14 @@ export class ProcessingCoordinator {
           ]);
         } finally {
           if (this.current === pass) this.current = null;
+          if (this.progress?.id === id) this.progress = null;
           this.notify();
         }
         this.queue = this.queue.filter((q) => q !== id);
       }
     } finally {
       this.processing = false;
+      void Recorder.endBackgroundTask();
     }
   }
 
@@ -379,7 +392,11 @@ export class ProcessingCoordinator {
       recapId: recap.id,
       audioUris: chunks.map((ch) => ch.relativePath),
       signal,
-      onProgress: () => this.heartbeat(),
+      onProgress: (done, total) => {
+        this.heartbeat();
+        this.progress = { id: recap.id, done, total };
+        this.notify();
+      },
     });
     if (result.segments.length === 0 && recap.durationSeconds >= 5) {
       // Nothing at all came back for a real recording — surface it (Retry / another model) rather than

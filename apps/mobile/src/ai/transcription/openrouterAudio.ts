@@ -138,6 +138,8 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
     let durationSeconds = 0;
     let failedChunks = 0;
     let failedSeconds = 0;
+    let done = 0;
+    const total = chunks.length;
 
     for (const chunk of chunks) {
       throwIfAborted(input.signal);
@@ -166,14 +168,14 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
           failedChunks += 1;
           failedSeconds += chunk.duration; // not cached → a retry re-attempts this chunk
           console.warn(`[transcription] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
-          input.onProgress?.(); // a handled skip is still progress
+          input.onProgress?.(++done, total); // a handled skip is still progress
           continue;
         }
       }
 
       if (result.language) languages.add(result.language.toLowerCase());
       segments.push(...result.segments);
-      input.onProgress?.(); // steady progress keeps the coordinator's stall watchdog from firing
+      input.onProgress?.(++done, total); // steady progress keeps the coordinator's stall watchdog from firing
     }
 
     return { segments, detectedLanguages: [...languages], durationSeconds, failedChunks, failedSeconds };

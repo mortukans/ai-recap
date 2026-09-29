@@ -38,6 +38,8 @@ export class OpenRouterSttTranscriber implements TranscriptionProvider {
     let durationSeconds = 0;
     let failedChunks = 0;
     let failedSeconds = 0;
+    let done = 0;
+    const total = chunks.length;
     // Providers that reject verbose_json fall back to plain json for the rest of this recording.
     let verbose = true;
 
@@ -74,14 +76,14 @@ export class OpenRouterSttTranscriber implements TranscriptionProvider {
           failedChunks += 1;
           failedSeconds += chunk.duration;
           console.warn(`[stt] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
-          input.onProgress?.();
+          input.onProgress?.(++done, total);
           continue;
         }
       }
 
       if (result.language) languages.add(result.language);
       segments.push(...result.segments);
-      input.onProgress?.();
+      input.onProgress?.(++done, total);
     }
 
     return { segments, detectedLanguages: [...languages], durationSeconds, failedChunks, failedSeconds };

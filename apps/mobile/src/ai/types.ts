@@ -12,8 +12,8 @@ export interface TranscriptionInput {
   languageHint?: 'auto' | 'lv' | 'en';
   /** Cancels in-flight network calls when the user force-stops processing. */
   signal?: AbortSignal;
-  /** Called after each chunk so the coordinator's stall watchdog knows work is progressing. */
-  onProgress?: () => void;
+  /** Called after each chunk (done = processed so far, total = chunk count): resets the stall watchdog and drives the progress UI. */
+  onProgress?: (done: number, total: number) => void;
 }
 
 export interface TranscriptionResultSegment {

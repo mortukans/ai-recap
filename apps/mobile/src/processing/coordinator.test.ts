@@ -27,6 +27,8 @@ vi.mock('react-native', () => ({
 
 vi.mock('../features/recap/transcriptResume', () => ({ clearResume: async () => undefined }));
 
+vi.mock('@ai-recap/recorder', () => ({ Recorder: { beginBackgroundTask: async () => undefined, endBackgroundTask: async () => undefined } }));
+
 vi.mock('../db', () => ({
   recapsRepo: {
     getRecap: async (id: string) => h.store.get(id) ?? null,
