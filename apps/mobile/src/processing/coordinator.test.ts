@@ -20,6 +20,13 @@ vi.mock('@react-native-community/netinfo', () => ({
   },
 }));
 
+// react-native ships Flow syntax that the node test runner can't parse; the coordinator only needs AppState.
+vi.mock('react-native', () => ({
+  AppState: { addEventListener: () => ({ remove: () => undefined }) },
+}));
+
+vi.mock('../features/recap/transcriptResume', () => ({ clearResume: async () => undefined }));
+
 vi.mock('../db', () => ({
   recapsRepo: {
     getRecap: async (id: string) => h.store.get(id) ?? null,

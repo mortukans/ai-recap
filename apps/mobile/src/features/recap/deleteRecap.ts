@@ -1,6 +1,7 @@
 import { Directory, Paths } from 'expo-file-system';
 
 import { recapsRepo } from '../../db';
+import { clearResume } from './transcriptResume';
 
 /**
  * Permanently delete a recap: DB rows (chunks/segments/artifacts/chat cascade via FK) and the audio
@@ -9,6 +10,7 @@ import { recapsRepo } from '../../db';
  */
 export async function deleteRecapCompletely(recapId: string): Promise<void> {
   await recapsRepo.deleteRecap(recapId);
+  await clearResume(recapId).catch(() => undefined); // drop any in-flight transcription cache
   try {
     const dir = new Directory(Paths.document, 'Recaps', recapId);
     if (dir.exists) dir.delete();

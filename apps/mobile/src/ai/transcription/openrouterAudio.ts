@@ -11,6 +11,7 @@ import { File } from 'expo-file-system';
 import { chunksRepo } from '../../db';
 import { AUDIO_CHUNK_TIMEOUT_MS, throwIfAborted, timeoutSignal } from '../http';
 import { chunkUri } from '../../features/recap/audioUri';
+import { loadResume, saveResume } from '../../features/recap/transcriptResume';
 import { isSttModel } from '../llm/openrouter';
 import { OpenRouterSttTranscriber } from './openrouterStt';
 import type {
@@ -130,6 +131,8 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
     if (isSttModel(model)) return new OpenRouterSttTranscriber(this.getKey, model).transcribe(input);
 
     const chunks = await chunksRepo.listChunks(input.recapId);
+    // Resume: successful chunks from a previous (interrupted) run are reused, not re-fetched.
+    const resume = await loadResume(input.recapId, model);
     const segments: TranscriptionResultSegment[] = [];
     const languages = new Set<string>();
     let durationSeconds = 0;
@@ -140,30 +143,36 @@ export class OpenRouterAudioTranscriber implements TranscriptionProvider {
       throwIfAborted(input.signal);
       durationSeconds = Math.max(durationSeconds, chunk.startOffset + chunk.duration);
 
-      let parsed: ParsedTranscript | null = null;
-      try {
-        // Per-chunk retries live here; a chunk that still fails is SKIPPED, never fatal to the recap.
-        parsed = await this.transcribeChunk(chunk, key, model, input);
-      } catch (e) {
-        if (input.signal?.aborted) throw e; // the user stopped — propagate
-        if (isFatal(e)) throw e; // bad key / auth — no point trying the remaining chunks
-        failedChunks += 1;
-        failedSeconds += chunk.duration;
-        console.warn(`[transcription] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
-        input.onProgress?.(); // a handled skip is still progress
-        continue;
+      let result = resume.chunks[chunk.index];
+      if (!result) {
+        try {
+          // Per-chunk retries live here; a chunk that still fails is SKIPPED, never fatal to the recap.
+          const parsed = await this.transcribeChunk(chunk, key, model, input);
+          result = {
+            language: parsed.language,
+            segments: parsed.segments.map((s) => ({
+              startTime: chunk.startOffset + s.start,
+              endTime: chunk.startOffset + Math.max(s.end, s.start),
+              speakerLabel: s.speaker,
+              language: parsed.language,
+              text: s.text,
+            })),
+          };
+          resume.chunks[chunk.index] = result;
+          await saveResume(input.recapId, resume); // persist progress so a later run resumes here
+        } catch (e) {
+          if (input.signal?.aborted) throw e; // the user stopped — propagate
+          if (isFatal(e)) throw e; // bad key / auth — no point trying the remaining chunks
+          failedChunks += 1;
+          failedSeconds += chunk.duration; // not cached → a retry re-attempts this chunk
+          console.warn(`[transcription] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
+          input.onProgress?.(); // a handled skip is still progress
+          continue;
+        }
       }
 
-      if (parsed.language) languages.add(parsed.language.toLowerCase());
-      for (const s of parsed.segments) {
-        segments.push({
-          startTime: chunk.startOffset + s.start,
-          endTime: chunk.startOffset + Math.max(s.end, s.start),
-          speakerLabel: s.speaker,
-          language: parsed.language,
-          text: s.text,
-        });
-      }
+      if (result.language) languages.add(result.language.toLowerCase());
+      segments.push(...result.segments);
       input.onProgress?.(); // steady progress keeps the coordinator's stall watchdog from firing
     }
 

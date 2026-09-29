@@ -11,6 +11,7 @@
 import { AiRecapError, type Recap, type TranscriptSegment, isAiRecapError, retryTarget, titleFromTranscript } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
 import NetInfo from '@react-native-community/netinfo';
+import { AppState, type NativeEventSubscription } from 'react-native';
 
 import {
   DEFAULT_SUMMARY_MODEL,
@@ -21,6 +22,7 @@ import {
 } from '../ai';
 import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo, usageRepo } from '../db';
 import { ensureShortChunks } from '../features/recap/normalizeChunks';
+import { clearResume } from '../features/recap/transcriptResume';
 import { syncUsage } from '../features/usage/syncUsage';
 import { newId } from '../lib/ids';
 import { getProcessingPaused, getRecapModels, getSummaryModel, setProcessingPaused, setTranscriptionCoverage } from '../lib/prefs';
@@ -48,6 +50,7 @@ export class ProcessingCoordinator {
   private paused = false;
   private online = true;
   private netUnsub: (() => void) | null = null;
+  private appStateSub: NativeEventSubscription | null = null;
   private listeners = new Set<() => void>();
   /** Last failure per recap (in-memory) so the UI can explain a *Failed status and offer Retry. */
   private lastErrors = new Map<string, string>();
@@ -76,11 +79,18 @@ export class ProcessingCoordinator {
       this.online = s.isConnected !== false;
       if (!wasOnline && this.online) void this.pump(); // reconnected → drain queue
     });
+    // Returning to the foreground resumes a transcription that iOS suspended/killed while backgrounded.
+    // Only when idle, so we never rewind a pass that is actually running right now.
+    this.appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && !this.paused && !this.processing) void this.recover().catch(() => undefined);
+    });
   }
 
   stop(): void {
     this.netUnsub?.();
     this.netUnsub = null;
+    this.appStateSub?.remove();
+    this.appStateSub = null;
   }
 
   /** Subscribe to status changes (UI can refresh). Returns an unsubscribe function. */
@@ -381,6 +391,9 @@ export class ProcessingCoordinator {
       failedSeconds: Math.round(result.failedSeconds ?? 0),
       failedChunks: result.failedChunks ?? 0,
     }).catch(() => undefined);
+    // Fully transcribed → free the resume cache. If chunks are still missing, keep it so a later
+    // Retry reuses the successes and only re-attempts the gaps.
+    if ((result.failedChunks ?? 0) === 0) await clearResume(recap.id).catch(() => undefined);
     const segments = result.segments.map<TranscriptSegment>((s) => ({
       id: newId(),
       recapId: recap.id,

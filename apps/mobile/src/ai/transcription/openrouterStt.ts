@@ -10,6 +10,7 @@ import { File } from 'expo-file-system';
 
 import { chunksRepo } from '../../db';
 import { chunkUri } from '../../features/recap/audioUri';
+import { loadResume, saveResume } from '../../features/recap/transcriptResume';
 import { AUDIO_CHUNK_TIMEOUT_MS, throwIfAborted, timeoutSignal } from '../http';
 import type { TranscriptionInput, TranscriptionProvider, TranscriptionResult, TranscriptionResultSegment } from '../types';
 import { type SttResponse, normalizeSttLanguage, sttSegments } from './sttParse';
@@ -31,6 +32,7 @@ export class OpenRouterSttTranscriber implements TranscriptionProvider {
     if (!key) throw new AiRecapError({ code: 'transcription/failed', message: 'OpenRouter key not set.' });
 
     const chunks = await chunksRepo.listChunks(input.recapId);
+    const resume = await loadResume(input.recapId, this.model); // reuse successful chunks from a prior run
     const segments: TranscriptionResultSegment[] = [];
     const languages = new Set<string>();
     let durationSeconds = 0;
@@ -43,37 +45,42 @@ export class OpenRouterSttTranscriber implements TranscriptionProvider {
       throwIfAborted(input.signal);
       durationSeconds = Math.max(durationSeconds, chunk.startOffset + chunk.duration);
 
-      let json: SttResponse;
-      try {
-        const data = await new File(chunkUri(input.recapId, chunk.relativePath)).base64();
-        let r = await this.request(key, data, input, verbose);
-        if (r === 'unsupported-format' && verbose) {
-          verbose = false; // this provider has no verbose_json; drop it for the rest of the recording
-          r = await this.request(key, data, input, false);
+      let result = resume.chunks[chunk.index];
+      if (!result) {
+        try {
+          const data = await new File(chunkUri(input.recapId, chunk.relativePath)).base64();
+          let r = await this.request(key, data, input, verbose);
+          if (r === 'unsupported-format' && verbose) {
+            verbose = false; // this provider has no verbose_json; drop it for the rest of the recording
+            r = await this.request(key, data, input, false);
+          }
+          if (r === 'unsupported-format') throw new AiRecapError({ code: 'transcription/failed', message: `${this.model} rejected the request format.` });
+          const lang = normalizeSttLanguage(r.language);
+          result = {
+            language: lang,
+            segments: sttSegments(r, chunk.duration).map((s) => ({
+              startTime: chunk.startOffset + s.start,
+              endTime: chunk.startOffset + s.end,
+              speakerLabel: s.speaker,
+              language: lang,
+              text: s.text,
+            })),
+          };
+          resume.chunks[chunk.index] = result;
+          await saveResume(input.recapId, resume);
+        } catch (e) {
+          if (input.signal?.aborted) throw e; // user stop → propagate
+          // A single chunk failing must not lose the whole recording — skip it and carry on.
+          failedChunks += 1;
+          failedSeconds += chunk.duration;
+          console.warn(`[stt] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
+          input.onProgress?.();
+          continue;
         }
-        if (r === 'unsupported-format') throw new AiRecapError({ code: 'transcription/failed', message: `${this.model} rejected the request format.` });
-        json = r;
-      } catch (e) {
-        if (input.signal?.aborted) throw e; // user stop → propagate
-        // A single chunk failing must not lose the whole recording — skip it and carry on.
-        failedChunks += 1;
-        failedSeconds += chunk.duration;
-        console.warn(`[stt] skipped chunk ${chunk.index}: ${e instanceof Error ? e.message : String(e)}`);
-        input.onProgress?.();
-        continue;
       }
 
-      const lang = normalizeSttLanguage(json.language);
-      if (lang) languages.add(lang);
-      for (const s of sttSegments(json, chunk.duration)) {
-        segments.push({
-          startTime: chunk.startOffset + s.start,
-          endTime: chunk.startOffset + s.end,
-          speakerLabel: s.speaker,
-          language: lang,
-          text: s.text,
-        });
-      }
+      if (result.language) languages.add(result.language);
+      segments.push(...result.segments);
       input.onProgress?.();
     }
 
