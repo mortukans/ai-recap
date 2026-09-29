@@ -57,8 +57,9 @@ export class ProcessingCoordinator {
   private lastErrors = new Map<string, string>();
   /** Reset by the active watchdog on each unit of progress; a no-op between passes. */
   private heartbeat: () => void = () => {};
-  /** Live transcription progress for the recap being processed (chunks done / total), for the UI. */
-  private progress: { id: string; done: number; total: number } | null = null;
+  /** Live progress for the recap being processed, for the UI + Dynamic Island. `done/total` are the
+   *  transcribed-chunk counts; during recap generation the phase is 'summarizing' (no chunk count). */
+  private progress: { id: string; phase: 'transcribing' | 'summarizing'; done: number; total: number } | null = null;
 
   constructor(private readonly transcriber: TranscriptionProvider) {}
 
@@ -131,9 +132,9 @@ export class ProcessingCoordinator {
     return this.paused;
   }
 
-  /** Transcription progress for this recap while it is being transcribed, else null. */
-  transcriptionProgress(recapId: string): { done: number; total: number } | null {
-    return this.progress && this.progress.id === recapId ? { done: this.progress.done, total: this.progress.total } : null;
+  /** Live progress for this recap while it is being processed (transcribing or generating), else null. */
+  processingProgress(recapId: string): { phase: 'transcribing' | 'summarizing'; done: number; total: number } | null {
+    return this.progress && this.progress.id === recapId ? { ...this.progress } : null;
   }
 
   /**
@@ -394,7 +395,7 @@ export class ProcessingCoordinator {
       signal,
       onProgress: (done, total) => {
         this.heartbeat();
-        this.progress = { id: recap.id, done, total };
+        this.progress = { id: recap.id, phase: 'transcribing', done, total };
         this.notify();
       },
     });
@@ -446,6 +447,11 @@ export class ProcessingCoordinator {
   }
 
   private async doSummary(recap: Recap, signal?: AbortSignal): Promise<void> {
+    // Recap generation is a background/foreground-resumable stage too: give it a fresh watchdog window
+    // and surface it as active work (Dynamic Island + in-app progress).
+    this.heartbeat();
+    this.progress = { id: recap.id, phase: 'summarizing', done: 0, total: 0 };
+    this.notify();
     const segments = await segmentsRepo.listSegments(recap.id);
     const context =
       (await contextsRepo.getContext(recap.contextId ?? presetContextId('workMeeting'))) ?? null;

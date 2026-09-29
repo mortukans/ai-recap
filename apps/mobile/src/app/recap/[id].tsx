@@ -84,7 +84,7 @@ export default function RecapDetailScreen() {
   const [playChunks, setPlayChunks] = useState<{ uri: string; duration: number }[]>([]);
   const [integrity, setIntegrity] = useState<IntegrityReport | null>(null);
   const [coverageMissing, setCoverageMissing] = useState(0); // seconds of audio that couldn't be transcribed
-  const [transcribeProgress, setTranscribeProgress] = useState<{ done: number; total: number } | null>(null);
+  const [procProgress, setProcProgress] = useState<{ phase: 'transcribing' | 'summarizing'; done: number; total: number } | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
@@ -113,7 +113,7 @@ export default function RecapDetailScreen() {
         setDurationSeconds(recap.durationSeconds);
         setStatus(recap.status);
         setProcessingError(processingCoordinator.getLastError(id));
-        setTranscribeProgress(processingCoordinator.transcriptionProgress(id));
+        setProcProgress(processingCoordinator.processingProgress(id));
         setContextId(recap.contextId ?? null);
       }
       setNotes((await attachmentsRepo.getNotes(id))?.extractedText ?? '');
@@ -425,8 +425,8 @@ export default function RecapDetailScreen() {
             <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
               <ProcessingBars color={th.accent} />
               <Text style={[Type.metaStrong, { color: th.accentText, flex: 1 }]}>
-                {status === 'transcribing' && transcribeProgress && transcribeProgress.total > 0
-                  ? t('processing.transcribingPct', { pct: Math.round((100 * transcribeProgress.done) / transcribeProgress.total) })
+                {status === 'transcribing' && procProgress?.phase === 'transcribing' && procProgress.total > 0
+                  ? t('processing.transcribingPct', { pct: Math.round((100 * procProgress.done) / procProgress.total) })
                   : t(`processing.${status}`, { defaultValue: t(`status.${status}`) })}
               </Text>
               <Button label={t('ui.stop')} variant="secondary" height={36} onPress={() => void processingCoordinator.forceStop()} style={{ paddingHorizontal: 14 }} />
