@@ -142,7 +142,9 @@ export const en = {
     thanks: 'Thank you! Your plan is active.',
     notNow: 'Not now',
     notConfigured: 'Purchases are not available in this build.',
-    legal: 'Subscriptions renew automatically until cancelled in your App Store settings. Prices shown are set by the App Store for your region.',
+    legal: 'Unlimited is an auto-renewing monthly subscription billed to your Apple account at the price shown above. It renews each month until you cancel at least 24 hours before the period ends, in App Store → your account → Subscriptions. Prices are set by the App Store for your region.',
+    terms: 'Terms of Use (EULA)',
+    privacy: 'Privacy Policy',
     f: {
       hosted: 'Transcription and recaps included — no API key needed',
       sixty: 'Recordings up to 90 minutes',

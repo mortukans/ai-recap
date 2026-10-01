@@ -144,7 +144,9 @@ export const lv: TranslationKeys = {
     thanks: 'Paldies! Tavs plāns ir aktīvs.',
     notNow: 'Ne tagad',
     notConfigured: 'Pirkumi šajā versijā nav pieejami.',
-    legal: 'Abonementi atjaunojas automātiski, kamēr tos neatceļ App Store iestatījumos. Cenas nosaka App Store tavam reģionam.',
+    legal: 'Unlimited ir automātiski atjaunojams mēneša abonements, kas tiek ieturēts no tava Apple konta par augstāk norādīto cenu. Tas atjaunojas katru mēnesi, līdz to atceļ vismaz 24 stundas pirms perioda beigām (App Store → tavs konts → Abonementi). Cenas nosaka App Store tavam reģionam.',
+    terms: 'Lietošanas noteikumi (EULA)',
+    privacy: 'Privātuma politika',
     f: {
       hosted: 'Transkripcija un kopsavilkumi iekļauti — nav vajadzīga API atslēga',
       sixty: 'Ieraksti līdz 90 minūtēm',
