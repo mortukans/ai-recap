@@ -144,7 +144,9 @@ export const lv: TranslationKeys = {
     thanks: 'Paldies! Tavs plāns ir aktīvs.',
     notNow: 'Ne tagad',
     notConfigured: 'Pirkumi šajā versijā nav pieejami.',
-    legal: 'Abonementi atjaunojas automātiski, kamēr tos neatceļ App Store iestatījumos. Cenas nosaka App Store tavam reģionam.',
+    legal: 'Unlimited ir automātiski atjaunojams mēneša abonements, kas tiek ieturēts no tava Apple konta par augstāk norādīto cenu. Tas atjaunojas katru mēnesi, līdz to atceļ vismaz 24 stundas pirms perioda beigām (App Store → tavs konts → Abonementi). Cenas nosaka App Store tavam reģionam.',
+    terms: 'Lietošanas noteikumi (EULA)',
+    privacy: 'Privātuma politika',
     f: {
       hosted: 'Transkripcija un kopsavilkumi iekļauti — nav vajadzīga API atslēga',
       sixty: 'Ieraksti līdz 90 minūtēm',
@@ -334,6 +336,8 @@ export const lv: TranslationKeys = {
     retry: 'Mēģināt vēlreiz',
     gaps: 'Trūkst {{seconds}} s audio ({{count}} pārrāvums). Atskaņošana un transkripts var izlaist daļu.',
     gaps_plural: 'Trūkst {{seconds}} s audio ({{count}} pārrāvumi). Atskaņošana un transkripts var izlaist daļu.',
+    partialTranscript: 'Apmēram {{seconds}} s no šī ieraksta neizdevās transkribēt; kopsavilkums aptver pārējo.',
+    transcribingPct: 'Transkribē… {{pct}}%',
     noKey: 'Pievieno OpenRouter atslēgu Iestatījumos, lai izveidotu kopsavilkumu.',
     noTranscript: 'Transkripta vēl nav — pagaidi, kamēr transkripcija pabeigta, vai spied Mēģināt vēlreiz.',
   },
@@ -348,6 +352,12 @@ export const lv: TranslationKeys = {
     transcriptionFailed: 'Transkripcija neizdevās',
     summaryFailed: 'Apkopošana neizdevās',
     uploadFailed: 'Augšupielāde neizdevās',
+  },
+  // Dynamic Island / bloķēšanas ekrāna Live Activity, kas redzama, kamēr ieraksts tiek apstrādāts.
+  island: {
+    transcribing: 'Transkribē…',
+    summarizing: 'Veido kopsavilkumu…',
+    untitled: 'Tavs ieraksts',
   },
 };
 

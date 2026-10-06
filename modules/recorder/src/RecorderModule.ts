@@ -22,6 +22,8 @@ interface NativeRecorder {
   addMarker(label: string | null): Promise<void>;
   transcribeFile(uri: string, locale: string): Promise<string>;
   splitAudioFile?(uri: string, maxSeconds: number): Promise<AudioFilePart[]>;
+  beginBackgroundTask?(): Promise<void>;
+  endBackgroundTask?(): Promise<void>;
   setWatchState?(state: WatchRecorderState, startedAt: number, pausedElapsed: number, phoneActive: boolean): Promise<void>;
   setWatchLastRecap?(title: string, status: string, startedAt: number): Promise<void>;
   shareRichText?(html: string, plain: string): Promise<void>;
@@ -70,6 +72,9 @@ export const Recorder = {
   /** Split one long audio file into ≤ maxSeconds parts; [] when unsupported or not needed. */
   splitAudioFile: (uri: string, maxSeconds: number): Promise<AudioFilePart[]> =>
     native.splitAudioFile ? native.splitAudioFile(uri, maxSeconds) : Promise.resolve([]),
+  /** Hold extra background time while processing runs after the app is backgrounded; no-op on old builds. */
+  beginBackgroundTask: (): Promise<void> => (native.beginBackgroundTask ? native.beginBackgroundTask().catch(() => undefined) : Promise.resolve()),
+  endBackgroundTask: (): Promise<void> => (native.endBackgroundTask ? native.endBackgroundTask().catch(() => undefined) : Promise.resolve()),
   /** Mirror recorder state to a paired Apple Watch (no-op on builds without the bridge). */
   setWatchState: (state: WatchRecorderState, startedAt: number, pausedElapsed: number, phoneActive: boolean) =>
     native.setWatchState

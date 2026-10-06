@@ -145,6 +145,37 @@ export async function setRecapModels(recapId: string, models: RecapModels): Prom
   }
 }
 
+const TRANSCRIPTION_COVERAGE_PREFIX = 'airecap.pref.transcriptionCoverage.';
+
+/** How much of a recap's audio could not be transcribed (skipped chunks), for the "part missing" note. */
+export interface TranscriptionCoverage {
+  failedSeconds: number;
+  failedChunks: number;
+}
+
+export async function getTranscriptionCoverage(recapId: string): Promise<TranscriptionCoverage> {
+  try {
+    const raw = await AsyncStorage.getItem(TRANSCRIPTION_COVERAGE_PREFIX + recapId);
+    const p: unknown = raw ? JSON.parse(raw) : null;
+    if (p && typeof p === 'object') {
+      const o = p as Partial<TranscriptionCoverage>;
+      return { failedSeconds: Number(o.failedSeconds) || 0, failedChunks: Number(o.failedChunks) || 0 };
+    }
+  } catch {
+    /* ignore */
+  }
+  return { failedSeconds: 0, failedChunks: 0 };
+}
+
+export async function setTranscriptionCoverage(recapId: string, c: TranscriptionCoverage): Promise<void> {
+  try {
+    if (c.failedChunks > 0 || c.failedSeconds > 0) await AsyncStorage.setItem(TRANSCRIPTION_COVERAGE_PREFIX + recapId, JSON.stringify(c));
+    else await AsyncStorage.removeItem(TRANSCRIPTION_COVERAGE_PREFIX + recapId); // a clean re-run clears the note
+  } catch {
+    /* non-fatal */
+  }
+}
+
 const PROCESSING_PAUSED_KEY = 'airecap.pref.processingPaused';
 
 /** True after a force-stop: the queue must not restart itself on the next launch. */

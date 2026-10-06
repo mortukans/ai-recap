@@ -8,11 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
+import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '../constants/legal';
 import { useTheme } from '../design/useTheme';
 import { applyEntitlements, refreshEntitlements } from '../purchases/entitlements';
 import {
@@ -160,6 +161,16 @@ export default function PaywallScreen() {
           <Text style={[styles.linkText, { color: c.textSecondary }]}>{t('paywall.notNow')}</Text>
         </Pressable>
         <Text style={[styles.legal, { color: c.textSecondary }]}>{t('paywall.legal')}</Text>
+        {/* Apple Guideline 3.1.2(c): functional Terms of Use (EULA) + Privacy Policy links in the purchase flow. */}
+        <View style={styles.legalLinks}>
+          <Pressable onPress={() => void Linking.openURL(TERMS_OF_USE_URL)} hitSlop={8}>
+            <Text style={[styles.legalLink, { color: th.accentText }]}>{t('paywall.terms')}</Text>
+          </Pressable>
+          <Text style={[styles.legal, { color: c.textSecondary }]}>·</Text>
+          <Pressable onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)} hitSlop={8}>
+            <Text style={[styles.legalLink, { color: th.accentText }]}>{t('paywall.privacy')}</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -180,4 +191,6 @@ const styles = StyleSheet.create({
   link: { alignItems: 'center', paddingVertical: Spacing.two },
   linkText: { fontSize: 14 },
   legal: { fontSize: 11, lineHeight: 16, textAlign: 'center', marginTop: Spacing.two },
+  legalLinks: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: Spacing.two, marginTop: Spacing.one },
+  legalLink: { fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
 });

@@ -142,7 +142,9 @@ export const en = {
     thanks: 'Thank you! Your plan is active.',
     notNow: 'Not now',
     notConfigured: 'Purchases are not available in this build.',
-    legal: 'Subscriptions renew automatically until cancelled in your App Store settings. Prices shown are set by the App Store for your region.',
+    legal: 'Unlimited is an auto-renewing monthly subscription billed to your Apple account at the price shown above. It renews each month until you cancel at least 24 hours before the period ends, in App Store → your account → Subscriptions. Prices are set by the App Store for your region.',
+    terms: 'Terms of Use (EULA)',
+    privacy: 'Privacy Policy',
     f: {
       hosted: 'Transcription and recaps included — no API key needed',
       sixty: 'Recordings up to 90 minutes',
@@ -332,6 +334,8 @@ export const en = {
     retry: 'Retry',
     gaps: '{{seconds}} s of audio missing ({{count}} gap). Playback and transcript may skip.',
     gaps_plural: '{{seconds}} s of audio missing ({{count}} gaps). Playback and transcript may skip.',
+    partialTranscript: 'About {{seconds}} s of this recording could not be transcribed; the recap covers the rest.',
+    transcribingPct: 'Transcribing… {{pct}}%',
     noKey: 'Add an OpenRouter key in Settings to generate the recap.',
     noTranscript: 'No transcript yet — wait for transcription to finish or tap Retry.',
   },
@@ -346,6 +350,12 @@ export const en = {
     transcriptionFailed: 'Transcription failed',
     summaryFailed: 'Summary failed',
     uploadFailed: 'Upload failed',
+  },
+  // Dynamic Island / Lock Screen Live Activity shown while a recording is being processed.
+  island: {
+    transcribing: 'Transcribing…',
+    summarizing: 'Creating recap…',
+    untitled: 'Your recording',
   },
 };
 

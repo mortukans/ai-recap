@@ -10,7 +10,9 @@
  */
 import { AiRecapError, type Recap, type TranscriptSegment, isAiRecapError, retryTarget, titleFromTranscript } from '@ai-recap/core';
 import { presetContextId } from '@ai-recap/prompts';
+import { Recorder } from '@ai-recap/recorder';
 import NetInfo from '@react-native-community/netinfo';
+import { AppState, type NativeEventSubscription } from 'react-native';
 
 import {
   DEFAULT_SUMMARY_MODEL,
@@ -21,12 +23,21 @@ import {
 } from '../ai';
 import { attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo, usageRepo } from '../db';
 import { ensureShortChunks } from '../features/recap/normalizeChunks';
+import {
+  endProcessingActivity,
+  endStaleProcessingActivities,
+  syncProcessingActivity,
+} from '../features/recap/processingLiveActivity';
+import { clearResume } from '../features/recap/transcriptResume';
 import { syncUsage } from '../features/usage/syncUsage';
 import { newId } from '../lib/ids';
-import { getProcessingPaused, getRecapModels, getSummaryModel, setProcessingPaused } from '../lib/prefs';
+import { getProcessingPaused, getRecapModels, getSummaryModel, setProcessingPaused, setTranscriptionCoverage } from '../lib/prefs';
 import { withRetry } from './backoff';
 
-const PASS_DEADLINE_MS = 25 * 60_000;
+// The watchdog fires only after this long WITHOUT progress (a heartbeat per chunk resets it), so a
+// legitimately long recording — a 1h40m watch file is ~100 chunks — is never killed for taking time;
+// only a genuinely stuck pass is. Each network call still has its own 120 s timeout underneath.
+const STALL_DEADLINE_MS = 8 * 60_000;
 
 /** Resolves when `signal` aborts (never, if it does not). */
 function onAbort(signal: AbortSignal): Promise<void> {
@@ -45,9 +56,15 @@ export class ProcessingCoordinator {
   private paused = false;
   private online = true;
   private netUnsub: (() => void) | null = null;
+  private appStateSub: NativeEventSubscription | null = null;
   private listeners = new Set<() => void>();
   /** Last failure per recap (in-memory) so the UI can explain a *Failed status and offer Retry. */
   private lastErrors = new Map<string, string>();
+  /** Reset by the active watchdog on each unit of progress; a no-op between passes. */
+  private heartbeat: () => void = () => {};
+  /** Live progress for the recap being processed, for the UI + Dynamic Island. `done/total` are the
+   *  transcribed-chunk counts; during recap generation the phase is 'summarizing' (no chunk count). */
+  private progress: { id: string; phase: 'transcribing' | 'summarizing'; done: number; total: number } | null = null;
 
   constructor(private readonly transcriber: TranscriptionProvider) {}
 
@@ -71,11 +88,18 @@ export class ProcessingCoordinator {
       this.online = s.isConnected !== false;
       if (!wasOnline && this.online) void this.pump(); // reconnected → drain queue
     });
+    // Returning to the foreground resumes a transcription that iOS suspended/killed while backgrounded.
+    // Only when idle, so we never rewind a pass that is actually running right now.
+    this.appStateSub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && !this.paused && !this.processing) void this.recover().catch(() => undefined);
+    });
   }
 
   stop(): void {
     this.netUnsub?.();
     this.netUnsub = null;
+    this.appStateSub?.remove();
+    this.appStateSub = null;
   }
 
   /** Subscribe to status changes (UI can refresh). Returns an unsubscribe function. */
@@ -111,6 +135,11 @@ export class ProcessingCoordinator {
 
   isPaused(): boolean {
     return this.paused;
+  }
+
+  /** Live progress for this recap while it is being processed (transcribing or generating), else null. */
+  processingProgress(recapId: string): { phase: 'transcribing' | 'summarizing'; done: number; total: number } | null {
+    return this.progress && this.progress.id === recapId ? { ...this.progress } : null;
   }
 
   /**
@@ -220,6 +249,11 @@ export class ProcessingCoordinator {
   private async pump(): Promise<void> {
     if (this.processing || this.paused) return;
     this.processing = true;
+    // Hold background time so a pass keeps running for the extra minutes iOS grants after the app is
+    // backgrounded; released as soon as the queue drains. Resumable transcription covers the rest.
+    void Recorder.beginBackgroundTask();
+    // Clear any island left behind by a crash/kill before showing progress for this run.
+    void endStaleProcessingActivities();
     try {
       while (this.queue.length > 0 && !this.paused) {
         const id = this.queue[0];
@@ -237,35 +271,47 @@ export class ProcessingCoordinator {
           ]);
         } finally {
           if (this.current === pass) this.current = null;
+          if (this.progress?.id === id) this.progress = null;
+          void endProcessingActivity(); // this pass is done/failed/stopped — drop the island
           this.notify();
         }
         this.queue = this.queue.filter((q) => q !== id);
       }
     } finally {
       this.processing = false;
+      void Recorder.endBackgroundTask();
     }
   }
 
   /**
-   * The queue is sequential, so one stalled recap would block every later one. Network calls already
-   * carry their own timeouts; this is the last line of defence: after `PASS_DEADLINE_MS` the recap is
-   * marked failed (Retry stays available) and the queue moves on.
+   * The queue is sequential, so one stalled recap would block every later one. This is a STALL
+   * watchdog: the deadline is re-armed on every heartbeat (one per transcribed chunk), so it fires
+   * only when a pass makes no progress for `STALL_DEADLINE_MS`, never merely because a recording is
+   * long. Each network call still carries its own 120 s timeout underneath.
    */
   private async withWatchdog(id: string, work: Promise<void>, signal: AbortSignal): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let resolveDeadline: (v: 'timeout') => void = () => {};
     const deadline = new Promise<'timeout'>((resolve) => {
-      timer = setTimeout(() => resolve('timeout'), PASS_DEADLINE_MS);
+      resolveDeadline = resolve;
     });
+    const arm = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => resolveDeadline('timeout'), STALL_DEADLINE_MS);
+    };
+    this.heartbeat = arm; // progress re-arms the deadline
+    arm();
     try {
       const outcome = await Promise.race([work.then(() => 'done' as const), deadline]);
       if (outcome === 'timeout' && !signal.aborted) {
         const recap = await recapsRepo.getRecap(id);
         const stage = recap?.status === 'summarizing' ? 'summary' : 'transcription';
-        this.recordFailure(id, stage, new Error(`Processing exceeded ${Math.round(PASS_DEADLINE_MS / 60000)} min — stopped so other recordings can continue.`));
+        this.recordFailure(id, stage, new Error(`Processing stalled for ${Math.round(STALL_DEADLINE_MS / 60000)} min — stopped so other recordings can continue.`));
         await this.setStatus(id, stage === 'summary' ? 'summaryFailed' : 'transcriptionFailed');
       }
     } finally {
       if (timer) clearTimeout(timer);
+      this.heartbeat = () => {};
     }
   }
 
@@ -346,18 +392,35 @@ export class ProcessingCoordinator {
 
   private async doTranscription(recap: Recap, signal?: AbortSignal): Promise<void> {
     // Watch recordings arrive as one long file; transcribe in ≤ 60 s pieces like phone recordings.
-    await ensureShortChunks(recap.id).catch((e) => console.warn('[processing] chunk split skipped:', String(e)));
+    // Splitting a 100-minute file is itself slow, so it heartbeats the stall watchdog per part.
+    await ensureShortChunks(recap.id, undefined, () => this.heartbeat()).catch((e) => console.warn('[processing] chunk split skipped:', String(e)));
     const chunks = await chunksRepo.listChunks(recap.id);
-    const result = await withRetry(
-      () => this.transcriber.transcribe({ recapId: recap.id, audioUris: chunks.map((ch) => ch.relativePath), signal }),
-      // Timeouts are retried; only the user's stop ends the attempts early.
-      { attempts: 3, baseMs: 10_000, shouldRetry: () => !signal?.aborted, signal },
-    );
+    // The transcriber retries each chunk and SKIPS ones that keep failing, so a single bad chunk never
+    // loses the whole recording. It only throws for a bad key or the user's stop.
+    const result = await this.transcriber.transcribe({
+      recapId: recap.id,
+      audioUris: chunks.map((ch) => ch.relativePath),
+      signal,
+      onProgress: (done, total) => {
+        this.heartbeat();
+        this.progress = { id: recap.id, phase: 'transcribing', done, total };
+        void syncProcessingActivity({ id: recap.id, phase: 'transcribing', done, total, title: recap.title });
+        this.notify();
+      },
+    });
     if (result.segments.length === 0 && recap.durationSeconds >= 5) {
-      // An empty transcript for a real recording is a failure to surface (Retry), not a resting state:
-      // otherwise the recap sits at "transcribed" forever with nothing to summarize.
+      // Nothing at all came back for a real recording — surface it (Retry / another model) rather than
+      // resting forever at "transcribed" with nothing to summarize.
       throw new AiRecapError({ code: 'transcription/failed', message: 'The transcript came back empty (no speech recognized). Try again or choose another transcription model.', retryable: true });
     }
+    // Remember how much couldn't be transcribed, so the recap screen can note the gap (partial success).
+    await setTranscriptionCoverage(recap.id, {
+      failedSeconds: Math.round(result.failedSeconds ?? 0),
+      failedChunks: result.failedChunks ?? 0,
+    }).catch(() => undefined);
+    // Fully transcribed → free the resume cache. If chunks are still missing, keep it so a later
+    // Retry reuses the successes and only re-attempts the gaps.
+    if ((result.failedChunks ?? 0) === 0) await clearResume(recap.id).catch(() => undefined);
     const segments = result.segments.map<TranscriptSegment>((s) => ({
       id: newId(),
       recapId: recap.id,
@@ -393,6 +456,12 @@ export class ProcessingCoordinator {
   }
 
   private async doSummary(recap: Recap, signal?: AbortSignal): Promise<void> {
+    // Recap generation is a background/foreground-resumable stage too: give it a fresh watchdog window
+    // and surface it as active work (Dynamic Island + in-app progress).
+    this.heartbeat();
+    this.progress = { id: recap.id, phase: 'summarizing', done: 0, total: 0 };
+    void syncProcessingActivity({ id: recap.id, phase: 'summarizing', done: 0, total: 0, title: recap.title });
+    this.notify();
     const segments = await segmentsRepo.listSegments(recap.id);
     const context =
       (await contextsRepo.getContext(recap.contextId ?? presetContextId('workMeeting'))) ?? null;

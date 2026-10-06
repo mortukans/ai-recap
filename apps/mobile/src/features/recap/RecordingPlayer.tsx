@@ -47,16 +47,22 @@ export function RecordingPlayer({
   const [wantPlay, setWantPlay] = useState(false);
   const [pending, setPending] = useState<{ index: number; offset: number } | null>(null);
   const [waveWidth, setWaveWidth] = useState(0);
-  const current = chunks[index];
+  // The AVPlayer is created only after the user first plays. Opening a recap never builds a player,
+  // and we never call a player method until it reports `isLoaded` — that's what avoids the
+  // JS↔main-thread deadlock (play()/session-activate hopping to main while the item is still
+  // configuring on main) that watchdog-killed the app on long recordings.
+  const [activated, setActivated] = useState(false);
+  const current = activated ? chunks[index] : undefined;
   const player = useAudioPlayer(current ? { uri: current.uri } : null);
   const status = useAudioPlayerStatus(player);
 
   // expo-audio's default session is "ambient": muted by the ringer switch, so playback seemed silent.
   // playAndRecord + speaker (playsInSilentMode + allowsRecording) is the same category the recorder
-  // uses, so applying it is harmless even if a recording is running in the background.
+  // uses. Deferred to first activation so it never runs while an AVPlayer item is configuring.
   useEffect(() => {
+    if (!activated) return;
     void setAudioModeAsync({ playsInSilentMode: true, allowsRecording: true, interruptionMode: 'doNotMix', shouldRouteThroughEarpiece: false }).catch(() => undefined);
-  }, []);
+  }, [activated]);
   const didFinish = status?.didJustFinish ?? false;
   const isLoaded = status?.isLoaded ?? false;
 
@@ -70,13 +76,12 @@ export function RecordingPlayer({
   const seekAbsolute = (seconds: number) => {
     if (chunks.length === 0) return;
     const { index: target, offset } = locateInChunks(durations, seconds);
+    setActivated(true);
     setWantPlay(true);
-    if (target === index) {
-      void player.seekTo(offset).then(() => player.play());
-    } else {
-      setPending({ index: target, offset });
-      setIndex(target);
-    }
+    // Always route through `pending`; the effect below fires the actual seek+play once the target
+    // chunk reports loaded, so we never call a player method during item setup.
+    setPending({ index: target, offset });
+    setIndex(target);
   };
 
   useEffect(() => {
@@ -105,10 +110,11 @@ export function RecordingPlayer({
     }
   }, [didFinish, index, chunks.length]);
 
+  // Start/resume only once the current item is loaded — never while it is still configuring.
   useEffect(() => {
-    if (wantPlay && pending === null) player.play();
+    if (wantPlay && pending === null && isLoaded && !playing) void player.play();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, wantPlay]);
+  }, [index, wantPlay, isLoaded]);
 
   useEffect(() => {
     onTime?.(currentTime, playing);
@@ -120,8 +126,11 @@ export function RecordingPlayer({
       player.pause();
       setWantPlay(false);
     } else {
+      // Don't call play() here; activating creates/loads the player and the effect above plays it
+      // once it is loaded. Calling play() during setup is exactly what deadlocked the app.
+      setActivated(true);
       setWantPlay(true);
-      player.play();
+      if (isLoaded) void player.play();
     }
   };
 

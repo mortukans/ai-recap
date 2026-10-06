@@ -42,7 +42,7 @@ import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
 import { ensureTranscript } from '../../features/recap/ensureTranscript';
 import { MARKDOWN, exportTextFile, safeFilename, shareRichText } from '../../features/share/shareService';
 import { newId } from '../../lib/ids';
-import { type RecapModels, getDoneTasks, getRecapModels, getSummaryModel, setDefaultContextId, setRecapModels } from '../../lib/prefs';
+import { type RecapModels, getDoneTasks, getRecapModels, getSummaryModel, getTranscriptionCoverage, setDefaultContextId, setRecapModels } from '../../lib/prefs';
 import { getOpenRouterKey } from '../../security/byok-store';
 import { Colors } from '@/constants/theme';
 import { DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '../../ai';
@@ -83,6 +83,8 @@ export default function RecapDetailScreen() {
   const [contextId, setContextId] = useState<string | null>(null);
   const [playChunks, setPlayChunks] = useState<{ uri: string; duration: number }[]>([]);
   const [integrity, setIntegrity] = useState<IntegrityReport | null>(null);
+  const [coverageMissing, setCoverageMissing] = useState(0); // seconds of audio that couldn't be transcribed
+  const [procProgress, setProcProgress] = useState<{ phase: 'transcribing' | 'summarizing'; done: number; total: number } | null>(null);
   const [processingError, setProcessingError] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
@@ -111,6 +113,7 @@ export default function RecapDetailScreen() {
         setDurationSeconds(recap.durationSeconds);
         setStatus(recap.status);
         setProcessingError(processingCoordinator.getLastError(id));
+        setProcProgress(processingCoordinator.processingProgress(id));
         setContextId(recap.contextId ?? null);
       }
       setNotes((await attachmentsRepo.getNotes(id))?.extractedText ?? '');
@@ -121,6 +124,7 @@ export default function RecapDetailScreen() {
       const chunks = await chunksRepo.listChunks(id);
       setPlayChunks(chunks.map((ch) => ({ uri: chunkUri(id, ch.relativePath), duration: ch.duration })));
       setIntegrity(recap && recap.status !== 'recording' ? checkRecordingIntegrity(chunks, recap.durationSeconds) : null);
+      setCoverageMissing((await getTranscriptionCoverage(id)).failedSeconds);
       setRecapModelsState(await getRecapModels(id));
       setGlobalSummaryModel((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
       const summaries = (await artifactsRepo.listArtifacts(id)).filter((a) => a.type === 'summary');
@@ -407,11 +411,24 @@ export default function RecapDetailScreen() {
           </Rise>
         ) : null}
 
+        {coverageMissing > 0 && !isBusy ? (
+          <Rise index={rise++}>
+            <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
+              <Icon name="info" size={18} color={th.text2} />
+              <Text style={[Type.meta, { color: th.text2, flex: 1 }]}>{t('processing.partialTranscript', { seconds: coverageMissing })}</Text>
+            </View>
+          </Rise>
+        ) : null}
+
         {isBusy ? (
           <Rise index={rise++}>
             <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
               <ProcessingBars color={th.accent} />
-              <Text style={[Type.metaStrong, { color: th.accentText, flex: 1 }]}>{t(`processing.${status}`, { defaultValue: t(`status.${status}`) })}</Text>
+              <Text style={[Type.metaStrong, { color: th.accentText, flex: 1 }]}>
+                {status === 'transcribing' && procProgress?.phase === 'transcribing' && procProgress.total > 0
+                  ? t('processing.transcribingPct', { pct: Math.round((100 * procProgress.done) / procProgress.total) })
+                  : t(`processing.${status}`, { defaultValue: t(`status.${status}`) })}
+              </Text>
               <Button label={t('ui.stop')} variant="secondary" height={36} onPress={() => void processingCoordinator.forceStop()} style={{ paddingHorizontal: 14 }} />
               <Button label={t('ui.restart')} variant="secondary" height={36} onPress={() => id && void processingCoordinator.restart(id)} style={{ paddingHorizontal: 14 }} />
             </View>

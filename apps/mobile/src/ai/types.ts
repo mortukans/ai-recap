@@ -12,6 +12,8 @@ export interface TranscriptionInput {
   languageHint?: 'auto' | 'lv' | 'en';
   /** Cancels in-flight network calls when the user force-stops processing. */
   signal?: AbortSignal;
+  /** Called after each chunk (done = processed so far, total = chunk count): resets the stall watchdog and drives the progress UI. */
+  onProgress?: (done: number, total: number) => void;
 }
 
 export interface TranscriptionResultSegment {
@@ -26,6 +28,10 @@ export interface TranscriptionResult {
   segments: TranscriptionResultSegment[];
   detectedLanguages: string[];
   durationSeconds: number;
+  /** Chunks that could not be transcribed after retries and were skipped (partial success). */
+  failedChunks?: number;
+  /** Approximate seconds of audio those skipped chunks covered (for the "part missing" note). */
+  failedSeconds?: number;
 }
 
 export interface TranscriptionProvider {

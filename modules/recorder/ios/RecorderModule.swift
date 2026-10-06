@@ -1,11 +1,14 @@
 import AVFoundation
 import ExpoModulesCore
+import UIKit
 
 /// Expo module bridge for the chunked background recorder.
 /// Registered as "AiRecapRecorder" (see expo-module.config.json).
 /// See AI_RECAP_TECHNICAL_ARCHITECTURE.md §7.2.
 public class RecorderModule: Module {
   private let engine = RecordingEngine()
+  /// Extra background time for finishing transcription after the app is sent to the background.
+  private var bgTask: UIBackgroundTaskIdentifier = .invalid
 
   public func definition() -> ModuleDefinition {
     Name("AiRecapRecorder")
@@ -106,6 +109,32 @@ public class RecorderModule: Module {
       let parts = try await AudioSplitter.split(url: url, maxSeconds: maxSeconds)
       return parts.map {
         ["uri": $0.url.absoluteString, "fileName": $0.url.lastPathComponent, "duration": $0.duration, "byteSize": $0.byteSize]
+      }
+    }
+
+    /// Ask iOS for extra time so transcription keeps running after the app is backgrounded. iOS grants
+    /// a finite window (tens of seconds to a few minutes); combined with resumable transcription, work
+    /// continues while the user is away and resumes cleanly next time. Idempotent.
+    AsyncFunction("beginBackgroundTask") { () in
+      DispatchQueue.main.async {
+        guard self.bgTask == .invalid else { return }
+        self.bgTask = UIApplication.shared.beginBackgroundTask(withName: "ai-recap-processing") { [weak self] in
+          // Expiration handler: iOS is reclaiming the time — release it (progress is already cached).
+          guard let self else { return }
+          if self.bgTask != .invalid {
+            UIApplication.shared.endBackgroundTask(self.bgTask)
+            self.bgTask = .invalid
+          }
+        }
+      }
+    }
+
+    /// Release the background time once processing is idle (or on foreground). Idempotent.
+    AsyncFunction("endBackgroundTask") { () in
+      DispatchQueue.main.async {
+        guard self.bgTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(self.bgTask)
+        self.bgTask = .invalid
       }
     }
   }

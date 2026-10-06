@@ -46,4 +46,15 @@ describe('withRetry', () => {
     ).rejects.toThrow('nope');
     expect(fn).toHaveBeenCalledTimes(1);
   });
+
+  it('stops waiting out the backoff and throws when the signal aborts', async () => {
+    const controller = new AbortController();
+    const fn = vi.fn().mockRejectedValue(new Error('boom'));
+    const p = withRetry(fn, { attempts: 5, baseMs: 10_000, signal: controller.signal });
+    const assertion = expect(p).rejects.toThrow(); // AbortError from the interrupted sleep
+    controller.abort(); // fires during the first backoff
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fn).toHaveBeenCalledTimes(1); // no further attempt after abort
+  });
 });
