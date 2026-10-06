@@ -89,9 +89,10 @@ export class ProcessingCoordinator {
       if (!wasOnline && this.online) void this.pump(); // reconnected → drain queue
     });
     // Returning to the foreground resumes a transcription that iOS suspended/killed while backgrounded.
-    // Only when idle, so we never rewind a pass that is actually running right now.
+    // Only when idle, and via resumeResting() (NOT recover()) so a recording that is still live in the
+    // foreground — iOS keeps capturing in the background — is never prematurely finalized/transcribed.
     this.appStateSub = AppState.addEventListener('change', (state) => {
-      if (state === 'active' && !this.paused && !this.processing) void this.recover().catch(() => undefined);
+      if (state === 'active' && !this.paused && !this.processing) void this.resumeResting().catch(() => undefined);
     });
   }
 
@@ -217,14 +218,27 @@ export class ProcessingCoordinator {
     void this.pump();
   }
 
-  /** On launch: reset recaps orphaned mid-processing by a crash, then enqueue anything resumable. */
+  /**
+   * COLD-LAUNCH recovery (call once from bootstrap only). A recap left in `recording` by a crash/kill
+   * is an orphan — rebuild it from the chunks persisted on disk (§5.5) — then resume resting work.
+   * MUST NOT run on every foreground: on a warm resume a `recording` recap may be a live session that
+   * iOS kept capturing in the background, and finalizing it would transcribe a partial + double-process
+   * it on Finish. The AppState path uses resumeResting() instead.
+   */
   async recover(): Promise<void> {
-    // Recording interrupted by a crash: rebuild from the chunks already persisted on disk (§5.5).
     for (const r of await recapsRepo.listByStatuses(['recording'])) {
       const chunks = await chunksRepo.listChunks(r.id);
       const duration = chunks.reduce((sum, c) => sum + c.duration, 0);
       await recapsRepo.updateRecap(r.id, { status: 'recorded', durationSeconds: duration, endedAt: Date.now() });
     }
+    await this.resumeResting();
+  }
+
+  /**
+   * Resume work resting mid-pipeline. Safe on every return to the foreground: unlike recover() it never
+   * touches `recording` recaps, so a recording in progress is never prematurely finalized.
+   */
+  private async resumeResting(): Promise<void> {
     for (const r of await recapsRepo.listByStatuses(['transcribing'])) {
       await recapsRepo.updateRecapStatus(r.id, 'recorded');
     }
@@ -266,7 +280,7 @@ export class ProcessingCoordinator {
           // A force-stop/restart aborts the signal; the pass is then abandoned immediately even if the
           // underlying work cannot be cancelled (it is guarded against writing after abort).
           await Promise.race([
-            this.withWatchdog(id, this.processRecap(id, controller.signal), controller.signal).catch(() => undefined),
+            this.withWatchdog(id, this.processRecap(id, controller.signal), controller).catch(() => undefined),
             onAbort(controller.signal),
           ]);
         } finally {
@@ -289,7 +303,7 @@ export class ProcessingCoordinator {
    * only when a pass makes no progress for `STALL_DEADLINE_MS`, never merely because a recording is
    * long. Each network call still carries its own 120 s timeout underneath.
    */
-  private async withWatchdog(id: string, work: Promise<void>, signal: AbortSignal): Promise<void> {
+  private async withWatchdog(id: string, work: Promise<void>, controller: AbortController): Promise<void> {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let resolveDeadline: (v: 'timeout') => void = () => {};
     const deadline = new Promise<'timeout'>((resolve) => {
@@ -303,7 +317,11 @@ export class ProcessingCoordinator {
     arm();
     try {
       const outcome = await Promise.race([work.then(() => 'done' as const), deadline]);
-      if (outcome === 'timeout' && !signal.aborted) {
+      if (outcome === 'timeout' && !controller.signal.aborted) {
+        // Abort FIRST so the stalled pass bails at its next `signal.aborted` checkpoint instead of
+        // continuing to run — otherwise it would later overwrite the failed status back to
+        // transcribed/ready and keep writing (a "zombie pass" that can double-write the transcript).
+        controller.abort();
         const recap = await recapsRepo.getRecap(id);
         const stage = recap?.status === 'summarizing' ? 'summary' : 'transcription';
         this.recordFailure(id, stage, new Error(`Processing stalled for ${Math.round(STALL_DEADLINE_MS / 60000)} min — stopped so other recordings can continue.`));
@@ -371,6 +389,10 @@ export class ProcessingCoordinator {
             await this.doSummary(recap, signal);
             if (signal.aborted) return;
             await this.setStatus(id, 'ready');
+            // Reached a terminal state → free the resume cache even for a partially-transcribed recap
+            // (it is kept across transcription retries, but a `ready` recap never re-transcribes, so it
+            // would otherwise leak the whole transcript into AsyncStorage indefinitely).
+            await clearResume(id).catch(() => undefined);
           } catch (e) {
             if (signal.aborted) return; // force-stopped: forceStop() already rewound to `transcribed`
             if (isAiRecapError(e) && e.code === 'llm/missing-key') {
@@ -392,8 +414,14 @@ export class ProcessingCoordinator {
 
   private async doTranscription(recap: Recap, signal?: AbortSignal): Promise<void> {
     // Watch recordings arrive as one long file; transcribe in ≤ 60 s pieces like phone recordings.
-    // Splitting a 100-minute file is itself slow, so it heartbeats the stall watchdog per part.
-    await ensureShortChunks(recap.id, undefined, () => this.heartbeat()).catch((e) => console.warn('[processing] chunk split skipped:', String(e)));
+    // Splitting a 100-minute file is a single opaque native call (one chunk ⇒ onProgress fires only
+    // once), so keep the stall watchdog armed with a periodic heartbeat for the whole split phase.
+    const splitBeat = setInterval(() => this.heartbeat(), 60_000);
+    try {
+      await ensureShortChunks(recap.id, undefined, () => this.heartbeat()).catch((e) => console.warn('[processing] chunk split skipped:', String(e)));
+    } finally {
+      clearInterval(splitBeat);
+    }
     const chunks = await chunksRepo.listChunks(recap.id);
     // The transcriber retries each chunk and SKIPS ones that keep failing, so a single bad chunk never
     // loses the whole recording. It only throws for a bad key or the user's stop.
@@ -410,7 +438,9 @@ export class ProcessingCoordinator {
     });
     if (result.segments.length === 0 && recap.durationSeconds >= 5) {
       // Nothing at all came back for a real recording — surface it (Retry / another model) rather than
-      // resting forever at "transcribed" with nothing to summarize.
+      // resting forever at "transcribed" with nothing to summarize. Clear the resume cache first, or the
+      // retry would reuse the cached empty chunks and fail again — making "Try again" futile.
+      await clearResume(recap.id).catch(() => undefined);
       throw new AiRecapError({ code: 'transcription/failed', message: 'The transcript came back empty (no speech recognized). Try again or choose another transcription model.', retryable: true });
     }
     // Remember how much couldn't be transcribed, so the recap screen can note the gap (partial success).
@@ -447,7 +477,7 @@ export class ProcessingCoordinator {
         inputTokens: 0,
         outputTokens: 0,
         model: '',
-        provider: this.transcriber.runsOnDevice ? 'on-device' : 'transcription',
+        provider: (result.runsOnDevice ?? this.transcriber.runsOnDevice) ? 'on-device' : 'transcription',
         estimatedCostMicros: 0,
         occurredAt: Date.now(),
         syncedToBackend: false,

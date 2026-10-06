@@ -32,6 +32,9 @@ export interface TranscriptionResult {
   failedChunks?: number;
   /** Approximate seconds of audio those skipped chunks covered (for the "part missing" note). */
   failedSeconds?: number;
+  /** Whether the concrete provider ran on-device (Apple Speech) vs a metered network provider — set by
+   * SmartTranscriber so usage accounting attributes free on-device work correctly. */
+  runsOnDevice?: boolean;
 }
 
 export interface TranscriptionProvider {

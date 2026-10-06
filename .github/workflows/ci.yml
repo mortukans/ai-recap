@@ -1,0 +1,35 @@
+# Fast PR/commit gate: typecheck + tests on every push and pull request (no secrets, no native build).
+# The iOS release workflow (ios-build.yml) is manual-dispatch only and runs no checks, so this is what
+# keeps a broken typecheck or red test from reaching a release build.
+name: CI
+
+on:
+  push:
+    branches: [main, 'release/**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: typecheck + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4 # version from package.json "packageManager"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm -r typecheck
+      - name: Test
+        run: pnpm test
+      # Lint is reported but non-blocking until the existing warnings are cleaned up (see docs/AUDIT_2026-10.md).
+      - name: Lint (non-blocking)
+        run: pnpm lint
+        continue-on-error: true

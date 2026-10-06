@@ -4,7 +4,7 @@
  * Timestamps are epoch milliseconds. JSON columns hold small arrays/objects.
  */
 import { sql } from 'drizzle-orm';
-import { blob, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { blob, index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const recaps = sqliteTable('recaps', {
   id: text('id').primaryKey(),
@@ -21,7 +21,10 @@ export const recaps = sqliteTable('recaps', {
   contextId: text('context_id'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
-});
+}, (t) => ({
+  byStarted: index('idx_recaps_started_at').on(t.startedAt), // library list orders by started_at
+  byStatus: index('idx_recaps_status').on(t.status), // coordinator listByStatuses() runs this constantly
+}));
 
 export const audioChunks = sqliteTable('audio_chunks', {
   id: text('id').primaryKey(),
@@ -34,7 +37,9 @@ export const audioChunks = sqliteTable('audio_chunks', {
   duration: real('duration').notNull().default(0),
   byteSize: integer('byte_size').notNull().default(0),
   uploadStatus: text('upload_status').notNull().default('local'),
-});
+}, (t) => ({
+  byRecap: index('idx_chunks_recap').on(t.recapId, t.index),
+}));
 
 export const transcriptSegments = sqliteTable('transcript_segments', {
   id: text('id').primaryKey(),
@@ -46,7 +51,9 @@ export const transcriptSegments = sqliteTable('transcript_segments', {
   speakerLabel: text('speaker_label'),
   language: text('language'),
   text: text('text').notNull().default(''),
-});
+}, (t) => ({
+  byRecap: index('idx_segments_recap').on(t.recapId, t.startTime), // listSegments(recapId) order by start_time
+}));
 
 export const contexts = sqliteTable('contexts', {
   id: text('id').primaryKey(),
@@ -78,7 +85,9 @@ export const recapSpeakers = sqliteTable('recap_speakers', {
   diarizedLabel: text('diarized_label').notNull(),
   customDisplayName: text('custom_display_name'),
   speakerProfileId: text('speaker_profile_id'),
-});
+}, (t) => ({
+  byRecap: index('idx_recap_speakers_recap').on(t.recapId),
+}));
 
 export const generatedArtifacts = sqliteTable('generated_artifacts', {
   id: text('id').primaryKey(),
@@ -92,7 +101,9 @@ export const generatedArtifacts = sqliteTable('generated_artifacts', {
   /** JSON-serialized RecapDocument (stored as an opaque string; app owns (de)serialization). */
   content: text('content').notNull(),
   createdAt: integer('created_at').notNull(),
-});
+}, (t) => ({
+  byRecap: index('idx_artifacts_recap').on(t.recapId, t.createdAt),
+}));
 
 export const attachments = sqliteTable('attachments', {
   id: text('id').primaryKey(),
@@ -102,7 +113,9 @@ export const attachments = sqliteTable('attachments', {
   relativePath: text('relative_path').notNull(),
   extractedText: text('extracted_text'),
   scope: text('scope').notNull().default('recap'),
-});
+}, (t) => ({
+  byRecap: index('idx_attachments_recap').on(t.recapId),
+}));
 
 export const chatMessages = sqliteTable('chat_messages', {
   id: text('id').primaryKey(),
@@ -113,7 +126,9 @@ export const chatMessages = sqliteTable('chat_messages', {
   content: text('content').notNull().default(''),
   citations: text('citations', { mode: 'json' }).$type<number[]>(),
   createdAt: integer('created_at').notNull(),
-});
+}, (t) => ({
+  byRecap: index('idx_chat_recap').on(t.recapId, t.createdAt),
+}));
 
 export const usageRecords = sqliteTable('usage_records', {
   id: text('id').primaryKey(),
@@ -127,7 +142,10 @@ export const usageRecords = sqliteTable('usage_records', {
   estimatedCostMicros: integer('estimated_cost_micros').notNull().default(0),
   occurredAt: integer('occurred_at').notNull(),
   syncedToBackend: integer('synced_to_backend', { mode: 'boolean' }).notNull().default(false),
-});
+}, (t) => ({
+  byOccurred: index('idx_usage_occurred').on(t.occurredAt), // "usage this month" window
+  bySynced: index('idx_usage_synced').on(t.syncedToBackend), // syncUsage() scans unsynced rows
+}));
 
 export const schema = {
   recaps,

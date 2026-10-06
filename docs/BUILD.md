@@ -61,5 +61,6 @@ review using **EAS Update**.
 
 ## Backend (Supabase)
 
-Apply `supabase/migrations/*.sql` to an EU-region Supabase project, enable **anonymous auth**, and
-create a private `processing-audio` storage bucket. Set the project URL + anon key in `.env`.
+Apply `supabase/migrations/*.sql` to an EU-region Supabase project and enable **anonymous auth**, then
+set the project URL + anon key in `.env`. (No storage bucket is needed: the hosted AI Edge Functions
+receive audio inline as base64 and never persist it.)

@@ -5,7 +5,7 @@
  */
 import type { Recap } from '@ai-recap/core';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -55,10 +55,19 @@ export default function RecapsScreen() {
     }
   }, []);
 
+  // Debounce the search so each keystroke doesn't re-run the (now indexed) search + usage queries.
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const h = setTimeout(() => setDebouncedQuery(query), 250);
+    return () => clearTimeout(h);
+  }, [query]);
+  const queryRef = useRef(debouncedQuery);
+  queryRef.current = debouncedQuery;
+
   useFocusEffect(
     useCallback(() => {
-      void load(query);
-    }, [load, query]),
+      void load(debouncedQuery);
+    }, [load, debouncedQuery]),
   );
 
   useEffect(() => {
@@ -68,26 +77,33 @@ export default function RecapsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(
-    () =>
-      processingCoordinator.onChange(() => {
-        setCurrentId(processingCoordinator.currentId());
-        setPaused(processingCoordinator.isPaused());
-        void load(query);
-      }),
-    [load, query],
-  );
+  // Coordinator progress fires once per chunk; debounce the full library reload so a 65-chunk recording
+  // doesn't trigger 65 re-queries. (queryRef keeps the latest query without re-subscribing per keystroke.)
+  useEffect(() => {
+    let h: ReturnType<typeof setTimeout> | undefined;
+    const unsub = processingCoordinator.onChange(() => {
+      setCurrentId(processingCoordinator.currentId());
+      setPaused(processingCoordinator.isPaused());
+      if (h) clearTimeout(h);
+      h = setTimeout(() => void load(queryRef.current), 300);
+    });
+    return () => {
+      unsub();
+      if (h) clearTimeout(h);
+    };
+  }, [load]);
   const currentTitle = rows.find((r) => r.recap.id === currentId)?.recap.title;
 
   const onDelete = useCallback(
     (recap: Recap) => {
       Alert.alert(t('home.deleteTitle'), t('home.deleteMessage'), [
         { text: t('home.cancel'), style: 'cancel' },
-        { text: t('home.delete'), style: 'destructive', onPress: () => void deleteRecapCompletely(recap.id).then(() => load(query)) },
+        { text: t('home.delete'), style: 'destructive', onPress: () => void deleteRecapCompletely(recap.id).then(() => load(queryRef.current)) },
       ]);
     },
-    [t, load, query],
+    [t, load],
   );
+  const todayLabel = useMemo(() => longDate(Date.now()), []);
 
   // Group by calendar day (rows arrive newest first).
   const sections = useMemo(() => {
@@ -109,7 +125,7 @@ export default function RecapsScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
         <Rise index={riseIndex++} style={styles.header}>
           <View style={{ gap: 2 }}>
-            <Text style={[Type.meta, { color: th.text2 }]}>{longDate(Date.now())}</Text>
+            <Text style={[Type.meta, { color: th.text2 }]}>{todayLabel}</Text>
             <Text style={[Type.screenTitle, { color: th.text }]}>{t('tabs.recaps')}</Text>
           </View>
           <View style={{ alignItems: 'flex-end', gap: 2, paddingBottom: 4 }}>
@@ -179,7 +195,16 @@ export default function RecapsScreen() {
               if (processing || failed) {
                 return (
                   <Rise key={r.id} index={riseIndex++}>
-                    <Pressable onPress={open} onLongPress={() => onDelete(r)} delayLongPress={400}>
+                    <Pressable
+                      onPress={open}
+                      onLongPress={() => onDelete(r)}
+                      delayLongPress={400}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${title}, ${t(`status.${r.status}`)}, ${shortDuration(r.durationSeconds)}`}
+                      accessibilityActions={[{ name: 'delete', label: t('home.delete') }]}
+                      onAccessibilityAction={(e) => {
+                        if (e.nativeEvent.actionName === 'delete') onDelete(r);
+                      }}>
                       <Card style={{ gap: 10 }}>
                         <View style={styles.between}>
                           <View style={styles.statusRow}>
@@ -213,6 +238,12 @@ export default function RecapsScreen() {
                     onPress={open}
                     onLongPress={() => onDelete(r)}
                     delayLongPress={400}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${title}, ${shortDuration(r.durationSeconds)}, ${clock(r.startedAt)}`}
+                    accessibilityActions={[{ name: 'delete', label: t('home.delete') }]}
+                    onAccessibilityAction={(e) => {
+                      if (e.nativeEvent.actionName === 'delete') onDelete(r);
+                    }}
                     style={({ pressed }) => [styles.row, { borderBottomColor: th.line, borderBottomWidth: isLast ? 0 : 1, opacity: pressed ? 0.6 : 1 }]}>
                     <Text style={[Type.body, { color: th.text }]} numberOfLines={2}>
                       {title}

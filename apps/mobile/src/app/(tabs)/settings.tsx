@@ -276,9 +276,10 @@ export default function SettingsScreen() {
         <Rise index={rise++} style={{ gap: 8 }}>
           <SectionLabel>{t('ui.recordingSection')}</SectionLabel>
           <Group>
-            <Row title={t('ui.language')} value={t('ui.languageAuto')} chevron />
-            <Row title={t('ui.chunkLength')} value={`${DEFAULT_SETTINGS.chunkDurationSeconds} s`} chevron />
-            <Row title={t('ui.audioQuality')} value={t('ui.standard')} chevron last />
+            {/* Read-only status rows — no chevron, since there's nothing to open (a stray chevron reads as tappable to VoiceOver and sighted users alike). */}
+            <Row title={t('ui.language')} value={t('ui.languageAuto')} />
+            <Row title={t('ui.chunkLength')} value={`${DEFAULT_SETTINGS.chunkDurationSeconds} s`} />
+            <Row title={t('ui.audioQuality')} value={t('ui.standard')} last />
           </Group>
         </Rise>
 

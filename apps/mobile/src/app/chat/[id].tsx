@@ -97,8 +97,11 @@ export default function ChatScreen() {
           <Pressable
             onPress={onSend}
             disabled={sending || input.trim().length === 0}
+            accessibilityRole="button"
+            accessibilityLabel={t('chat.send')}
+            accessibilityState={{ disabled: sending || input.trim().length === 0 }}
             style={[styles.sendBtn, { backgroundColor: th.primaryBtn, opacity: sending || input.trim().length === 0 ? 0.4 : 1 }]}>
-            <Ionicons name="arrow-up" color={th.onPrimaryBtn} size={22} />
+            <Ionicons name="arrow-up" color={th.onPrimaryBtn} size={22} accessibilityElementsHidden importantForAccessibility="no" />
           </Pressable>
         </View>
       </KeyboardAvoidingView>

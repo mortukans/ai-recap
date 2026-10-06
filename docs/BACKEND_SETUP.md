@@ -1,6 +1,6 @@
 # Backend + purchases setup (M0-5 · M5-1 · M5-2)
 
-> **Status 2026-09-19:** sections A, C and D are DONE (Supabase project `syjpumaqnlmglrokiujy`, RevenueCat project `19269c38`, EAS env vars set). Section B products are created; the **Paid Apps Agreement, sandbox tester and the E verification are still open** — see `docs/STATUS.md`.
+> **Status 2026-09-19:** sections A, C and D are DONE (Supabase project `<SUPABASE_PROJECT_REF>`, RevenueCat project `<REVENUECAT_PROJECT_ID>`, EAS env vars set). Section B products are created; the **Paid Apps Agreement, sandbox tester and the E verification are still open** — see `docs/STATUS.md`. (Project identifiers are kept out of this public repo; the real values live in the EAS/Supabase dashboards.)
 >
 > Hosted AI functions `transcribe` and `recap-generate` are deployed too (Unlimited users only, fair-use capped). They need one more secret before an Unlimited user can use them:
 > ```bash

@@ -34,6 +34,9 @@ export class SmartTranscriber implements TranscriptionProvider {
     } else {
       impl = new AppleSpeechTranscriber();
     }
-    return impl.transcribe(input);
+    // Carry the concrete provider's on-device flag so usage accounting can distinguish free on-device
+    // transcription from metered network providers (this wrapper's own runsOnDevice is always false).
+    const result = await impl.transcribe(input);
+    return { ...result, runsOnDevice: impl.runsOnDevice };
   }
 }

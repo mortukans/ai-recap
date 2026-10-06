@@ -12,9 +12,69 @@ import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, Vi
 import type { PurchasesPackage } from 'react-native-purchases';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import type { TFunction } from 'i18next';
+
 import { Colors, Spacing } from '@/constants/theme';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '../constants/legal';
 import { useTheme } from '../design/useTheme';
+
+/**
+ * A single plan card. Hoisted to module scope (not declared during render) so the React Compiler can
+ * memoize it and it never resets child state; render-scope values are passed in as props.
+ */
+function Plan({
+  title,
+  price,
+  features,
+  pkg,
+  owned,
+  highlight,
+  busy,
+  onBuy,
+  c,
+  th,
+  t,
+}: {
+  title: string;
+  price: string;
+  features: string[];
+  pkg: PurchasesPackage | null;
+  owned: boolean;
+  highlight?: boolean;
+  busy: string | null;
+  onBuy: (pkg: PurchasesPackage | null) => void;
+  c: typeof Colors.light;
+  th: ReturnType<typeof useTheme>;
+  t: TFunction;
+}) {
+  const disabled = owned || !pkg || busy !== null;
+  const label = owned ? t('paywall.owned') : pkg ? t('paywall.buy') : t('paywall.unavailable');
+  return (
+    <View style={[styles.card, { backgroundColor: c.backgroundElement, borderColor: highlight ? th.accent : th.line, borderWidth: 1 }]}>
+      <Text style={[styles.cardTitle, { color: c.text }]}>{title}</Text>
+      <Text style={[styles.price, { color: c.text }]}>{price}</Text>
+      {features.map((f) => (
+        <View key={f} style={styles.featureRow}>
+          <Ionicons name="checkmark-circle" size={18} color={th.accentText} accessibilityElementsHidden importantForAccessibility="no" />
+          <Text style={[styles.feature, { color: c.text }]}>{f}</Text>
+        </View>
+      ))}
+      <Pressable
+        disabled={disabled}
+        onPress={() => onBuy(pkg)}
+        accessibilityRole="button"
+        accessibilityLabel={`${title}, ${price}. ${label}`}
+        accessibilityState={{ disabled }}
+        style={[styles.buy, { backgroundColor: owned ? c.backgroundSelected : th.primaryBtn, opacity: !pkg && !owned ? 0.5 : 1 }]}>
+        {busy === pkg?.identifier ? (
+          <ActivityIndicator color={th.onPrimaryBtn} />
+        ) : (
+          <Text style={[styles.buyText, { color: owned ? c.text : th.onPrimaryBtn }]}>{label}</Text>
+        )}
+      </Pressable>
+    </View>
+  );
+}
 import { applyEntitlements, refreshEntitlements } from '../purchases/entitlements';
 import {
   PRODUCT_BYOK_LIFETIME,
@@ -81,45 +141,6 @@ export default function PaywallScreen() {
     }
   };
 
-  const Plan = ({
-    title,
-    price,
-    features,
-    pkg,
-    owned,
-    highlight,
-  }: {
-    title: string;
-    price: string;
-    features: string[];
-    pkg: PurchasesPackage | null;
-    owned: boolean;
-    highlight?: boolean;
-  }) => (
-    <View style={[styles.card, { backgroundColor: c.backgroundElement, borderColor: highlight ? th.accent : th.line, borderWidth: 1 }]}>
-      <Text style={[styles.cardTitle, { color: c.text }]}>{title}</Text>
-      <Text style={[styles.price, { color: c.text }]}>{price}</Text>
-      {features.map((f) => (
-        <View key={f} style={styles.featureRow}>
-          <Ionicons name="checkmark-circle" size={18} color={th.accentText} />
-          <Text style={[styles.feature, { color: c.text }]}>{f}</Text>
-        </View>
-      ))}
-      <Pressable
-        disabled={owned || !pkg || busy !== null}
-        onPress={() => void buy(pkg)}
-        style={[styles.buy, { backgroundColor: owned ? c.backgroundSelected : th.primaryBtn, opacity: !pkg && !owned ? 0.5 : 1 }]}>
-        {busy === pkg?.identifier ? (
-          <ActivityIndicator color={th.onPrimaryBtn} />
-        ) : (
-          <Text style={[styles.buyText, { color: owned ? c.text : th.onPrimaryBtn }]}>
-            {owned ? t('paywall.owned') : pkg ? t('paywall.buy') : t('paywall.unavailable')}
-          </Text>
-        )}
-      </Pressable>
-    </View>
-  );
-
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]} edges={['bottom']}>
       <Stack.Screen options={{ headerShown: true, title: t('paywall.title') }} />
@@ -139,6 +160,11 @@ export default function PaywallScreen() {
           pkg={unlimited}
           owned={caps.hostedLLM && caps.maxRecapsPerDay === null}
           highlight
+          busy={busy}
+          onBuy={buy}
+          c={c}
+          th={th}
+          t={t}
         />
         <Plan
           title={t('paywall.byokTitle')}
@@ -146,28 +172,33 @@ export default function PaywallScreen() {
           features={[t('paywall.f.byok'), t('paywall.f.sixty'), t('paywall.f.export'), t('paywall.f.templates')]}
           pkg={byok}
           owned={caps.byokEnabled}
+          busy={busy}
+          onBuy={buy}
+          c={c}
+          th={th}
+          t={t}
         />
 
         {message ? <Text style={[styles.note, { color: c.textSecondary }]}>{message}</Text> : null}
 
-        <Pressable onPress={() => void onRestore()} disabled={busy !== null} style={styles.link}>
+        <Pressable onPress={() => void onRestore()} disabled={busy !== null} accessibilityRole="button" accessibilityLabel={t('paywall.restore')} style={styles.link}>
           {busy === 'restore' ? (
             <ActivityIndicator color={c.textSecondary} />
           ) : (
             <Text style={[styles.linkText, { color: c.textSecondary }]}>{t('paywall.restore')}</Text>
           )}
         </Pressable>
-        <Pressable onPress={() => router.back()} style={styles.link}>
+        <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel={t('paywall.notNow')} style={styles.link}>
           <Text style={[styles.linkText, { color: c.textSecondary }]}>{t('paywall.notNow')}</Text>
         </Pressable>
         <Text style={[styles.legal, { color: c.textSecondary }]}>{t('paywall.legal')}</Text>
         {/* Apple Guideline 3.1.2(c): functional Terms of Use (EULA) + Privacy Policy links in the purchase flow. */}
         <View style={styles.legalLinks}>
-          <Pressable onPress={() => void Linking.openURL(TERMS_OF_USE_URL)} hitSlop={8}>
+          <Pressable onPress={() => void Linking.openURL(TERMS_OF_USE_URL)} hitSlop={8} accessibilityRole="link" accessibilityLabel={t('paywall.terms')}>
             <Text style={[styles.legalLink, { color: th.accentText }]}>{t('paywall.terms')}</Text>
           </Pressable>
           <Text style={[styles.legal, { color: c.textSecondary }]}>·</Text>
-          <Pressable onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)} hitSlop={8}>
+          <Pressable onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)} hitSlop={8} accessibilityRole="link" accessibilityLabel={t('paywall.privacy')}>
             <Text style={[styles.legalLink, { color: th.accentText }]}>{t('paywall.privacy')}</Text>
           </Pressable>
         </View>

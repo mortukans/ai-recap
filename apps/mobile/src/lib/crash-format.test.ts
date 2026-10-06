@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
-import { type DeviceEnv, buildErrorPayload, clip, sanitizeRoute, signatureOf } from './crash-format';
+import { type DeviceEnv, buildErrorPayload, clip, sanitizeRoute, scrubSecrets, signatureOf } from './crash-format';
 
 const env: DeviceEnv = { appVersion: '1.0.1', buildNumber: '34', platform: 'ios', osVersion: '17.5', deviceModel: "Martin's iPhone" };
+
+describe('scrubSecrets', () => {
+  it('redacts API keys, bearer tokens, JWTs and base64 blobs', () => {
+    expect(scrubSecrets('key sk-or-v1-abcdef0123456789 failed')).toBe('key sk-[redacted] failed');
+    expect(scrubSecrets('Authorization: Bearer abc.def-123_XYZ done')).toBe('Authorization: Bearer [redacted] done');
+    expect(scrubSecrets('token eyJhbGciOiJIUzI1NiwidHlwIjoiSldUIn0 end')).toContain('[jwt]');
+    const audio = 'YWJj1' + 'QUJDRA0987'.repeat(30); // long base64-ish run containing digits
+    expect(scrubSecrets(`input_audio ${audio}`)).toBe('input_audio [base64]');
+  });
+  it('leaves ordinary error text untouched', () => {
+    expect(scrubSecrets('The transcript came back empty (no speech recognized).')).toBe('The transcript came back empty (no speech recognized).');
+    expect(scrubSecrets('a'.repeat(2000))).toBe('a'.repeat(2000)); // no digit → not a base64 false-positive
+    expect(scrubSecrets(null)).toBe(null);
+  });
+});
 
 describe('sanitizeRoute', () => {
   it('strips id-like and numeric segments to :id', () => {
