@@ -1,6 +1,8 @@
-# App Store listing — AI Recap (draft for Martins to review)
+# App Store listing — AI Recap
 
-Paste into App Store Connect → App Information / Version. Character limits are Apple's. Two localizations: **Latvian (primary)** and **English (U.K.)**. Keep the brand name "AI Recap" untranslated.
+> ✅ **LIVE:** [AI Recap – Meeting Recaps](https://apps.apple.com/app/id6813450802) (app id `6813450802`). The copy below is what's published (English (U.S.) is the only App Store locale; the app UI itself is LV/EN). Promotional text is editable without a new build.
+
+Reference for the App Store Connect → App Information / Version fields. Character limits are Apple's. Keep the brand name "AI Recap" untranslated.
 
 ## App name (30)
 - App Store metadata has no Latvian localization; English (U.S.) is the only locale.

@@ -1,5 +1,7 @@
 # Launch checklist — AI Recap 1.0 (iOS)
 
+> ✅ **LAUNCHED 2026-10 — v1.0.1 (build 41) is live on the [App Store](https://apps.apple.com/app/id6813450802).** 1.0 was rejected once under guideline 3.1.2(c) (subscription screen needed in-app Terms of Use + Privacy Policy links); fixed in build 41 (paywall links + hosted Terms page) and approved. This checklist is retained as the launch record.
+
 Ordered. "Me" = engineering (Claude), "M" = Martins. Everything marked Me is done or scripted; M items need accounts, legal or a physical device.
 
 ## A. Product decisions (M)

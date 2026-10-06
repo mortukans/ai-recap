@@ -2,6 +2,8 @@
 
 > Record once. Understand the meeting in as many ways as you need.
 
+**📱 Live on the App Store → [AI Recap – Meeting Recaps](https://apps.apple.com/app/id6813450802)** · Free with in-app purchases · iPhone + Apple Watch
+
 An iPhone-first (cross-platform) meeting & conversation recorder that turns long audio into a reusable
 AI workspace: record → chunked local audio → transcribe (Latvian + English) → structured recap →
 ask questions / regenerate with new context.
@@ -40,4 +42,7 @@ modules. See [`docs/BUILD.md`](docs/BUILD.md).
 
 ## Status
 
-Early scaffolding — see `docs/AI_RECAP_MVP_TASKS.md` for the milestone the code is currently at.
+**Shipped — v1.0.1 (build 41) is live on the [App Store](https://apps.apple.com/app/id6813450802).** The 1.0 launch
+includes recording (iPhone + Apple Watch), Latvian/English transcription, structured recaps, ask-the-recording,
+contexts, Dynamic Island processing progress, on-device storage, and the Free / Unlimited / Bring-your-own-key plans.
+See [`docs/STATUS.md`](docs/STATUS.md) for the current state and what's next.
