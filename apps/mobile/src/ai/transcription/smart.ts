@@ -1,18 +1,18 @@
 /**
  * Chooses the transcription provider at run time (Product Plan §7):
- *   1. OpenAI key set      → Whisper (dedicated speech API)
- *   2. OpenRouter key set  → audio-capable chat model via OpenRouter (one BYOK key for everything)
- *   3. Unlimited plan      → hosted (our key, metered, via Edge Function)
- *   4. otherwise           → Apple on-device (free; English-centric)
- * Keeps the coordinator agnostic of the provider.
+ *   1. OpenRouter key set  → audio-capable chat / STT model via OpenRouter (one BYOK key for everything;
+ *                            Whisper and other dedicated STT models are selectable through OpenRouter)
+ *   2. Unlimited plan      → hosted (our key, metered, via Edge Function)
+ *   3. otherwise           → Apple on-device (free; English-centric)
+ * Keeps the coordinator agnostic of the provider. (BYOK audio only ever goes to OpenRouter — the direct
+ * OpenAI path was removed so the data flow matches the privacy policy.)
  */
 import { getRecapModels, getTranscriptionModel } from '../../lib/prefs';
 import { getEntitlements } from '../../purchases/entitlements';
-import { getOpenAiKey, getOpenRouterKey } from '../../security/byok-store';
+import { getOpenRouterKey } from '../../security/byok-store';
 import type { TranscriptionInput, TranscriptionProvider, TranscriptionResult } from '../types';
 import { AppleSpeechTranscriber } from './appleSpeech';
 import { HostedTranscriber } from './hosted';
-import { OpenAiWhisperTranscriber } from './openaiWhisper';
 import { OpenRouterAudioTranscriber } from './openrouterAudio';
 
 export class SmartTranscriber implements TranscriptionProvider {
@@ -25,8 +25,6 @@ export class SmartTranscriber implements TranscriptionProvider {
     if (override && (await getOpenRouterKey())) {
       // Per-recap model experiment (quality tuning) — always through OpenRouter.
       impl = new OpenRouterAudioTranscriber(getOpenRouterKey, async () => override);
-    } else if (await getOpenAiKey()) {
-      impl = new OpenAiWhisperTranscriber(getOpenAiKey);
     } else if (await getOpenRouterKey()) {
       impl = new OpenRouterAudioTranscriber(getOpenRouterKey, getTranscriptionModel);
     } else if (getEntitlements().unlimitedActive) {

@@ -40,7 +40,7 @@ import {
 } from '../../lib/prefs';
 import { processingCoordinator } from '../../processing/coordinator';
 import { useCapabilities } from '../../purchases/useCapabilities';
-import { clearOpenAiKey, clearOpenRouterKey, getOpenAiKey, getOpenRouterKey, setOpenAiKey, setOpenRouterKey } from '../../security/byok-store';
+import { clearOpenRouterKey, getOpenRouterKey, setOpenRouterKey } from '../../security/byok-store';
 
 type Retention = '7' | '30' | '90' | 'always';
 
@@ -59,12 +59,10 @@ export default function SettingsScreen() {
   const [model, setModel] = useState(DEFAULT_SUMMARY_MODEL);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
-  const [hasOpenAiKey, setHasOpenAiKey] = useState(false);
-  const [openAiInput, setOpenAiInput] = useState('');
   const [transcriptionModel, setTranscriptionModelState] = useState(DEFAULT_TRANSCRIPTION_MODEL);
   const [models, setModels] = useState<LlmModel[]>([]);
   const [picker, setPicker] = useState<'summary' | 'transcription' | null>(null);
-  const [sheet, setSheet] = useState<'key' | 'whisper' | null>(null);
+  const [sheet, setSheet] = useState<'key' | null>(null);
   const [audioBytes, setAudioBytes] = useState<number | null>(null);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
   const [retentionDays, setRetentionDays] = useState<number | null>(null);
@@ -89,7 +87,6 @@ export default function SettingsScreen() {
       setHasKey(keyPresent);
       setModel((await getSummaryModel()) ?? DEFAULT_SUMMARY_MODEL);
       setTranscriptionModelState((await getTranscriptionModel()) ?? DEFAULT_TRANSCRIPTION_MODEL);
-      setHasOpenAiKey((await getOpenAiKey()) !== null);
       setRetentionDays(await getAudioRetentionDays());
       setAppLanguageState(await getAppLanguage());
       void refreshStorage();
@@ -148,15 +145,6 @@ export default function SettingsScreen() {
     setHasKey(false);
     setKeyVerified(false);
     setModels([]);
-    setSheet(null);
-  };
-
-  const onSaveOpenAi = async () => {
-    if (openAiInput.trim()) {
-      await setOpenAiKey(openAiInput.trim());
-      setHasOpenAiKey(true);
-      setOpenAiInput('');
-    }
     setSheet(null);
   };
 
@@ -262,12 +250,6 @@ export default function SettingsScreen() {
               subtitle={`${transcriptionModel} · ${t('ui.withAudio')}`}
               onPress={() => (hasKey ? setPicker('transcription') : setSheet('key'))}
               chevron
-            />
-            <Row
-              title={t('ui.whisper')}
-              subtitle={hasOpenAiKey ? t('ui.optionalAdded') : t('ui.optionalNotAdded')}
-              onPress={() => setSheet('whisper')}
-              right={<Text style={[Type.buttonMini, { color: th.accentText }]}>{hasOpenAiKey ? t('ui.more') : t('ui.add')}</Text>}
               last
             />
           </Group>
@@ -370,30 +352,6 @@ export default function SettingsScreen() {
           ) : null}
         </View>
         {hasKey ? <Button label={t('ui.removeKey')} variant="destructive" height={44} onPress={() => void onRemoveKey()} /> : null}
-      </Sheet>
-
-      <Sheet visible={sheet === 'whisper'} onClose={() => setSheet(null)} title={t('ui.whisper')}>
-        <Text style={[Type.meta, { color: th.text2 }]}>{t('ui.whisperSheetText')}</Text>
-        <Input
-          value={openAiInput}
-          onChangeText={setOpenAiInput}
-          placeholder={hasOpenAiKey ? t('settings.keySavedPlaceholder') : 'sk-...'}
-          autoCapitalize="none"
-          autoCorrect={false}
-          secureTextEntry
-        />
-        <Button label={t('ui.save')} height={48} onPress={() => void onSaveOpenAi()} disabled={!openAiInput.trim()} />
-        {hasOpenAiKey ? (
-          <Button
-            label={t('ui.removeKey')}
-            variant="destructive"
-            height={44}
-            onPress={() => {
-              void clearOpenAiKey().then(() => setHasOpenAiKey(false));
-              setSheet(null);
-            }}
-          />
-        ) : null}
       </Sheet>
     </SafeAreaView>
   );

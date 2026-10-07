@@ -4,7 +4,6 @@ export { HostedLLMProvider } from './llm/hosted';
 export { HostedTranscriber } from './transcription/hosted';
 export { MockTranscriber } from './transcription/mock';
 export { AppleSpeechTranscriber } from './transcription/appleSpeech';
-export { OpenAiWhisperTranscriber } from './transcription/openaiWhisper';
 export { OpenRouterAudioTranscriber, DEFAULT_TRANSCRIPTION_MODEL } from './transcription/openrouterAudio';
 export { OpenRouterSttTranscriber } from './transcription/openrouterStt';
 export { isSttModel } from './llm/openrouter';
