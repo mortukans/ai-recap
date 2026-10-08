@@ -28,7 +28,7 @@ AI Recap ieraksta sanāksmes, sarunas un balss piezīmes, transkribē tās un uz
 • Apple Watch — sāc ierakstu no plaukstas; ja iPhone lietotne nav atvērta, pulkstenis ieraksta pats un nosūta audio telefonam.
 • Pārtraukumi (zvani, austiņu maiņa) tiek apstrādāti automātiski — ieraksts turpinās.
 
-**Kopsavilkums, kas der tavai situācijai.** Izvēlies kontekstu — darba sanāksme, pārdošanas zvans, intervija, lekcija, personīga piezīme — vai izveido savu ar vārdnīcu (Sales7, PIM, ERP…) un norādījumiem, kā rakstīt. Pārģenerē jebkuru ierakstu ar citu kontekstu vai piezīmēm; visas versijas saglabājas.
+**Kopsavilkums, kas der tavai situācijai.** Izvēlies kontekstu — darba sanāksme, pārdošanas zvans, intervija, lekcija, personīga piezīme — vai izveido savu ar vārdnīcu (projektu nosaukumi, klientu vārdi, saīsinājumi…) un norādījumiem, kā rakstīt. Pārģenerē jebkuru ierakstu ar citu kontekstu vai piezīmēm; visas versijas saglabājas.
 
 **Jautā ierakstam.** "Ko nolēmām par cenām?" — atbilde ar atsauci uz brīdi transkriptā. Pieskaries laikam, un audio atskaņojas tieši no tās vietas.
 
@@ -53,7 +53,7 @@ AI Recap records meetings, conversations and voice notes, transcribes them and w
 • Apple Watch — start from your wrist; if the iPhone app isn't open, the watch records on its own and hands the audio to the phone.
 • Interruptions (calls, headphone changes) are handled automatically — the recording continues.
 
-**A recap that fits the situation.** Pick a context — work meeting, sales call, interview, lecture, personal note — or create your own with vocabulary (Sales7, PIM, ERP…) and writing instructions. Regenerate any recording with a different context or notes; every version is kept.
+**A recap that fits the situation.** Pick a context — work meeting, sales call, interview, lecture, personal note — or create your own with vocabulary (project names, client names, acronyms…) and writing instructions. Regenerate any recording with a different context or notes; every version is kept.
 
 **Ask the recording.** "What did we decide on pricing?" — an answer with a reference to the moment in the transcript. Tap a time and the audio plays from there.
 
