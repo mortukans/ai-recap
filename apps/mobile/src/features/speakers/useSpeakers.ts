@@ -36,6 +36,7 @@ export function useSpeakers(recapId: string) {
   }, [recapId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads speakers on mount; state is set after the async read, not a sync cascade
     void load();
   }, [load]);
 

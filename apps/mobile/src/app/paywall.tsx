@@ -17,6 +17,16 @@ import type { TFunction } from 'i18next';
 import { Colors, Spacing } from '@/constants/theme';
 import { PRIVACY_POLICY_URL, TERMS_OF_USE_URL } from '../constants/legal';
 import { useTheme } from '../design/useTheme';
+import { applyEntitlements, refreshEntitlements } from '../purchases/entitlements';
+import {
+  PRODUCT_BYOK_LIFETIME,
+  PRODUCT_UNLIMITED_MONTHLY,
+  getCurrentOffering,
+  isPurchasesConfigured,
+  purchase,
+  restore,
+} from '../purchases/revenuecat';
+import { useCapabilities } from '../purchases/useCapabilities';
 
 /**
  * A single plan card. Hoisted to module scope (not declared during render) so the React Compiler can
@@ -75,16 +85,6 @@ function Plan({
     </View>
   );
 }
-import { applyEntitlements, refreshEntitlements } from '../purchases/entitlements';
-import {
-  PRODUCT_BYOK_LIFETIME,
-  PRODUCT_UNLIMITED_MONTHLY,
-  getCurrentOffering,
-  isPurchasesConfigured,
-  purchase,
-  restore,
-} from '../purchases/revenuecat';
-import { useCapabilities } from '../purchases/useCapabilities';
 
 export default function PaywallScreen() {
   const { t } = useTranslation();

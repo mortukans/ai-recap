@@ -5,13 +5,13 @@
  */
 import { type TranscriptSegment, formatTimestamp, formatTranscriptText } from '@ai-recap/core';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { chunksRepo, recapsRepo } from '../../db';
-import { IconButton, ProcessingBars, Rise, SearchField, Segmented } from '../../design/components';
+import { IconButton, ProcessingBars, Rise, SearchField, Segmented , Button } from '../../design/components';
 import { Layout } from '../../design/tokens';
 import { Type } from '../../design/typography';
 import { useTheme } from '../../design/useTheme';
@@ -20,7 +20,6 @@ import { chunkUri } from '../../features/recap/audioUri';
 import { PLAINTEXT, exportTextFile, safeFilename } from '../../features/share/shareService';
 import { useTranscript } from '../../features/transcript/useTranscript';
 import { type TranscriptVersion, activateTranscriptVersion, listTranscriptVersions, shortModel } from '../../features/recap/retranscribe';
-import { Button } from '../../design/components';
 
 type Tab = 'summary' | 'transcript' | 'chat';
 
@@ -66,9 +65,10 @@ export default function TranscriptScreen() {
     return (label: string | null) => (label && labels.indexOf(label) % 2 === 1 ? th.speaker2 : th.accentText);
   }, [segments, th.speaker2, th.accentText]);
 
+  const seekNonce = useRef(0);
   const onSeek = (segment: TranscriptSegment) => {
     setSelectedId(segment.id);
-    if (chunks.length > 0) setSeek({ seconds: segment.startTime, nonce: Date.now() });
+    if (chunks.length > 0) setSeek({ seconds: segment.startTime, nonce: ++seekNonce.current });
   };
 
   const onTime = useCallback(
@@ -91,9 +91,17 @@ export default function TranscriptScreen() {
 
   const q = query.trim().toLowerCase();
   const shownSegments = viewing ? viewing.segments : segments;
-  const rows = q ? shownSegments.filter((s) => s.text.toLowerCase().includes(q)) : shownSegments;
+  // Filter + precompute "show the speaker name" per row (speaker changed vs the previous line, or we're
+  // searching). Precomputing keeps it correct in a virtualized list, where render order isn't linear.
+  const displayRows = useMemo(() => {
+    const filtered = q ? shownSegments.filter((s) => s.text.toLowerCase().includes(q)) : shownSegments;
+    return filtered.map((seg, i) => ({
+      seg,
+      showSpeaker: q.length > 0 || seg.speakerLabel !== filtered[i - 1]?.speakerLabel,
+    }));
+  }, [shownSegments, q]);
 
-  const useVersion = async () => {
+  const applyVersion = async () => {
     if (!id || !viewing) return;
     await activateTranscriptVersion(id, viewing);
     setViewing(null);
@@ -127,9 +135,6 @@ export default function TranscriptScreen() {
     );
   };
 
-  let rise = 0;
-  let lastSpeaker: string | null | undefined;
-
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: th.bg }]} edges={['top']}>
       <View style={styles.nav}>
@@ -141,7 +146,7 @@ export default function TranscriptScreen() {
       </View>
 
       <View style={styles.tools}>
-        <Rise index={rise++}>
+        <Rise index={0}>
           <Segmented<Tab>
             value="transcript"
             onChange={onTab}
@@ -152,7 +157,7 @@ export default function TranscriptScreen() {
             ]}
           />
         </Rise>
-        <Rise index={rise++} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Rise index={1} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View style={{ flex: 1 }}>
             <SearchField value={query} onChangeText={setQuery} placeholder={t('ui.searchTranscript')} height={40} />
           </View>
@@ -168,83 +173,96 @@ export default function TranscriptScreen() {
         </Rise>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: 130 + insets.bottom }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-        {versions.length > 1 ? (
-          <View style={{ gap: 8 }}>
-            <Text style={[Type.sectionLabel, { color: th.text2 }]}>{t('ui.transcriptVersions')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-              <Pressable
-                onPress={() => {
-                  setViewing(null);
-                  setCompare(false);
-                }}
-                style={[styles.version, { backgroundColor: !viewing && !compare ? th.primaryBtn : th.surface, borderColor: th.line }]}>
-                <Text style={[Type.captionStrong, { color: !viewing && !compare ? th.onPrimaryBtn : th.text }]}>{t('ui.current')}</Text>
-              </Pressable>
-              {versions.map((v, i) => {
-                const selected = !compare && viewing?.artifact.id === v.artifact.id;
-                return (
-                  <Pressable
-                    key={v.artifact.id}
-                    onPress={() => {
-                      setCompare(false);
-                      setViewing(v);
-                    }}
-                    style={[styles.version, { backgroundColor: selected ? th.primaryBtn : th.surface, borderColor: th.line }]}>
-                    <Text style={[Type.captionStrong, { color: selected ? th.onPrimaryBtn : th.text }]}>{`#${versions.length - i} · ${shortModel(v.artifact.model || '?')}`}</Text>
-                  </Pressable>
-                );
-              })}
-              <Pressable
-                onPress={() => setCompare((c) => !c)}
-                style={[styles.version, { backgroundColor: compare ? th.accentTint : th.surface, borderColor: compare ? th.accent : th.line }]}>
-                <Text style={[Type.captionStrong, { color: th.accentText }]}>{compare ? t('ui.hideCompare') : t('ui.compare')}</Text>
-              </Pressable>
-            </ScrollView>
-            {viewing && !compare ? <Button label={t('ui.useThisVersion')} height={40} onPress={() => void useVersion()} style={{ alignSelf: 'flex-start' }} /> : null}
-          </View>
-        ) : null}
-
-        {compare
-          ? versions.map((v, i) => (
-              <View key={v.artifact.id} style={[styles.compareCard, { borderColor: th.line, backgroundColor: th.surface }]}>
-                <Text style={[Type.metaStrong, { color: th.accentText }]}>{`#${versions.length - i} · ${shortModel(v.artifact.model || '?')}`}</Text>
-                {v.segments.map((seg) => (
-                  <View key={seg.id} style={styles.line}>
-                    <Text style={[Type.caption, styles.tabular, { color: th.text2, width: 44 }]}>{formatTimestamp(seg.startTime)}</Text>
-                    <Text style={[Type.bodyText15, { color: th.text, flex: 1 }]}>{seg.text}</Text>
-                  </View>
-                ))}
-              </View>
-            ))
-          : null}
-
-        {!compare && rows.length === 0 ? (
-          <Text style={[Type.bodyText15, { color: th.text2, textAlign: 'center', marginTop: 40 }]}>
-            {q ? t('home.noResults', { query: query.trim() }) : t('transcript.empty')}
-          </Text>
-        ) : null}
-        {!compare && rows.map((seg) => {
+      <FlatList
+        data={compare ? [] : displayRows}
+        keyExtractor={(item) => item.seg.id}
+        extraData={`${selectedId ?? ''}|${playing}`}
+        initialNumToRender={20}
+        maxToRenderPerBatch={20}
+        windowSize={11}
+        removeClippedSubviews
+        contentContainerStyle={[styles.content, { paddingBottom: 130 + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        ListHeaderComponent={
+          versions.length > 1 || compare ? (
+            <View style={{ gap: 20 }}>
+              {versions.length > 1 ? (
+                <View style={{ gap: 8 }}>
+                  <Text style={[Type.sectionLabel, { color: th.text2 }]}>{t('ui.transcriptVersions')}</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    <Pressable
+                      onPress={() => {
+                        setViewing(null);
+                        setCompare(false);
+                      }}
+                      style={[styles.version, { backgroundColor: !viewing && !compare ? th.primaryBtn : th.surface, borderColor: th.line }]}>
+                      <Text style={[Type.captionStrong, { color: !viewing && !compare ? th.onPrimaryBtn : th.text }]}>{t('ui.current')}</Text>
+                    </Pressable>
+                    {versions.map((v, i) => {
+                      const selected = !compare && viewing?.artifact.id === v.artifact.id;
+                      return (
+                        <Pressable
+                          key={v.artifact.id}
+                          onPress={() => {
+                            setCompare(false);
+                            setViewing(v);
+                          }}
+                          style={[styles.version, { backgroundColor: selected ? th.primaryBtn : th.surface, borderColor: th.line }]}>
+                          <Text style={[Type.captionStrong, { color: selected ? th.onPrimaryBtn : th.text }]}>{`#${versions.length - i} · ${shortModel(v.artifact.model || '?')}`}</Text>
+                        </Pressable>
+                      );
+                    })}
+                    <Pressable
+                      onPress={() => setCompare((c) => !c)}
+                      style={[styles.version, { backgroundColor: compare ? th.accentTint : th.surface, borderColor: compare ? th.accent : th.line }]}>
+                      <Text style={[Type.captionStrong, { color: th.accentText }]}>{compare ? t('ui.hideCompare') : t('ui.compare')}</Text>
+                    </Pressable>
+                  </ScrollView>
+                  {viewing && !compare ? <Button label={t('ui.useThisVersion')} height={40} onPress={() => void applyVersion()} style={{ alignSelf: 'flex-start' }} /> : null}
+                </View>
+              ) : null}
+              {compare
+                ? versions.map((v, i) => (
+                    <View key={v.artifact.id} style={[styles.compareCard, { borderColor: th.line, backgroundColor: th.surface }]}>
+                      <Text style={[Type.metaStrong, { color: th.accentText }]}>{`#${versions.length - i} · ${shortModel(v.artifact.model || '?')}`}</Text>
+                      {v.segments.map((seg) => (
+                        <View key={seg.id} style={styles.line}>
+                          <Text style={[Type.caption, styles.tabular, { color: th.text2, width: 44 }]}>{formatTimestamp(seg.startTime)}</Text>
+                          <Text style={[Type.bodyText15, { color: th.text, flex: 1 }]}>{seg.text}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))
+                : null}
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          compare ? null : (
+            <Text style={[Type.bodyText15, { color: th.text2, textAlign: 'center', marginTop: 40 }]}>
+              {q ? t('home.noResults', { query: query.trim() }) : t('transcript.empty')}
+            </Text>
+          )
+        }
+        renderItem={({ item }) => {
+          const { seg, showSpeaker } = item;
           const selected = seg.id === selectedId;
-          const showSpeaker = seg.speakerLabel !== lastSpeaker || q.length > 0;
-          lastSpeaker = seg.speakerLabel;
           const name = nameFor(seg.speakerLabel);
           return (
-            <Rise key={seg.id} index={Math.min(rise++, 12)}>
-              <Pressable onPress={() => onSeek(seg)} style={styles.line}>
-                <View style={styles.timeCol}>
-                  <Text style={[selected ? Type.captionStrong : Type.caption, styles.tabular, { color: selected ? th.text : th.text2 }]}>{formatTimestamp(seg.startTime)}</Text>
-                  {selected && playing ? <ProcessingBars color={th.accent} height={10} width={2} gap={2} /> : null}
-                </View>
-                <View style={[styles.utterance, selected && { backgroundColor: th.accentTint }]}>
-                  {showSpeaker && name ? <Text style={[Type.captionStrong, { color: speakerColor(seg.speakerLabel) }]}>{name}</Text> : null}
-                  <Text style={[Type.bodyText, { color: th.text }]}>{renderText(seg.text)}</Text>
-                </View>
-              </Pressable>
-            </Rise>
+            <Pressable onPress={() => onSeek(seg)} style={styles.line}>
+              <View style={styles.timeCol}>
+                <Text style={[selected ? Type.captionStrong : Type.caption, styles.tabular, { color: selected ? th.text : th.text2 }]}>{formatTimestamp(seg.startTime)}</Text>
+                {selected && playing ? <ProcessingBars color={th.accent} height={10} width={2} gap={2} /> : null}
+              </View>
+              <View style={[styles.utterance, selected && { backgroundColor: th.accentTint }]}>
+                {showSpeaker && name ? <Text style={[Type.captionStrong, { color: speakerColor(seg.speakerLabel) }]}>{name}</Text> : null}
+                <Text style={[Type.bodyText, { color: th.text }]}>{renderText(seg.text)}</Text>
+              </View>
+            </Pressable>
           );
-        })}
-      </ScrollView>
+        }}
+      />
 
       {chunks.length > 0 && id ? (
         <View pointerEvents="box-none" style={[styles.playerWrap, { paddingBottom: Math.max(insets.bottom, 20) + 14, backgroundColor: th.bg }]}>

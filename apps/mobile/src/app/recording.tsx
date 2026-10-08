@@ -41,7 +41,9 @@ export default function RecordingScreen() {
   }, []);
 
   useEffect(() => {
+    // syncs the displayed context name to the selected contextId (an external value)
     if (!contextId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- clears the name when no context is selected
       setContextName('');
       return;
     }

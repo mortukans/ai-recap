@@ -28,13 +28,14 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { DEFAULT_SUMMARY_MODEL, generateRecap, resolveLLMRoute } from '../../ai';
 import { artifactsRepo, attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
 import { Button, Chip, Dot, Group, IconButton, Input, ProcessingBars, Rise, Row, Segmented } from '../../design/components';
-import { dayAndClock, shortDuration } from '../../design/format';
+import { dayAndClock, shortDuration , clock } from '../../design/format';
 import { Icon } from '../../design/icons';
 import { Sheet } from '../../design/Sheet';
 import { Layout } from '../../design/tokens';
 import { Type } from '../../design/typography';
 import { useTheme } from '../../design/useTheme';
 import { ContextPicker } from '../../features/contexts/ContextPicker';
+import { maybeRequestReview } from '../../features/ratings/requestReview';
 import { RecordingPlayer, type SeekRequest } from '../../features/recap/RecordingPlayer';
 import { SummaryBody } from '../../features/recap/SummaryBody';
 import { chunkUri } from '../../features/recap/audioUri';
@@ -48,7 +49,6 @@ import { Colors } from '@/constants/theme';
 import { DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '../../ai';
 import { ModelPicker } from '../../features/settings/ModelPicker';
 import { retranscribe, shortModel } from '../../features/recap/retranscribe';
-import { clock } from '../../design/format';
 import { processingCoordinator } from '../../processing/coordinator';
 
 type Tab = 'summary' | 'transcript' | 'chat';
@@ -142,6 +142,12 @@ export default function RecapDetailScreen() {
     }, [load]),
   );
   useEffect(() => processingCoordinator.onChange(() => void load()), [load]);
+
+  // A finished recap with a summary is the natural "this app is useful" moment — ask for a rating
+  // (at most once ever, and only after a couple of successful recaps; see maybeRequestReview).
+  useEffect(() => {
+    if (status === 'ready' && doc) void maybeRequestReview();
+  }, [status, doc]);
 
   const contextName = contexts.find((c) => c.id === (contextId ?? presetContextId('workMeeting')))?.name ?? '';
 

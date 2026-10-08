@@ -92,7 +92,6 @@ export default function SpeakersScreen() {
   const { t } = useTranslation();
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
-  const th = useTheme();
   const { speakers, profiles, samples, rename, assignProfile, saveAsProfile } = useSpeakers(id ?? '');
 
   return (

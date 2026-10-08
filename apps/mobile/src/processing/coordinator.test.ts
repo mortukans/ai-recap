@@ -120,7 +120,7 @@ function makeTranscriber(fail = false) {
       if (fail) throw new Error('transcribe failed');
       return { segments: [], detectedLanguages: ['lv', 'en'], durationSeconds: 100 };
     }),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
   } as any;
 }
 
@@ -221,7 +221,7 @@ describe('ProcessingCoordinator', () => {
         calls++;
         return calls === 1 ? new Promise(() => undefined) : Promise.resolve({ segments: [], detectedLanguages: ['lv'], durationSeconds: 1 });
       }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
     } as any;
     const c = new ProcessingCoordinator(hanging);
     const run = c.enqueue('g');
@@ -257,7 +257,7 @@ describe('ProcessingCoordinator', () => {
             });
           }),
       ),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
     } as any;
     const c = new ProcessingCoordinator(hanging);
     const run = c.enqueue('i');
@@ -283,7 +283,7 @@ describe('ProcessingCoordinator', () => {
         failedChunks: 2,
         failedSeconds: 120,
       })),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
     } as any;
     const c = new ProcessingCoordinator(partial);
     await c.enqueue('p');
@@ -311,7 +311,7 @@ describe('ProcessingCoordinator', () => {
       transcribe: vi.fn(async () => {
         throw new Error('all chunks failed');
       }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
     } as any;
     const c = new ProcessingCoordinator(failing);
     await c.enqueue('l');
@@ -337,7 +337,7 @@ describe('ProcessingCoordinator', () => {
         }
         return { segments: [{ startTime: 0, endTime: 1, speakerLabel: null, language: 'lv', text: 'hi' }], detectedLanguages: ['lv'], durationSeconds: 9000 };
       }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
     } as any;
     const c = new ProcessingCoordinator(slow);
     const p = c.enqueue('w');
@@ -355,7 +355,7 @@ describe('ProcessingCoordinator', () => {
       supportsDiarization: false,
       runsOnDevice: false,
       transcribe: vi.fn(() => new Promise(() => undefined)), // never resolves, never heartbeats
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
     } as any;
     const c = new ProcessingCoordinator(stuck);
     const p = c.enqueue('s2');

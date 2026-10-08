@@ -62,7 +62,9 @@ export default function RecapsScreen() {
     return () => clearTimeout(h);
   }, [query]);
   const queryRef = useRef(debouncedQuery);
-  queryRef.current = debouncedQuery;
+  useEffect(() => {
+    queryRef.current = debouncedQuery;
+  }, [debouncedQuery]);
 
   useFocusEffect(
     useCallback(() => {
@@ -103,7 +105,7 @@ export default function RecapsScreen() {
     },
     [t, load],
   );
-  const todayLabel = useMemo(() => longDate(Date.now()), []);
+  const [todayLabel] = useState(() => longDate(Date.now())); // computed once at mount (lazy init is pure-safe)
 
   // Group by calendar day (rows arrive newest first).
   const sections = useMemo(() => {

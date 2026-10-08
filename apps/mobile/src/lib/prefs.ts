@@ -7,6 +7,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const SUMMARY_MODEL_KEY = 'airecap.pref.summaryModel';
 const TRANSCRIPTION_MODEL_KEY = 'airecap.pref.transcriptionModel';
 const AUDIO_RETENTION_KEY = 'airecap.pref.audioRetentionDays';
+const RATING_PROMPTED_KEY = 'airecap.pref.ratingPrompted';
+
+/** Whether we've already asked for an App Store rating (we ask at most once, after a few good recaps). */
+export async function getRatingPrompted(): Promise<boolean> {
+  try {
+    return (await AsyncStorage.getItem(RATING_PROMPTED_KEY)) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export async function setRatingPrompted(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(RATING_PROMPTED_KEY, '1');
+  } catch {
+    /* ignore */
+  }
+}
 
 /** Days to keep recorded audio after processing; null = keep forever (default). */
 export async function getAudioRetentionDays(): Promise<number | null> {

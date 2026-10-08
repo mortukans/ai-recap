@@ -3,13 +3,13 @@
  * before it was added keeps working (the animation simply renders nothing), and Reduce Motion shows
  * the final frame instead of looping.
  */
-import type { ComponentType } from 'react';
+import { type ComponentType, createElement } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 
 export type LottieName = 'logo-mark' | 'record-pulse' | 'waveform-live' | 'check-draw' | 'processing-bars' | 'halo-breathe';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const SOURCES: Record<LottieName, unknown> = {
   'logo-mark': require('../../assets/lottie/logo-mark.json'),
   'record-pulse': require('../../assets/lottie/record-pulse.json'),
@@ -56,18 +56,18 @@ export function Lottie({
   play?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
-  const View = nativeView();
-  if (!View) return null;
+  const native = nativeView();
+  if (!native) return null;
   const still = reduceMotion || !play;
-  return (
-    <View
-      source={SOURCES[name]}
-      autoPlay={!still}
-      loop={loop && !still}
-      progress={still ? 1 : undefined}
-      speed={speed}
-      style={style}
-      resizeMode="contain"
-    />
-  );
+  // createElement (not JSX) so the compiler doesn't read the cached native module as a component
+  // created during render.
+  return createElement(native, {
+    source: SOURCES[name],
+    autoPlay: !still,
+    loop: loop && !still,
+    progress: still ? 1 : undefined,
+    speed,
+    style,
+    resizeMode: 'contain',
+  });
 }

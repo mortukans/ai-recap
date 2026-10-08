@@ -29,7 +29,5 @@ jobs:
         run: pnpm -r typecheck
       - name: Test
         run: pnpm test
-      # Lint is reported but non-blocking until the existing warnings are cleaned up (see docs/AUDIT_2026-10.md).
-      - name: Lint (non-blocking)
+      - name: Lint
         run: pnpm lint
-        continue-on-error: true

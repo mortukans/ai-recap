@@ -36,7 +36,7 @@ export function LiveWaveform({
   const t = useTheme();
   const reduce = useReducedMotion();
   const historyRef = useRef<number[]>(Array.from({ length: HALF }, () => 0.05));
-  const [history, setHistory] = useState(historyRef.current);
+  const [history, setHistory] = useState<number[]>(() => Array.from({ length: HALF }, () => 0.05));
   const idle = useSharedValue(0);
 
   useEffect(() => {

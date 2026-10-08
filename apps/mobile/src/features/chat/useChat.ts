@@ -23,6 +23,7 @@ export function useChat(recapId: string) {
   }, [recapId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads chat history on mount; state is set after the async read, not a sync cascade
     void reload();
   }, [reload]);
 

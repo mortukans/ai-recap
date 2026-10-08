@@ -4,7 +4,6 @@
 import { type ReactNode, useEffect, useState } from 'react';
 import {
   Pressable,
-  type PressableProps,
   StyleSheet,
   Text,
   TextInput,

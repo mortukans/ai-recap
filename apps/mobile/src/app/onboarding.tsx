@@ -15,6 +15,16 @@ import { useTheme } from '../design/useTheme';
 import { setOnboarded } from '../lib/prefs';
 import { setOpenRouterKey } from '../security/byok-store';
 
+/** One icon + line in the intro card. Hoisted out of render so it isn't recreated each render. */
+function Step({ icon, text, accentColor, textColor }: { icon: keyof typeof Ionicons.glyphMap; text: string; accentColor: string; textColor: string }) {
+  return (
+    <View style={styles.step}>
+      <Ionicons name={icon} size={22} color={accentColor} />
+      <Text style={[styles.stepText, { color: textColor }]}>{text}</Text>
+    </View>
+  );
+}
+
 export default function OnboardingScreen() {
   const { t } = useTranslation();
   const router = useRouter();
@@ -42,13 +52,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  const Step = ({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: string }) => (
-    <View style={styles.step}>
-      <Ionicons name={icon} size={22} color={th.accentText} />
-      <Text style={[styles.stepText, { color: c.text }]}>{text}</Text>
-    </View>
-  );
-
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: c.background }]}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -56,10 +59,10 @@ export default function OnboardingScreen() {
         <Text style={[styles.lead, { color: c.textSecondary }]}>{t('onboarding.lead')}</Text>
 
         <View style={[styles.card, { backgroundColor: c.backgroundElement, borderColor: th.line }]}>
-          <Step icon="mic-outline" text={t('onboarding.step1')} />
-          <Step icon="text-outline" text={t('onboarding.step2')} />
-          <Step icon="sparkles-outline" text={t('onboarding.step3')} />
-          <Step icon="watch-outline" text={t('onboarding.step4')} />
+          <Step icon="mic-outline" text={t('onboarding.step1')} accentColor={th.accentText} textColor={c.text} />
+          <Step icon="text-outline" text={t('onboarding.step2')} accentColor={th.accentText} textColor={c.text} />
+          <Step icon="sparkles-outline" text={t('onboarding.step3')} accentColor={th.accentText} textColor={c.text} />
+          <Step icon="watch-outline" text={t('onboarding.step4')} accentColor={th.accentText} textColor={c.text} />
         </View>
 
         <Text style={[styles.h2, { color: c.text }]}>{t('onboarding.chooseTitle')}</Text>

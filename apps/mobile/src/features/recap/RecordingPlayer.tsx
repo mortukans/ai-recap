@@ -85,6 +85,7 @@ export function RecordingPlayer({
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- applies a seek request pushed from the parent (external event), not a render cascade
     if (seekRequest) seekAbsolute(seekRequest.seconds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seekRequest?.nonce]);
@@ -93,6 +94,7 @@ export function RecordingPlayer({
   useEffect(() => {
     if (!pending || pending.index !== index || !isLoaded || loadedDuration <= 0) return;
     const { offset } = pending;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clears the pending seek once the player is loaded (syncs to the audio player, an external system)
     setPending(null);
     void player
       .seekTo(offset)
@@ -103,6 +105,7 @@ export function RecordingPlayer({
 
   useEffect(() => {
     if (!didFinish) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- advances to the next chunk when the player reports finish (external event)
     if (index < chunks.length - 1) setIndex((i) => i + 1);
     else {
       setWantPlay(false);

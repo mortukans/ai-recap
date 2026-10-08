@@ -28,6 +28,7 @@ export function useStartRecording() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async refresh on mount + on coordinator change; state is set after the async read
     void refresh();
     return processingCoordinator.onChange(() => void refresh());
   }, [refresh]);
