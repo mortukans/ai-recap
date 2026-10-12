@@ -52,7 +52,12 @@ export function RecordingPlayer({
   // JS↔main-thread deadlock (play()/session-activate hopping to main while the item is still
   // configuring on main) that watchdog-killed the app on long recordings.
   const [activated, setActivated] = useState(false);
-  const current = activated ? chunks[index] : undefined;
+  // Briefly unloaded (source → null) for one frame when moving between chunks, so the next chunk loads
+  // from scratch (isLoaded false→true) and we never play()/seekTo() an audio item that is still being
+  // configured on the main thread — the deadlock that froze playback a few seconds in on multi-chunk
+  // recaps (and every few seconds on Live Rewind's short chunks).
+  const [advancing, setAdvancing] = useState(false);
+  const current = activated && !advancing ? chunks[index] : undefined;
   const player = useAudioPlayer(current ? { uri: current.uri } : null);
   const status = useAudioPlayerStatus(player);
 
@@ -78,6 +83,7 @@ export function RecordingPlayer({
     const { index: target, offset } = locateInChunks(durations, seconds);
     setActivated(true);
     setWantPlay(true);
+    if (target !== index) setAdvancing(true); // swapping chunks → unload first (same guard as a transition)
     // Always route through `pending`; the effect below fires the actual seek+play once the target
     // chunk reports loaded, so we never call a player method during item setup.
     setPending({ index: target, offset });
@@ -105,13 +111,23 @@ export function RecordingPlayer({
 
   useEffect(() => {
     if (!didFinish) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- advances to the next chunk when the player reports finish (external event)
-    if (index < chunks.length - 1) setIndex((i) => i + 1);
-    else {
+    if (index < chunks.length - 1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- chunk transition driven by the player's finish event
+      setAdvancing(true); // unload the finished item before loading the next chunk; play happens via the load-gated `pending` effect
+      setPending({ index: index + 1, offset: 0 });
+      setIndex(index + 1);
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- playback reached the end (player event)
       setWantPlay(false);
       setIndex(0);
     }
   }, [didFinish, index, chunks.length]);
+
+  // Clear the one-frame unload so `current` becomes the next chunk and loads cleanly.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- single-frame unload toggle between chunks
+    if (advancing) setAdvancing(false);
+  }, [advancing]);
 
   // Start/resume only once the current item is loaded — never while it is still configuring.
   useEffect(() => {

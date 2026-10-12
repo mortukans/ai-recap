@@ -19,9 +19,10 @@ import { chunkUri } from '../recap/audioUri';
 import { deleteRecapCompletely } from '../recap/deleteRecap';
 
 /** Keep a little over a minute so a full 60 s is always available once the buffer has filled. */
-const WINDOW_SECONDS = 64;
-/** Short chunks = fine-grained pruning and a small lost tail if the final-chunk flush ever times out. */
-const CHUNK_SECONDS = 4;
+const WINDOW_SECONDS = 60;
+/** 10 s chunks: ~6–7 per captured minute, so playback has few chunk transitions (smoother, and fewer
+ * of the item swaps that playback has to handle) while pruning stays reasonably precise (±10 s). */
+const CHUNK_SECONDS = 10;
 
 interface Buffered {
   relativePath: string;
