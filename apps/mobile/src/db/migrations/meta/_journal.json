@@ -15,6 +15,13 @@
       "when": 1791327061229,
       "tag": "0001_previous_professor_monster",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791825296209,
+      "tag": "0002_whole_raider",
+      "breakpoints": true
     }
   ]
 }

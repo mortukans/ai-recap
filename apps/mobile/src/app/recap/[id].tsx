@@ -26,9 +26,9 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DEFAULT_SUMMARY_MODEL, generateRecap, resolveLLMRoute } from '../../ai';
-import { artifactsRepo, attachmentsRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
+import { type CalendarEvent, artifactsRepo, attachmentsRepo, calendarRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
 import { Button, Chip, Dot, Group, IconButton, Input, ProcessingBars, Rise, Row, Segmented } from '../../design/components';
-import { dayAndClock, shortDuration , clock } from '../../design/format';
+import { dayAndClock, shortDate, shortDuration , clock } from '../../design/format';
 import { Icon } from '../../design/icons';
 import { Sheet } from '../../design/Sheet';
 import { Layout } from '../../design/tokens';
@@ -49,6 +49,8 @@ import { Colors } from '@/constants/theme';
 import { DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '../../ai';
 import { ModelPicker } from '../../features/settings/ModelPicker';
 import { retranscribe, shortModel } from '../../features/recap/retranscribe';
+import { extractCalendarEvents } from '../../features/calendar/extractCalendarEvents';
+import { getEntitlements } from '../../purchases/entitlements';
 import { processingCoordinator } from '../../processing/coordinator';
 
 type Tab = 'summary' | 'transcript' | 'chat';
@@ -101,6 +103,10 @@ export default function RecapDetailScreen() {
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   // Per-recording model experiments are a BYOK feature (they call OpenRouter with the user's key).
   const [hasKey, setHasKey] = useState(false);
+  // Calendar (beta): dates extracted from this recap, plus the "add to calendar" scan state.
+  const [calEvents, setCalEvents] = useState<CalendarEvent[]>([]);
+  const [calScanning, setCalScanning] = useState(false);
+  const [calMsg, setCalMsg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -131,6 +137,7 @@ export default function RecapDetailScreen() {
       setVersions(summaries);
       const shown = summaries.find((a) => a.id === selectedVersionId) ?? summaries[0] ?? null;
       setDoc(shown ? parseArtifactContent(shown.content) : null);
+      setCalEvents(await calendarRepo.listEventsForRecap(id));
     } catch {
       /* db not ready */
     }
@@ -323,6 +330,26 @@ export default function RecapDetailScreen() {
     }
   }, [id, recapModels.transcriptionModel, t, load, onGenerate]);
 
+  // Calendar (beta): scan this recap for dates and add them to the in-app calendar. Idempotent — a
+  // rescan replaces the recap's events. Uses the recap document when present, else the transcript.
+  const onScanCalendar = useCallback(async () => {
+    if (!id || calScanning) return;
+    setCalScanning(true);
+    setCalMsg(null);
+    try {
+      const res = await extractCalendarEvents(id);
+      const next = await calendarRepo.listEventsForRecap(id);
+      setCalEvents(next);
+      if (!res.scanned) setCalMsg(t('calendar.needsKey'));
+      else if (next.length === 0) setCalMsg(t('calendar.noDatesFound'));
+      else setCalMsg(t('calendar.addedCount', { count: next.length }));
+    } catch {
+      setCalMsg(t('calendar.noDatesFound'));
+    } finally {
+      setCalScanning(false);
+    }
+  }, [id, calScanning, t]);
+
   const onTab = (tab: Tab) => {
     if (!id || tab === 'summary') return;
     if (tab === 'transcript') router.push({ pathname: '/transcript/[id]', params: { id } });
@@ -337,6 +364,9 @@ export default function RecapDetailScreen() {
   const isEmptyTranscript = status === 'transcribed' && segmentCount === 0 && durationSeconds >= 5 && !isActive;
   const isBusy = isActive;
   const canGenerate = segmentCount > 0;
+  // Calendar scan works via BYOK key or hosted (Unlimited); show the section once there's something to scan.
+  const canScan = hasKey || getEntitlements().unlimitedActive;
+  const showCalendar = (doc !== null || segmentCount > 0) && !isBusy;
   let rise = 0;
 
   return (
@@ -538,6 +568,53 @@ export default function RecapDetailScreen() {
           </Rise>
         ) : null}
 
+        {showCalendar ? (
+          <Rise index={rise++} style={{ gap: 10 }}>
+            <View style={styles.calHeader}>
+              <Text style={[Type.sectionLabel, { color: th.text2 }]}>
+                {t('calendar.title')} <Text style={{ color: th.accentText }}>· {t('calendar.beta')}</Text>
+              </Text>
+              {calEvents.length > 0 ? (
+                <Pressable onPress={() => router.push('/calendar')} accessibilityRole="button">
+                  <Text style={[Type.captionStrong, { color: th.accentText }]}>{t('calendar.countForRecap', { count: calEvents.length })} ›</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            {calEvents.length > 0 ? (
+              <View style={{ gap: 2 }}>
+                {calEvents.slice(0, 5).map((ev) => (
+                  <View key={ev.id} style={styles.calRow}>
+                    <Text style={[Type.metaStrong, { color: ev.type === 'deadline' ? th.destructive : th.accentText, width: 72 }]} numberOfLines={1}>
+                      {shortDate(ev.startAt)}
+                    </Text>
+                    <Text style={[Type.meta, { color: th.text, flex: 1 }]} numberOfLines={1}>
+                      {ev.title}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={[Type.meta, { color: th.text2 }]}>{canScan ? t('calendar.entrySub') : t('calendar.needsKey')}</Text>
+            )}
+            {canScan ? (
+              <Button
+                label={calEvents.length > 0 ? t('calendar.rescan') : t('calendar.addToCalendar')}
+                variant="secondary"
+                height={44}
+                icon="refresh"
+                iconColor={th.accentText}
+                disabled={calScanning}
+                onPress={() => void onScanCalendar()}
+              />
+            ) : null}
+            {calScanning ? (
+              <Text style={[Type.caption, { color: th.text2 }]}>{t('calendar.scanningThis')}</Text>
+            ) : calMsg ? (
+              <Text style={[Type.caption, { color: th.text2 }]}>{calMsg}</Text>
+            ) : null}
+          </Rise>
+        ) : null}
+
         {busyLabel ? (
           <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
             <ActivityIndicator color={th.accentText} />
@@ -639,4 +716,6 @@ const styles = StyleSheet.create({
   compareCard: { gap: 12, padding: 14, borderRadius: 16, borderWidth: 1 },
   floating: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: 40 },
   pill: { height: 48, paddingHorizontal: 20, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  calHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  calRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
 });

@@ -9,4 +9,6 @@ export * as speakerProfilesRepo from './speakerProfiles';
 export * as usageRepo from './usage';
 export * as searchRepo from './search';
 export * as attachmentsRepo from './attachments';
+export * as calendarRepo from './calendar';
 export type { RecapSearchHit, SearchMatchSource } from './search';
+export type { CalendarEvent, CalendarEventType } from './calendar';

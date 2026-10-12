@@ -19,11 +19,41 @@ export const recaps = sqliteTable('recaps', {
   status: text('status').notNull().default('recording'),
   presetId: text('preset_id'),
   contextId: text('context_id'),
+  // When the calendar extractor last scanned this recap for dates (epoch ms, null = never). Drives the
+  // idempotent launch-time batch scan (scanAllRecaps): null + ready → eligible. Not part of the Recap
+  // domain model; owned by the calendar repository.
+  calendarScannedAt: integer('calendar_scanned_at'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 }, (t) => ({
   byStarted: index('idx_recaps_started_at').on(t.startedAt), // library list orders by started_at
   byStatus: index('idx_recaps_status').on(t.status), // coordinator listByStatuses() runs this constantly
+}));
+
+/**
+ * Calendar events extracted from a recap's recap/transcript (M-calendar, beta). One row per concrete
+ * date mentioned — appointments, deadlines, dated references. `startAt` is the resolved instant (epoch
+ * ms, local midnight when all-day); relative phrases ("next Tuesday") are resolved by the LLM against
+ * the recap's `startedAt`. Deleting a recap cascades here.
+ */
+export const calendarEvents = sqliteTable('calendar_events', {
+  id: text('id').primaryKey(),
+  recapId: text('recap_id')
+    .notNull()
+    .references(() => recaps.id, { onDelete: 'cascade' }),
+  title: text('title').notNull().default(''),
+  /** Resolved instant, epoch ms. All-day events use local midnight of the date. */
+  startAt: integer('start_at').notNull(),
+  allDay: integer('all_day', { mode: 'boolean' }).notNull().default(true),
+  /** 'event' | 'deadline' | 'mention' */
+  type: text('type').notNull().default('event'),
+  note: text('note').notNull().default(''),
+  /** Seconds into the recording where it was mentioned (null = unknown), for tap-to-seek. */
+  timestampRef: real('timestamp_ref'),
+  createdAt: integer('created_at').notNull(),
+}, (t) => ({
+  byRecap: index('idx_calendar_recap').on(t.recapId),
+  byStart: index('idx_calendar_start').on(t.startAt), // agenda orders by start_at
 }));
 
 export const audioChunks = sqliteTable('audio_chunks', {
@@ -158,4 +188,5 @@ export const schema = {
   attachments,
   chatMessages,
   usageRecords,
+  calendarEvents,
 };

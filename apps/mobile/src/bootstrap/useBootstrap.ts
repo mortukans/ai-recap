@@ -2,6 +2,7 @@ import { builtInContexts } from '@ai-recap/prompts';
 import { useEffect, useState } from 'react';
 import { ensureSession, supabase } from '../api/supabase';
 import { contextsRepo, initDatabase } from '../db';
+import { scanAllRecapsForDates } from '../features/calendar/scanAllRecaps';
 import { importPendingWatchRecordings } from '../features/recording/importWatchRecording';
 import { applyAudioRetention } from '../features/storage/audioStorage';
 import { syncUsage } from '../features/usage/syncUsage';
@@ -36,6 +37,9 @@ export function useBootstrap() {
         void applyAudioRetention().catch(() => undefined);
         // Recordings made on the Apple Watch while the app was closed are registered now.
         void importPendingWatchRecordings();
+        // Beta calendar backfill: scan past recaps for dates and populate the in-app calendar.
+        // Idempotent, sequential, capped per launch; no-op without an LLM route. Never awaited.
+        void scanAllRecapsForDates().catch(() => undefined);
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e : new Error(String(e)));
       } finally {

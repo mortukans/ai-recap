@@ -55,7 +55,7 @@ export function RecordingPlayer({
   // Briefly unloaded (source → null) for one frame when moving between chunks, so the next chunk loads
   // from scratch (isLoaded false→true) and we never play()/seekTo() an audio item that is still being
   // configured on the main thread — the deadlock that froze playback a few seconds in on multi-chunk
-  // recaps (and every few seconds on Live Rewind's short chunks).
+  // recaps (and more often the shorter the chunks are).
   const [advancing, setAdvancing] = useState(false);
   const current = activated && !advancing ? chunks[index] : undefined;
   const player = useAudioPlayer(current ? { uri: current.uri } : null);

@@ -49,6 +49,15 @@ export function dayAndClock(ms: number): string {
   return `${dayLabel(ms)} ${clock(ms)}`;
 }
 
+/** Compact day + month for chips/badges: "12 Oct" / "12. okt.". */
+export function shortDate(ms: number): string {
+  try {
+    return new Intl.DateTimeFormat(lang(), { day: 'numeric', month: 'short' }).format(new Date(ms));
+  } catch {
+    return new Date(ms).toLocaleDateString();
+  }
+}
+
 /** Compact duration for list rows: "38 min", "16 s", "1 h 12 min". */
 export function shortDuration(seconds: number): string {
   const s = Math.round(seconds);

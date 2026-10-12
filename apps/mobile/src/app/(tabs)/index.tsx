@@ -17,7 +17,6 @@ import { Layout } from '../../design/tokens';
 import { Type } from '../../design/typography';
 import { useTheme } from '../../design/useTheme';
 import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
-import { onRewindChange, rewindState } from '../../features/rewind/liveRewind';
 import { isOnboarded } from '../../lib/prefs';
 import { processingCoordinator } from '../../processing/coordinator';
 
@@ -40,8 +39,6 @@ export default function RecapsScreen() {
   const [contextNames, setContextNames] = useState<Record<string, string>>({});
   const [currentId, setCurrentId] = useState<string | null>(processingCoordinator.currentId());
   const [paused, setPaused] = useState(processingCoordinator.isPaused());
-  const [rewind, setRewind] = useState(rewindState());
-  useEffect(() => onRewindChange(() => setRewind(rewindState())), []);
 
   const load = useCallback(async (q: string) => {
     try {
@@ -145,18 +142,16 @@ export default function RecapsScreen() {
 
         <Rise index={riseIndex++}>
           <Pressable
-            onPress={() => router.push('/live-rewind')}
+            onPress={() => router.push('/calendar')}
             accessibilityRole="button"
-            accessibilityLabel={`${t('rewind.entry')} ${t('rewind.beta')}`}
-            style={[styles.rewindRow, { backgroundColor: rewind.active ? th.accentTint : th.surface, borderColor: rewind.active ? th.accent : th.line }]}>
-            {rewind.active ? <ProcessingBars color={th.accent} /> : <View style={[styles.rewindDot, { backgroundColor: th.accent }]} />}
+            accessibilityLabel={t('calendar.title')}
+            style={[styles.entryRow, { backgroundColor: th.surface, borderColor: th.line }]}>
+            <View style={[styles.entryDot, { backgroundColor: th.accent }]} />
             <View style={{ flex: 1, gap: 1 }}>
               <Text style={[Type.captionStrong, { color: th.text }]}>
-                {t('rewind.entry')} <Text style={{ color: th.accentText }}>· {t('rewind.beta')}</Text>
+                {t('calendar.title')} <Text style={{ color: th.accentText }}>· {t('calendar.beta')}</Text>
               </Text>
-              <Text style={[Type.meta, { color: th.text2 }]} numberOfLines={1}>
-                {rewind.active ? `${t('rewind.listening')} · ${Math.round(rewind.bufferedSeconds)}s` : t('rewind.idle')}
-              </Text>
+              <Text style={[Type.meta, { color: th.text2 }]} numberOfLines={1}>{t('calendar.entrySub')}</Text>
             </View>
           </Pressable>
         </Rise>
@@ -326,8 +321,8 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   row: { gap: 6, paddingVertical: 14, paddingHorizontal: 4 },
   queueBar: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingLeft: 14, borderRadius: 14, borderWidth: 1 },
-  rewindRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingLeft: 14, borderRadius: 14, borderWidth: 1 },
-  rewindDot: { width: 10, height: 10, borderRadius: 5 },
+  entryRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingLeft: 14, borderRadius: 14, borderWidth: 1 },
+  entryDot: { width: 10, height: 10, borderRadius: 5 },
   stopBtn: { height: 36, paddingHorizontal: 12, borderRadius: 18, flexDirection: 'row', alignItems: 'center', gap: 8 },
   stopSquare: { width: 10, height: 10, borderRadius: 2 },
 });
