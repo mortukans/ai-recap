@@ -351,6 +351,24 @@ export const en = {
     summarizing: 'Creating recap…',
     untitled: 'Your recording',
   },
+  // Live Rewind (beta): rolling last-60s buffer you can save retroactively.
+  rewind: {
+    title: 'Live Rewind',
+    beta: 'BETA',
+    entry: 'Live Rewind',
+    explainer: 'Keeps the last 60 seconds of audio while you listen, so you can save what was just said — even if you weren’t recording.',
+    idle: 'Start listening and the last minute is always ready to save.',
+    start: 'Start listening',
+    stop: 'Stop',
+    save: 'Save last 60 seconds',
+    listening: 'Listening',
+    buffering: 'ready to save',
+    full: 'last minute ready',
+    micNote: 'Your microphone stays on while Live Rewind is listening. Audio older than a minute is discarded and nothing is saved until you tap Save.',
+    micDeniedTitle: 'Microphone needed',
+    micDeniedBody: 'Allow microphone access in Settings to use Live Rewind.',
+    activeBanner: 'Live Rewind is listening',
+  },
 };
 
 export type TranslationKeys = typeof en;

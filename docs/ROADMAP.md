@@ -15,6 +15,17 @@ description + the audit fixes + OpenAI-path removal). Audit backlog: `docs/AUDIT
 
 Shipped to TestFlight as **1.0.3**; verify on device, then submit.
 
+## Live Rewind (beta) — 1.0.4 ✅ built (TestFlight)
+A rolling ~60 s audio buffer you can save retroactively: tap "Start listening" (mic on, buffering only
+the last minute), and "Save last 60 seconds" promotes that minute into a normal recap (transcript +
+recap) — for when someone says something you wanted and you weren't recording. Built entirely on the
+existing native recorder (continuous AAC chunks + background audio) with **no native changes**: records
+into a throwaway buffer, prunes chunks older than the window, and on capture promotes the survivors into
+a recap with re-based timestamps (`features/rewind/liveRewind.ts`, `app/live-rewind.tsx`, Home entry).
+**Honest constraint:** the mic must be on while listening (there's no retroactive capture of audio that
+was never buffered). Next, based on testing: a Dynamic Island / persistent indicator while listening,
+and a "rewind, then keep recording" flow.
+
 ## Track B — product analytics (next, in parallel)
 Currently flying blind on activation, paywall view→purchase, and failed-transcription rate. Plan:
 a privacy-respecting, anonymous event layer keyed to the existing anonymous account id — a small

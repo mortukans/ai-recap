@@ -353,6 +353,24 @@ export const lv: TranslationKeys = {
     summarizing: 'Veido kopsavilkumu…',
     untitled: 'Tavs ieraksts',
   },
+  // Live Rewind (beta): pēdējo 60 s buferis, ko var saglabāt ar atpakaļejošu datumu.
+  rewind: {
+    title: 'Live Rewind',
+    beta: 'BETA',
+    entry: 'Live Rewind',
+    explainer: 'Kamēr klausies, saglabā pēdējās 60 sekundes audio, lai vari saglabāt tikko pateikto — pat ja neierakstīji.',
+    idle: 'Sāc klausīties, un pēdējā minūte vienmēr būs gatava saglabāšanai.',
+    start: 'Sākt klausīties',
+    stop: 'Apturēt',
+    save: 'Saglabāt pēdējās 60 sekundes',
+    listening: 'Klausās',
+    buffering: 'gatavs saglabāšanai',
+    full: 'pēdējā minūte gatava',
+    micNote: 'Mikrofons paliek ieslēgts, kamēr Live Rewind klausās. Audio, kas vecāks par minūti, tiek dzēsts, un nekas netiek saglabāts, līdz nospied Saglabāt.',
+    micDeniedTitle: 'Nepieciešams mikrofons',
+    micDeniedBody: 'Atļauj mikrofona piekļuvi Iestatījumos, lai lietotu Live Rewind.',
+    activeBanner: 'Live Rewind klausās',
+  },
 };
 
 export default lv;
