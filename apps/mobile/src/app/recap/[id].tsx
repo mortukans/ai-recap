@@ -27,7 +27,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { DEFAULT_SUMMARY_MODEL, generateRecap, resolveLLMRoute } from '../../ai';
 import { type CalendarEvent, artifactsRepo, attachmentsRepo, calendarRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
-import { Button, Chip, Dot, Group, IconButton, Input, ProcessingBars, Rise, Row, Segmented } from '../../design/components';
+import { Button, Card, Chip, Dot, Group, IconButton, Input, ProcessingBars, Rise, Row, Segmented } from '../../design/components';
 import { dayAndClock, shortDate, shortDuration , clock } from '../../design/format';
 import { Icon } from '../../design/icons';
 import { Sheet } from '../../design/Sheet';
@@ -569,49 +569,56 @@ export default function RecapDetailScreen() {
         ) : null}
 
         {showCalendar ? (
-          <Rise index={rise++} style={{ gap: 10 }}>
-            <View style={styles.calHeader}>
-              <Text style={[Type.sectionLabel, { color: th.text2 }]}>
-                {t('calendar.title')} <Text style={{ color: th.accentText }}>· {t('calendar.beta')}</Text>
-              </Text>
-              {calEvents.length > 0 ? (
-                <Pressable onPress={() => router.push('/calendar')} accessibilityRole="button">
-                  <Text style={[Type.captionStrong, { color: th.accentText }]}>{t('calendar.countForRecap', { count: calEvents.length })} ›</Text>
-                </Pressable>
-              ) : null}
-            </View>
-            {calEvents.length > 0 ? (
-              <View style={{ gap: 2 }}>
-                {calEvents.slice(0, 5).map((ev) => (
-                  <View key={ev.id} style={styles.calRow}>
-                    <Text style={[Type.metaStrong, { color: ev.type === 'deadline' ? th.destructive : th.accentText, width: 72 }]} numberOfLines={1}>
-                      {shortDate(ev.startAt)}
-                    </Text>
-                    <Text style={[Type.meta, { color: th.text, flex: 1 }]} numberOfLines={1}>
-                      {ev.title}
-                    </Text>
-                  </View>
-                ))}
+          <Rise index={rise++}>
+            <Card style={{ gap: 12 }}>
+              <View style={styles.calHeader}>
+                <Text style={[Type.sectionLabel, { color: th.text2 }]}>
+                  {t('calendar.title')} <Text style={{ color: th.accentText }}>· {t('calendar.beta')}</Text>
+                </Text>
+                {calEvents.length > 0 ? (
+                  <Pressable onPress={() => router.push('/calendar')} accessibilityRole="button" hitSlop={8} style={styles.calLink}>
+                    <Text style={[Type.captionStrong, { color: th.accentText }]}>{t('calendar.countForRecap', { count: calEvents.length })}</Text>
+                    <Icon name="chevronRight" size={14} color={th.accentText} />
+                  </Pressable>
+                ) : null}
               </View>
-            ) : (
-              <Text style={[Type.meta, { color: th.text2 }]}>{canScan ? t('calendar.entrySub') : t('calendar.needsKey')}</Text>
-            )}
-            {canScan ? (
-              <Button
-                label={calEvents.length > 0 ? t('calendar.rescan') : t('calendar.addToCalendar')}
-                variant="secondary"
-                height={44}
-                icon="refresh"
-                iconColor={th.accentText}
-                disabled={calScanning}
-                onPress={() => void onScanCalendar()}
-              />
-            ) : null}
-            {calScanning ? (
-              <Text style={[Type.caption, { color: th.text2 }]}>{t('calendar.scanningThis')}</Text>
-            ) : calMsg ? (
-              <Text style={[Type.caption, { color: th.text2 }]}>{calMsg}</Text>
-            ) : null}
+              {calEvents.length > 0 ? (
+                <View style={{ gap: 10 }}>
+                  {calEvents.slice(0, 5).map((ev) => (
+                    <View key={ev.id} style={styles.calRow}>
+                      <View style={[styles.calDot, { backgroundColor: ev.type === 'deadline' ? th.destructive : ev.type === 'mention' ? th.text3 : th.accent }]} />
+                      <Text style={[Type.metaStrong, { color: th.text, width: 68 }]} numberOfLines={1}>
+                        {shortDate(ev.startAt)}
+                      </Text>
+                      <Text style={[Type.meta, { color: th.text2, flex: 1 }]} numberOfLines={1}>
+                        {ev.title}
+                      </Text>
+                    </View>
+                  ))}
+                  {calEvents.length > 5 ? (
+                    <Text style={[Type.caption, { color: th.text3 }]}>{t('calendar.countForRecap', { count: calEvents.length })}</Text>
+                  ) : null}
+                </View>
+              ) : (
+                <Text style={[Type.meta, { color: th.text2 }]}>{canScan ? t('calendar.entrySub') : t('calendar.needsKey')}</Text>
+              )}
+              {canScan ? (
+                <Button
+                  label={calEvents.length > 0 ? t('calendar.rescan') : t('calendar.addToCalendar')}
+                  variant="secondary"
+                  height={44}
+                  icon="refresh"
+                  iconColor={th.accentText}
+                  disabled={calScanning}
+                  onPress={() => void onScanCalendar()}
+                />
+              ) : null}
+              {calScanning ? (
+                <Text style={[Type.caption, { color: th.text2 }]}>{t('calendar.scanningThis')}</Text>
+              ) : calMsg ? (
+                <Text style={[Type.caption, { color: th.text2 }]}>{calMsg}</Text>
+              ) : null}
+            </Card>
           </Rise>
         ) : null}
 
@@ -717,5 +724,7 @@ const styles = StyleSheet.create({
   floating: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: 40 },
   pill: { height: 48, paddingHorizontal: 20, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
   calHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  calRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
+  calLink: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  calRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  calDot: { width: 8, height: 8, borderRadius: 4 },
 });
