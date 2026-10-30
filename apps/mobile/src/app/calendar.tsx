@@ -1,9 +1,9 @@
 /**
  * Calendar (beta) — a polished agenda of dates extracted from recaps. A display-type header with a live
- * summary, a "Next up" hero for the nearest upcoming event, then a date-stamp timeline of upcoming days
- * (today highlighted) and a de-emphasised past section. Tap an event to open its recap; long-press to
- * remove. Populated by the launch-time backfill (scanAllRecaps) and the per-recap "Add to calendar"
- * button; if the list is empty but there are unscanned recaps, we scan on open.
+ * summary, time + type filters, a "Next up" hero for the nearest upcoming event, then a date-stamp
+ * timeline of upcoming days (today highlighted) and a de-emphasised past section. Tap an event for its
+ * detail sheet (reminder + add-to-calendar + open recap); long-press to remove. Populated by the
+ * launch-time backfill (scanAllRecaps) and the per-recap "Add to calendar" button.
  */
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -11,16 +11,20 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { type CalendarEvent, calendarRepo, recapsRepo } from '../db';
-import { Card, Dot, IconButton, ProcessingBars, Rise, SectionLabel } from '../design/components';
+import { type CalendarEvent, type CalendarEventType, calendarRepo, recapsRepo } from '../db';
+import { Card, Dot, IconButton, ProcessingBars, Rise, SectionLabel, Segmented } from '../design/components';
 import { Icon } from '../design/icons';
 import { clock, longDate } from '../design/format';
 import { Layout } from '../design/tokens';
 import { Type } from '../design/typography';
 import { useTheme } from '../design/useTheme';
 import { dayDiff, startOfDay } from '../features/calendar/agendaDates';
+import { EventSheet } from '../features/calendar/EventSheet';
 import { scanAllRecapsForDates } from '../features/calendar/scanAllRecaps';
 import i18n from '../i18n';
+
+type TimeFilter = 'all' | 'upcoming' | 'ended';
+type TypeFilter = 'all' | CalendarEventType;
 
 function locale(): string {
   return i18n.language?.startsWith('lv') ? 'lv-LV' : 'en-GB';
@@ -75,6 +79,9 @@ export default function CalendarScreen() {
   const [titles, setTitles] = useState<Record<string, string>>({});
   const [scanning, setScanning] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [selected, setSelected] = useState<CalendarEvent | null>(null);
   // Single "now" for the whole agenda (refreshed on focus, so "today" stays correct across midnight).
   // Reading the clock in state keeps it out of render, which the React Compiler requires.
   const [now, setNow] = useState(() => Date.now());
@@ -126,18 +133,42 @@ export default function CalendarScreen() {
     (ev: CalendarEvent) => {
       Alert.alert(t('calendar.removeTitle'), ev.title, [
         { text: t('ui.cancel'), style: 'cancel' },
-        { text: t('calendar.remove'), style: 'destructive', onPress: () => void calendarRepo.deleteEvent(ev.id).then(() => load()) },
+        {
+          text: t('calendar.remove'),
+          style: 'destructive',
+          onPress: () =>
+            void calendarRepo.deleteEvent(ev.id).then(() => {
+              setSelected(null);
+              return load();
+            }),
+        },
       ]);
     },
     [t, load],
   );
 
-  const { upcomingGroups, pastGroups, nextEvent } = useMemo(() => {
+  const openRecap = useCallback(
+    (recapId: string) => {
+      setSelected(null);
+      router.push({ pathname: '/recap/[id]', params: { id: recapId } });
+    },
+    [router],
+  );
+
+  const { upcomingGroups, pastGroups, nextEvent, visibleCount } = useMemo(() => {
     const todayStart = startOfDay(now);
-    const up = events.filter((e) => e.startAt >= todayStart); // ascending from the repo
-    const pa = events.filter((e) => e.startAt < todayStart).reverse(); // most recent first
-    return { upcomingGroups: groupByDay(up), pastGroups: groupByDay(pa), nextEvent: up[0] ?? null };
-  }, [events, now]);
+    const typed = typeFilter === 'all' ? events : events.filter((e) => e.type === typeFilter);
+    const up = typed.filter((e) => e.startAt >= todayStart); // ascending from the repo
+    const pa = typed.filter((e) => e.startAt < todayStart).reverse(); // most recent first
+    const showUp = timeFilter !== 'ended';
+    const showPast = timeFilter !== 'upcoming';
+    return {
+      upcomingGroups: showUp ? groupByDay(up) : [],
+      pastGroups: showPast ? groupByDay(pa) : [],
+      nextEvent: showUp ? up[0] ?? null : null,
+      visibleCount: (showUp ? up.length : 0) + (showPast ? pa.length : 0),
+    };
+  }, [events, now, timeFilter, typeFilter]);
 
   const typeColor = useCallback(
     (type: CalendarEvent['type']) => (type === 'deadline' ? th.destructive : type === 'mention' ? th.text3 : th.accent),
@@ -150,7 +181,7 @@ export default function CalendarScreen() {
 
   const EventCard = ({ ev, dim }: { ev: CalendarEvent; dim?: boolean }) => (
     <Pressable
-      onPress={() => router.push({ pathname: '/recap/[id]', params: { id: ev.recapId } })}
+      onPress={() => setSelected(ev)}
       onLongPress={() => onRemove(ev)}
       delayLongPress={400}
       accessibilityRole="button"
@@ -171,6 +202,7 @@ export default function CalendarScreen() {
               <Text style={[Type.caption, { color: th.text2 }]}>{clock(ev.startAt)}</Text>
             </>
           ) : null}
+          {ev.reminderMinutes !== null ? <Icon name="bell" size={13} color={th.accentText} /> : null}
           {titles[ev.recapId] ? (
             <>
               <Dot />
@@ -211,6 +243,13 @@ export default function CalendarScreen() {
 
   let rise = 0;
   const isEmpty = loaded && events.length === 0;
+  const noMatch = loaded && events.length > 0 && visibleCount === 0;
+  const typeChips: { value: TypeFilter; label: string }[] = [
+    { value: 'all', label: t('calendar.filter.all') },
+    { value: 'event', label: t('calendar.filter.events') },
+    { value: 'deadline', label: t('calendar.filter.deadlines') },
+    { value: 'mention', label: t('calendar.filter.dates') },
+  ];
 
   return (
     <SafeAreaView style={[styles.fill, { backgroundColor: th.bg }]} edges={['top']}>
@@ -232,6 +271,35 @@ export default function CalendarScreen() {
           </Text>
         </Rise>
 
+        {events.length > 0 ? (
+          <Rise index={rise++} style={{ gap: 10 }}>
+            <Segmented<TimeFilter>
+              value={timeFilter}
+              onChange={setTimeFilter}
+              options={[
+                { value: 'all', label: t('calendar.filter.all') },
+                { value: 'upcoming', label: t('calendar.filter.upcoming') },
+                { value: 'ended', label: t('calendar.filter.ended') },
+              ]}
+            />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+              {typeChips.map((c) => {
+                const on = typeFilter === c.value;
+                return (
+                  <Pressable
+                    key={c.value}
+                    onPress={() => setTypeFilter(c.value)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    style={[styles.filterChip, { backgroundColor: on ? th.primaryBtn : th.surface, borderColor: on ? th.primaryBtn : th.line }]}>
+                    <Text style={[Type.captionStrong, { color: on ? th.onPrimaryBtn : th.text2 }]}>{c.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Rise>
+        ) : null}
+
         {scanning ? (
           <Rise index={rise++}>
             <View style={[styles.banner, { backgroundColor: th.surface, borderColor: th.line }]}>
@@ -252,10 +320,21 @@ export default function CalendarScreen() {
           </Rise>
         ) : null}
 
+        {noMatch ? (
+          <Rise index={rise++}>
+            <View style={styles.emptyWrap}>
+              <View style={[styles.emptyIcon, { backgroundColor: th.surface2 }]}>
+                <Icon name="filter" size={22} color={th.text3} />
+              </View>
+              <Text style={[Type.bodyText15, { color: th.text2, textAlign: 'center' }]}>{t('calendar.emptyFiltered')}</Text>
+            </View>
+          </Rise>
+        ) : null}
+
         {nextEvent ? (
           <Rise index={rise++}>
             <Pressable
-              onPress={() => router.push({ pathname: '/recap/[id]', params: { id: nextEvent.recapId } })}
+              onPress={() => setSelected(nextEvent)}
               onLongPress={() => onRemove(nextEvent)}
               delayLongPress={400}
               accessibilityRole="button">
@@ -313,6 +392,16 @@ export default function CalendarScreen() {
           </View>
         ) : null}
       </ScrollView>
+
+      <EventSheet
+        key={selected?.id}
+        event={selected}
+        recapTitle={selected ? titles[selected.recapId] : undefined}
+        onClose={() => setSelected(null)}
+        onChanged={() => void load()}
+        onOpenRecap={openRecap}
+        onRemove={onRemove}
+      />
     </SafeAreaView>
   );
 }
@@ -335,4 +424,5 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   pill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 7 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
+  filterChip: { paddingHorizontal: 14, height: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
 });

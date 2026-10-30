@@ -50,6 +50,9 @@ export const calendarEvents = sqliteTable('calendar_events', {
   note: text('note').notNull().default(''),
   /** Seconds into the recording where it was mentioned (null = unknown), for tap-to-seek. */
   timestampRef: real('timestamp_ref'),
+  /** Reminder lead time in minutes before the event (null = no reminder). Used as the VALARM when the
+   * event is exported to the device calendar; 0 = at the time of the event. */
+  reminderMinutes: integer('reminder_minutes'),
   createdAt: integer('created_at').notNull(),
 }, (t) => ({
   byRecap: index('idx_calendar_recap').on(t.recapId),

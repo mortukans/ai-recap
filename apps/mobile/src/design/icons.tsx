@@ -26,6 +26,10 @@ export type IconName =
   | 'chat'
   | 'lines'
   | 'book'
+  | 'bell'
+  | 'clock'
+  | 'calendarPlus'
+  | 'filter'
   | 'close'
   | 'trash';
 
@@ -179,6 +183,33 @@ export function Icon({ name, size = 22, color, strokeWidth = 1.8 }: Props) {
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24">
           <Path d="M4 19V5l8 4 8-4v14l-8 4z" {...common} />
+        </Svg>
+      );
+    case 'bell':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+          <Path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6z" {...common} />
+          <Path d="M10 20a2 2 0 0 0 4 0" {...common} />
+        </Svg>
+      );
+    case 'clock':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+          <Circle cx={12} cy={12} r={9} {...common} />
+          <Path d="M12 7v5l3 2" {...common} />
+        </Svg>
+      );
+    case 'calendarPlus':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+          <Rect x={4} y={5} width={16} height={16} rx={3} {...common} />
+          <Path d="M4 9h16M8 3v4M16 3v4M12 13v4M10 15h4" {...common} />
+        </Svg>
+      );
+    case 'filter':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+          <Path d="M4 6h16M7 12h10M10 18h4" {...common} strokeWidth={2} />
         </Svg>
       );
     case 'close':

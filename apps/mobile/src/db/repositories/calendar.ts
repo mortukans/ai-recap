@@ -18,6 +18,8 @@ export interface CalendarEvent {
   type: CalendarEventType;
   note: string;
   timestampRef: number | null;
+  /** Reminder lead time in minutes before the event (null = none, 0 = at the time). */
+  reminderMinutes: number | null;
   createdAt: number;
 }
 
@@ -33,6 +35,7 @@ function toDomain(row: Row): CalendarEvent {
     type: (row.type as CalendarEventType) ?? 'event',
     note: row.note,
     timestampRef: row.timestampRef,
+    reminderMinutes: row.reminderMinutes ?? null,
     createdAt: row.createdAt,
   };
 }
@@ -61,6 +64,11 @@ export async function replaceEventsForRecap(recapId: string, events: CalendarEve
 
 export async function deleteEvent(id: string): Promise<void> {
   await getDatabase().delete(calendarEvents).where(eq(calendarEvents.id, id));
+}
+
+/** Set (or clear, with null) the reminder lead time for one event. */
+export async function setReminder(id: string, reminderMinutes: number | null): Promise<void> {
+  await getDatabase().update(calendarEvents).set({ reminderMinutes }).where(eq(calendarEvents.id, id));
 }
 
 /** Mark a recap scanned (idempotency for the launch-time batch scan), whether or not events were found. */

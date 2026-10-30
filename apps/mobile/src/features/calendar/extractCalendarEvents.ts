@@ -206,6 +206,7 @@ export async function extractCalendarEvents(recapId: string, opts?: { signal?: A
       type: asEventType(raw.type),
       note: typeof raw.note === 'string' ? raw.note.trim().slice(0, 280) : '',
       timestampRef: typeof raw.timestampRef === 'number' && Number.isFinite(raw.timestampRef) ? raw.timestampRef : null,
+      reminderMinutes: null,
       createdAt: now,
     });
   }

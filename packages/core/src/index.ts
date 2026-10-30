@@ -20,3 +20,4 @@ export * from './integrity';
 export * from './playback';
 export * from './title';
 export * from './share-html';
+export * from './calendar-ics';
