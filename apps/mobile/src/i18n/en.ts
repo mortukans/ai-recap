@@ -389,8 +389,8 @@ export const en = {
     summary_other: '{{count}} dates',
     emptyFiltered: 'Nothing matches this filter.',
     reminder: 'Reminder',
-    reminderHint: 'The reminder goes with the event when you add it to your calendar.',
-    addToDeviceCalendar: 'Add to Calendar',
+    reminderHint: 'The reminder goes with the event into your calendar.',
+    addToDeviceCalendar: 'Add to Apple Calendar',
     allDay: 'All day',
     filter: {
       all: 'All',

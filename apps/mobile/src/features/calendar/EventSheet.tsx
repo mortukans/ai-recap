@@ -14,7 +14,7 @@ import { Icon } from '../../design/icons';
 import { Sheet } from '../../design/Sheet';
 import { Type } from '../../design/typography';
 import { useTheme } from '../../design/useTheme';
-import { shareEventToCalendar } from './shareToCalendar';
+import { addEventToDeviceCalendar } from './addToDeviceCalendar';
 
 const REMINDER_OPTS: { minutes: number | null; key: string }[] = [
   { minutes: null, key: 'none' },
@@ -110,7 +110,11 @@ export function EventSheet({
             height={48}
             icon="calendarPlus"
             iconColor={th.onPrimaryBtn}
-            onPress={() => void shareEventToCalendar({ ...ev, reminderMinutes: reminder }, recapTitle)}
+            onPress={() =>
+              void addEventToDeviceCalendar({ ...ev, reminderMinutes: reminder }, recapTitle).then((r) => {
+                if (r === 'added') onClose();
+              })
+            }
           />
           <Button label={t('calendar.openRecap')} variant="secondary" height={44} icon="book" iconColor={th.accentText} onPress={() => onOpenRecap(ev.recapId)} />
           <Button label={t('calendar.remove')} variant="destructive" height={44} icon="trash" iconColor={th.destructive} onPress={() => onRemove(ev)} />

@@ -21,15 +21,11 @@ function toIcs(ev: CalendarEvent, recapTitle?: string): IcsEvent {
   };
 }
 
-/** Share one event as an .ics so the user can add it (with its reminder) to their calendar. */
+/**
+ * Share one event as an .ics so the user can add it (with its reminder) to their calendar. This is the
+ * fallback for addEventToDeviceCalendar() when the native calendar module isn't present.
+ */
 export async function shareEventToCalendar(ev: CalendarEvent, recapTitle?: string): Promise<void> {
   const ics = buildIcs([toIcs(ev, recapTitle)]);
   await exportTextFile(`${safeFilename(ev.title, 'event')}.ics`, ics, ICS.mime, ICS.uti);
-}
-
-/** Share several events as a single .ics (e.g. everything from one recap). */
-export async function shareEventsToCalendar(events: CalendarEvent[], titles: Record<string, string> = {}, filename = 'calendar'): Promise<void> {
-  if (events.length === 0) return;
-  const ics = buildIcs(events.map((e) => toIcs(e, titles[e.recapId])));
-  await exportTextFile(`${safeFilename(filename)}.ics`, ics, ICS.mime, ICS.uti);
 }

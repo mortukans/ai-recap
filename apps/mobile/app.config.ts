@@ -10,7 +10,7 @@ import type { ExpoConfig } from 'expo/config';
 const config: ExpoConfig = {
   name: 'AI Recap',
   slug: 'ai-recap',
-  version: '1.0.8',
+  version: '1.0.9',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   scheme: 'airecap',
@@ -61,6 +61,20 @@ const config: ExpoConfig = {
     'expo-secure-store',
     'expo-localization',
     'expo-audio',
+    // Add recap dates to the device calendar via Apple's native event editor (EventKitUI). Write-only
+    // access (iOS 17+) — AI Recap never reads the user's calendar; it only opens the "New Event" sheet.
+    [
+      'expo-calendar',
+      {
+        calendarPermission: 'AI Recap opens the calendar editor so you can add a date from a recap.',
+        writeOnlyCalendarPermission: 'AI Recap adds a date from a recap to your calendar when you choose to.',
+        writeOnlyAccess: true,
+        // AI Recap never uses Reminders; the string is required only because the calendar framework
+        // references the Reminders API (same situation as the Photos string above, ITMS-90683).
+        remindersPermission:
+          'AI Recap does not use reminders. This permission is only referenced by the calendar component.',
+      },
+    ],
     // Live Activity for in-progress recordings (Lock Screen + Dynamic Island), M6-1. No home-screen
     // widgets yet; the plugin still generates the WidgetKit extension target + NSSupportsLiveActivities.
     ['expo-widgets', { widgets: [] }],
