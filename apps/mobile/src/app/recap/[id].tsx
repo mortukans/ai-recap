@@ -27,8 +27,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { DEFAULT_SUMMARY_MODEL, generateRecap, resolveLLMRoute } from '../../ai';
 import { type CalendarEvent, artifactsRepo, attachmentsRepo, calendarRepo, chunksRepo, contextsRepo, recapsRepo, segmentsRepo } from '../../db';
-import { Button, Card, Chip, Dot, Group, IconButton, Input, ProcessingBars, Rise, Row, Segmented } from '../../design/components';
-import { dayAndClock, shortDate, shortDuration , clock } from '../../design/format';
+import { Button, Chip, Dot, Group, IconButton, Input, ProcessingBars, Rise, Row, Segmented } from '../../design/components';
+import { dayAndClock, shortDuration , clock } from '../../design/format';
 import { Icon } from '../../design/icons';
 import { Sheet } from '../../design/Sheet';
 import { Layout } from '../../design/tokens';
@@ -50,8 +50,14 @@ import { DEFAULT_TRANSCRIPTION_MODEL, type LlmModel, getByokLLMProvider } from '
 import { ModelPicker } from '../../features/settings/ModelPicker';
 import { retranscribe, shortModel } from '../../features/recap/retranscribe';
 import { extractCalendarEvents } from '../../features/calendar/extractCalendarEvents';
+import { addEventToDeviceCalendar } from '../../features/calendar/addToDeviceCalendar';
+import { EventSheet } from '../../features/calendar/EventSheet';
+import { cap, fmt, monthShort } from '../../features/calendar/agendaLabels';
 import { getEntitlements } from '../../purchases/entitlements';
 import { processingCoordinator } from '../../processing/coordinator';
+
+/** Weekday name for a date row, e.g. "Friday" / "Piektdiena" (the plate already shows day + month). */
+const calWeekday = (ms: number) => cap(fmt(ms, { weekday: 'long' }));
 
 type Tab = 'summary' | 'transcript' | 'chat';
 
@@ -103,10 +109,11 @@ export default function RecapDetailScreen() {
   const [busyLabel, setBusyLabel] = useState<string | null>(null);
   // Per-recording model experiments are a BYOK feature (they call OpenRouter with the user's key).
   const [hasKey, setHasKey] = useState(false);
-  // Calendar (beta): dates extracted from this recap, plus the "add to calendar" scan state.
+  // Calendar: dates extracted from this recap, the scan state, and the tapped date's detail sheet.
   const [calEvents, setCalEvents] = useState<CalendarEvent[]>([]);
   const [calScanning, setCalScanning] = useState(false);
   const [calMsg, setCalMsg] = useState<string | null>(null);
+  const [calSelected, setCalSelected] = useState<CalendarEvent | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -287,6 +294,7 @@ export default function RecapDetailScreen() {
           detectedLanguages: ['lv', 'en'],
           durationSeconds,
           speakers: [...new Set(segments.map((s) => s.speakerLabel).filter(Boolean))] as string[],
+          recordedAt: startedAt,
         },
         context,
         transcript: segments,
@@ -349,6 +357,29 @@ export default function RecapDetailScreen() {
       setCalScanning(false);
     }
   }, [id, calScanning, t]);
+
+  // Add every date this recap found to the device calendar (Apple's editor opens per event).
+  const onAddAllToCalendar = useCallback(async () => {
+    for (const ev of calEvents) await addEventToDeviceCalendar(ev, title).catch(() => undefined);
+  }, [calEvents, title]);
+
+  const onRemoveDate = useCallback(
+    (ev: CalendarEvent) => {
+      Alert.alert(t('calendar.removeTitle'), ev.title, [
+        { text: t('ui.cancel'), style: 'cancel' },
+        {
+          text: t('calendar.remove'),
+          style: 'destructive',
+          onPress: () =>
+            void calendarRepo.deleteEvent(ev.id).then(() => {
+              setCalSelected(null);
+              return load();
+            }),
+        },
+      ]);
+    },
+    [t, load],
+  );
 
   const onTab = (tab: Tab) => {
     if (!id || tab === 'summary') return;
@@ -569,56 +600,74 @@ export default function RecapDetailScreen() {
         ) : null}
 
         {showCalendar ? (
-          <Rise index={rise++}>
-            <Card style={{ gap: 12 }}>
-              <View style={styles.calHeader}>
-                <Text style={[Type.sectionLabel, { color: th.text2 }]}>
-                  {t('calendar.title')} <Text style={{ color: th.accentText }}>· {t('calendar.beta')}</Text>
-                </Text>
-                {calEvents.length > 0 ? (
-                  <Pressable onPress={() => router.push('/calendar')} accessibilityRole="button" hitSlop={8} style={styles.calLink}>
-                    <Text style={[Type.captionStrong, { color: th.accentText }]}>{t('calendar.countForRecap', { count: calEvents.length })}</Text>
-                    <Icon name="chevronRight" size={14} color={th.accentText} />
-                  </Pressable>
-                ) : null}
-              </View>
-              {calEvents.length > 0 ? (
-                <View style={{ gap: 10 }}>
-                  {calEvents.slice(0, 5).map((ev) => (
-                    <View key={ev.id} style={styles.calRow}>
-                      <View style={[styles.calDot, { backgroundColor: ev.type === 'deadline' ? th.destructive : ev.type === 'mention' ? th.text3 : th.accent }]} />
-                      <Text style={[Type.metaStrong, { color: th.text, width: 68 }]} numberOfLines={1}>
-                        {shortDate(ev.startAt)}
-                      </Text>
-                      <Text style={[Type.meta, { color: th.text2, flex: 1 }]} numberOfLines={1}>
+          <Rise index={rise++} style={{ gap: 8 }}>
+            <View style={styles.calHeader}>
+              <Text style={[Type.sectionLabel, { color: th.text2 }]}>
+                {t('recapDoc.dates')}
+                {calEvents.length > 0 ? ` · ${calEvents.length}` : ''}
+              </Text>
+              {canScan ? (
+                <Pressable onPress={() => void onScanCalendar()} accessibilityRole="button" hitSlop={8} disabled={calScanning} style={styles.calLink}>
+                  <Icon name="refresh" size={14} color={th.accentText} strokeWidth={2.2} />
+                  <Text style={[Type.captionStrong, { color: th.accentText }]}>{t('calendar.rescan')}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            {calEvents.length > 0 ? (
+              <View style={[styles.calCard, { backgroundColor: th.surface, borderColor: th.line }]}>
+                {calEvents.map((ev, i) => (
+                  <Pressable
+                    key={ev.id}
+                    onPress={() => setCalSelected(ev)}
+                    accessibilityRole="button"
+                    style={({ pressed }) => [styles.calEventRow, { borderTopColor: th.line, borderTopWidth: i === 0 ? 0 : 1, opacity: pressed ? 0.6 : 1 }]}>
+                    <View style={[styles.calPlate, { backgroundColor: th.accentTint }]}>
+                      <Text style={[Type.caption, { color: th.accentText, fontFamily: Type.captionStrong.fontFamily }]}>{monthShort(ev.startAt)}</Text>
+                      <Text style={[Type.tileNumber, { color: th.text, fontSize: 24, lineHeight: 24 }]}>{new Date(ev.startAt).getDate()}</Text>
+                    </View>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={[Type.metaStrong, { color: th.text, fontSize: 16 }]} numberOfLines={1}>
                         {ev.title}
                       </Text>
+                      <Text style={[Type.meta, { color: th.text2 }]} numberOfLines={1}>
+                        {calWeekday(ev.startAt)}
+                        {!ev.allDay ? ` · ${clock(ev.startAt)}` : ''}
+                      </Text>
+                      {ev.note ? (
+                        <Text style={[Type.meta, { color: th.text2 }]} numberOfLines={1}>
+                          {ev.note}
+                        </Text>
+                      ) : null}
                     </View>
-                  ))}
-                  {calEvents.length > 5 ? (
-                    <Text style={[Type.caption, { color: th.text3 }]}>{t('calendar.countForRecap', { count: calEvents.length })}</Text>
-                  ) : null}
-                </View>
-              ) : (
-                <Text style={[Type.meta, { color: th.text2 }]}>{canScan ? t('calendar.entrySub') : t('calendar.needsKey')}</Text>
-              )}
-              {canScan ? (
-                <Button
-                  label={calEvents.length > 0 ? t('calendar.rescan') : t('calendar.addToCalendar')}
-                  variant="secondary"
-                  height={44}
-                  icon="refresh"
-                  iconColor={th.accentText}
-                  disabled={calScanning}
-                  onPress={() => void onScanCalendar()}
-                />
-              ) : null}
-              {calScanning ? (
-                <Text style={[Type.caption, { color: th.text2 }]}>{t('calendar.scanningThis')}</Text>
-              ) : calMsg ? (
-                <Text style={[Type.caption, { color: th.text2 }]}>{calMsg}</Text>
-              ) : null}
-            </Card>
+                    <Icon name="chevronRight" size={16} color={th.text3} />
+                  </Pressable>
+                ))}
+                <Pressable
+                  onPress={() => void onAddAllToCalendar()}
+                  accessibilityRole="button"
+                  style={({ pressed }) => [styles.calAddRow, { borderTopColor: th.line, opacity: pressed ? 0.6 : 1 }]}>
+                  <Icon name="calendarPlus" size={18} color={th.accentText} />
+                  <Text style={[Type.buttonSmall, { color: th.accentText }]}>{t('calendar.addToDeviceCalendar')}</Text>
+                </Pressable>
+              </View>
+            ) : canScan ? (
+              <Button
+                label={t('calendar.addToCalendar')}
+                variant="secondary"
+                height={44}
+                icon="calendar"
+                iconColor={th.accentText}
+                disabled={calScanning}
+                onPress={() => void onScanCalendar()}
+              />
+            ) : (
+              <Text style={[Type.meta, { color: th.text2 }]}>{t('calendar.needsKey')}</Text>
+            )}
+            {calScanning ? (
+              <Text style={[Type.caption, { color: th.text2 }]}>{t('calendar.scanningThis')}</Text>
+            ) : calMsg ? (
+              <Text style={[Type.caption, { color: th.text2 }]}>{calMsg}</Text>
+            ) : null}
           </Rise>
         ) : null}
 
@@ -709,6 +758,15 @@ export default function RecapDetailScreen() {
         onSelect={(mid) => void pickModel(mid)}
         onClose={closeModelPicker}
       />
+      <EventSheet
+        key={calSelected?.id}
+        event={calSelected}
+        recapTitle={title}
+        onClose={() => setCalSelected(null)}
+        onChanged={() => void load()}
+        onOpenRecap={() => setCalSelected(null)}
+        onRemove={onRemoveDate}
+      />
     </SafeAreaView>
   );
 }
@@ -723,8 +781,10 @@ const styles = StyleSheet.create({
   compareCard: { gap: 12, padding: 14, borderRadius: 16, borderWidth: 1 },
   floating: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center', paddingTop: 40 },
   pill: { height: 48, paddingHorizontal: 20, borderRadius: 24, borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  calHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  calLink: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  calRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  calDot: { width: 8, height: 8, borderRadius: 4 },
+  calHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 },
+  calLink: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32 },
+  calCard: { borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
+  calEventRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
+  calPlate: { width: 48, alignItems: 'center', gap: 1, paddingVertical: 7, borderRadius: 12 },
+  calAddRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, borderTopWidth: 1 },
 });

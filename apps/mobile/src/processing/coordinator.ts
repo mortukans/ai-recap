@@ -507,6 +507,7 @@ export class ProcessingCoordinator {
             title: recap.title || undefined,
             detectedLanguages: recap.detectedLanguages,
             durationSeconds: recap.durationSeconds,
+            recordedAt: recap.startedAt,
           },
           context,
           transcript: segments,

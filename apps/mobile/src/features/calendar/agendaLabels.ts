@@ -25,6 +25,17 @@ export const monthShort = (ms: number) => fmt(ms, { month: 'short' }).replace('.
 /** "Sunday, 15 November" (capitalised), for day-list and card headers. */
 export const fullWeekday = (ms: number) => cap(fmt(ms, { weekday: 'long', day: 'numeric', month: 'long' }, longDate(ms)));
 
+/** A YYYY-MM-DD string → "6 November" (year shown only when it isn't the current year). Never ISO. */
+export function isoDateLabel(iso: string | null | undefined, now = Date.now()): string {
+  if (!iso) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+  if (!m) return iso;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (Number.isNaN(d.getTime())) return iso;
+  const sameYear = d.getFullYear() === new Date(now).getFullYear();
+  return cap(fmt(d.getTime(), sameYear ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'long', year: 'numeric' }));
+}
+
 /** Today / Tomorrow / Yesterday / in N days / N days ago, else a full date. */
 export function relativeDay(ms: number, now: number): string {
   const d = dayDiff(ms, now);

@@ -13,6 +13,7 @@ import { Icon } from '../../design/icons';
 import { Lottie } from '../../design/Lottie';
 import { Type } from '../../design/typography';
 import { useTheme } from '../../design/useTheme';
+import { isoDateLabel } from '../calendar/agendaLabels';
 import { getDoneTasks, setDoneTasks } from '../../lib/prefs';
 
 export function SummaryBody({ doc, recapId, onSeek }: { doc: RecapDocument; recapId: string; onSeek?: (seconds: number) => void }) {
@@ -71,7 +72,8 @@ export function SummaryBody({ doc, recapId, onSeek }: { doc: RecapDocument; reca
           <SectionLabel>{tr('ui.tasks')}</SectionLabel>
           {doc.actionItems.map((a, i) => {
             const isDone = done.has(i);
-            const sub = [a.owner, a.deadline].filter(Boolean).join(' · ');
+            // Never show a raw ISO deadline; format it to a readable date (handoff §5/§6.1).
+            const sub = [a.owner, a.deadline ? isoDateLabel(a.deadline) : null].filter(Boolean).join(' · ');
             return (
               <Pressable
                 key={i}
@@ -113,19 +115,8 @@ export function SummaryBody({ doc, recapId, onSeek }: { doc: RecapDocument; reca
         </Rise>
       ) : null}
 
-      {doc.importantDates.length > 0 ? (
-        <Rise index={rise++} step={80} style={{ gap: 10 }}>
-          <SectionLabel>{tr('ui.dates')}</SectionLabel>
-          {doc.importantDates.map((d, i) => (
-            <View key={i} style={styles.bullet}>
-              <Text style={[Type.metaStrong, { color: t.accentText, minWidth: 84 }]}>{d.date ?? '—'}</Text>
-              <Text style={[Type.bodyText15, { color: t.text, flex: 1 }]}>
-                {d.text} {refs(d.timestampRefs)}
-              </Text>
-            </View>
-          ))}
-        </Rise>
-      ) : null}
+      {/* Dates live in the recap screen's "Dates" card (anchored calendar events), not here — the
+          RecapDocument's importantDates aren't date-anchored and showed raw/wrong ISO strings (§6.1). */}
 
       {doc.openQuestions.length > 0 ? (
         <Rise index={rise++} step={80} style={{ gap: 10 }}>

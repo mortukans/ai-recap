@@ -6,7 +6,7 @@
 import type { Context, TranscriptSegment } from '@ai-recap/core';
 import { RECAP_DOCUMENT_JSON_SCHEMA, formatTimestamp } from '@ai-recap/core';
 
-export const RECAP_PROMPT_VERSION = 'recap/2026-09-10.1';
+export const RECAP_PROMPT_VERSION = 'recap/2026-11-11.1';
 export const CHAT_PROMPT_VERSION = 'chat/2026-09-10.1';
 
 export interface LlmMessage {
@@ -19,6 +19,8 @@ export interface MeetingMeta {
   detectedLanguages: string[];
   durationSeconds: number;
   speakers?: string[];
+  /** When the meeting was recorded (epoch ms). Anchors relative dates ("next Tuesday") to real dates. */
+  recordedAt?: number;
 }
 
 export interface RecapPromptInput {
@@ -45,8 +47,26 @@ const RECAP_SYSTEM = [
   'The "title" must be a short, specific name for this recording (3–7 words, in the meeting’s main language):',
   'what it was about, e.g. "Q3 budget review with finance" — never generic like "Meeting" or "Recording".',
   'If a title was provided in the metadata, keep it unless it is empty or "(untitled)".',
+  'When a recording date is given in the metadata, resolve every relative date — today, tomorrow, next',
+  'Tuesday, this Friday, in two weeks, the 15th — to an absolute YYYY-MM-DD against that date, and use',
+  'that for every "date" and "deadline" field. Never output a date in a different year than the',
+  'recording unless the text explicitly says so.',
   'Respond with ONLY a JSON object matching the provided schema. No markdown, no prose outside JSON.',
 ].join(' ');
+
+/** Recording date as "Monday, 2026-11-11" for the metadata block; empty when unknown. */
+function renderRecordedAt(ms?: number): string {
+  if (!ms) return '';
+  const d = new Date(ms);
+  const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  let weekday = '';
+  try {
+    weekday = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(d);
+  } catch {
+    /* ignore */
+  }
+  return `\nRecording date: ${weekday ? `${weekday}, ` : ''}${iso}`;
+}
 
 function renderTranscript(transcript: TranscriptSegment[] | string): string {
   if (typeof transcript === 'string') return transcript;
@@ -75,7 +95,7 @@ export function buildRecapMessages(input: RecapPromptInput): LlmMessage[] {
   parts.push(
     `# Meeting metadata\nTitle: ${input.meta.title ?? '(untitled)'}\nLanguages: ${langs}\nDuration (s): ${Math.round(
       input.meta.durationSeconds,
-    )}`,
+    )}${renderRecordedAt(input.meta.recordedAt)}`,
   );
   if (input.meta.speakers && input.meta.speakers.length > 0) {
     parts.push(`Speakers: ${input.meta.speakers.join(', ')}`);

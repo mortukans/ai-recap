@@ -18,7 +18,7 @@ import type { LLMProvider } from '../types';
 
 export interface GenerateRecapInput {
   recapId: string;
-  meta: { title?: string; detectedLanguages: string[]; durationSeconds: number; speakers?: string[] };
+  meta: { title?: string; detectedLanguages: string[]; durationSeconds: number; speakers?: string[]; recordedAt?: number };
   context: Context | null;
   transcript: TranscriptSegment[] | string;
   provider: LLMProvider;
