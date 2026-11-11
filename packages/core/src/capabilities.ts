@@ -55,6 +55,9 @@ export function resolveCapabilities(entitlements: Entitlements): Capabilities {
     caps = {
       ...caps,
       maxRecordingMinutes: Math.max(caps.maxRecordingMinutes, PAID_RECORDING_MINUTES),
+      // BYOK calls the user's own provider key directly (app→OpenRouter); we bear no inference cost,
+      // so there is no reason to cap daily recaps. No daily limit, same as Unlimited.
+      maxRecapsPerDay: null,
       byokEnabled: true,
       export: true,
       advancedTemplates: true,

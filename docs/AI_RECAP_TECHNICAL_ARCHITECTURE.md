@@ -535,6 +535,9 @@ Cross-platform IAP is the reason to use **RevenueCat** rather than hand-rolling 
 - **Capabilities, not a plan enum** (retained): resolve owned entitlements → `{ maxRecordingMinutes,
   maxRecapsPerDay, hostedTranscription, hostedLLM, byokEnabled, watch, export, advancedTemplates }`.
   Free defaults (15 min / 5 per day); BYOK and Unlimited unlock different sets and can co-exist.
+  Both BYOK and Unlimited lift the daily recap cap (`maxRecapsPerDay = null`) — BYOK because it uses the
+  user's own provider key (app→OpenRouter direct), so we bear no inference cost. They differ in hosted AI:
+  Unlimited includes our hosted LLM/transcription; BYOK does not.
 - **Free enforcement (Product Plan §21/§22):** warn 13:00, strong warn 14:00, **auto-stop 15:00, still
   save + process**; 5 recaps/day enforced client + server (`/quota/consume`); Unlimited 60-min cap +
   server fair-use guards.

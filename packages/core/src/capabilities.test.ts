@@ -17,12 +17,12 @@ describe('resolveCapabilities', () => {
     expect(c.watch).toBe(true);
   });
 
-  it('BYOK enables the key + advanced features but keeps the daily cap', () => {
+  it('BYOK enables the key + advanced features and lifts the daily cap (own key, own cost)', () => {
     const c = resolveCapabilities({ unlimitedActive: false, byokLifetime: true });
     expect(c.byokEnabled).toBe(true);
     expect(c.maxRecordingMinutes).toBe(PAID_RECORDING_MINUTES);
     expect(c.advancedTemplates).toBe(true);
-    expect(c.maxRecapsPerDay).toBe(FREE_CAPABILITIES.maxRecapsPerDay);
+    expect(c.maxRecapsPerDay).toBeNull();
   });
 
   it('BYOK + Unlimited co-exist as the most-permissive union', () => {

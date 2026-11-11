@@ -39,7 +39,7 @@ AI Recap ieraksta sanāksmes, sarunas un balss piezīmes, transkribē tās un uz
 **Plāni.**
 • Bezmaksas — ieraksti līdz 15 min, 5 kopsavilkumi dienā, transkripcija ierīcē.
 • Unlimited (mēneša abonements) — bez dienas limita, garāki ieraksti, mūsu AI apstrāde, arī latviešu valodā.
-• Sava atslēga (vienreizējs pirkums) — izmanto savu OpenRouter kontu un izvēlies modeļus pats.
+• Sava atslēga (vienreizējs pirkums) — bez dienas limita, izmanto savu OpenRouter kontu un izvēlies modeļus pats.
 
 Abonementi tiek apmaksāti caur App Store un atjaunojas automātiski, ja tos neatceļ vismaz 24 h pirms perioda beigām. Lietošanas noteikumi un privātuma politika: [URL].
 
@@ -64,7 +64,7 @@ AI Recap records meetings, conversations and voice notes, transcribes them and w
 **Plans.**
 • Free — recordings up to 15 min, 5 recaps a day, on-device transcription.
 • Unlimited (monthly subscription) — no daily limit, longer recordings, our AI processing including Latvian.
-• Bring your own key (one-time purchase) — use your own OpenRouter account and pick the models yourself.
+• Bring your own key (one-time purchase) — no daily limit, use your own OpenRouter account and pick the models yourself.
 
 Subscriptions are billed through the App Store and renew automatically unless cancelled at least 24 hours before the end of the period. Terms of use and privacy policy: [URL].
 

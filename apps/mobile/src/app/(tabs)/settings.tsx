@@ -50,7 +50,8 @@ export default function SettingsScreen() {
   const legacy = Colors[th.scheme];
   const router = useRouter();
   const caps = useCapabilities();
-  const planName = caps.maxRecapsPerDay === null ? 'Unlimited' : caps.byokEnabled ? 'BYOK' : t('ui.planFree');
+  // BYOK and Unlimited both lift the daily cap now, so check the key path first to keep the label right.
+  const planName = caps.byokEnabled ? 'BYOK' : caps.maxRecapsPerDay === null ? 'Unlimited' : t('ui.planFree');
 
   const [hasKey, setHasKey] = useState(false);
   const [keyVerified, setKeyVerified] = useState(false);

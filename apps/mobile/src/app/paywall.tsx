@@ -26,7 +26,7 @@ import {
   purchase,
   restore,
 } from '../purchases/revenuecat';
-import { useCapabilities } from '../purchases/useCapabilities';
+import { useEntitlements } from '../purchases/useCapabilities';
 
 /**
  * A single plan card. Hoisted to module scope (not declared during render) so the React Compiler can
@@ -92,7 +92,7 @@ export default function PaywallScreen() {
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const th = useTheme();
-  const caps = useCapabilities();
+  const ent = useEntitlements();
 
   const [packages, setPackages] = useState<PurchasesPackage[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -158,7 +158,7 @@ export default function PaywallScreen() {
           price={unlimited?.product.priceString ? t('paywall.perMonth', { price: unlimited.product.priceString }) : '—'}
           features={[t('paywall.f.hosted'), t('paywall.f.sixty'), t('paywall.f.noCap'), t('paywall.f.export')]}
           pkg={unlimited}
-          owned={caps.hostedLLM && caps.maxRecapsPerDay === null}
+          owned={ent.unlimitedActive}
           highlight
           busy={busy}
           onBuy={buy}
@@ -169,9 +169,9 @@ export default function PaywallScreen() {
         <Plan
           title={t('paywall.byokTitle')}
           price={byok?.product.priceString ? t('paywall.oneTime', { price: byok.product.priceString }) : '—'}
-          features={[t('paywall.f.byok'), t('paywall.f.sixty'), t('paywall.f.export'), t('paywall.f.templates')]}
+          features={[t('paywall.f.byok'), t('paywall.f.noCap'), t('paywall.f.sixty'), t('paywall.f.export'), t('paywall.f.templates')]}
           pkg={byok}
-          owned={caps.byokEnabled}
+          owned={ent.byokLifetime}
           busy={busy}
           onBuy={buy}
           c={c}
