@@ -10,12 +10,15 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { type RecapSearchHit, contextsRepo, recapsRepo, searchRepo, usageRepo } from '../../db';
+import { type CalendarEvent, type RecapSearchHit, calendarRepo, contextsRepo, recapsRepo, searchRepo, usageRepo } from '../../db';
 import { Button, Card, Dot, ProcessingBars, ProgressBar, Rise, SearchField, SectionLabel } from '../../design/components';
 import { clock, dayLabel, longDate, shortDuration, startOfMonth } from '../../design/format';
+import { Icon } from '../../design/icons';
 import { Layout } from '../../design/tokens';
 import { Type } from '../../design/typography';
 import { useTheme } from '../../design/useTheme';
+import { startOfDay } from '../../features/calendar/agendaDates';
+import { monthShort, relativeDay } from '../../features/calendar/agendaLabels';
 import { deleteRecapCompletely } from '../../features/recap/deleteRecap';
 import { isOnboarded } from '../../lib/prefs';
 import { processingCoordinator } from '../../processing/coordinator';
@@ -39,6 +42,10 @@ export default function RecapsScreen() {
   const [contextNames, setContextNames] = useState<Record<string, string>>({});
   const [currentId, setCurrentId] = useState<string | null>(processingCoordinator.currentId());
   const [paused, setPaused] = useState(processingCoordinator.isPaused());
+  // Calendar glance: the nearest upcoming date (for the "Next up" bar) and per-recap date counts.
+  const [nextDate, setNextDate] = useState<CalendarEvent | null>(null);
+  const [dateCounts, setDateCounts] = useState<Record<string, number>>({});
+  const [now, setNow] = useState(() => Date.now()); // for the "Next up" relative label; refreshed on focus
 
   const load = useCallback(async (q: string) => {
     try {
@@ -50,6 +57,10 @@ export default function RecapsScreen() {
       const ctx = await contextsRepo.listContexts();
       setContextNames(Object.fromEntries(ctx.map((c) => [c.id, c.name])));
       setMonthSeconds((await usageRepo.summarizeUsageSince(startOfMonth())).recordingSeconds);
+      const events = await calendarRepo.listEvents().catch(() => []);
+      const todayStart = startOfDay(Date.now());
+      setNextDate(events.filter((e) => e.startAt >= todayStart).sort((a, b) => a.startAt - b.startAt)[0] ?? null);
+      setDateCounts(events.reduce<Record<string, number>>((acc, e) => ((acc[e.recapId] = (acc[e.recapId] ?? 0) + 1), acc), {}));
     } catch {
       setRows([]);
     }
@@ -68,6 +79,7 @@ export default function RecapsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      setNow(Date.now());
       void load(debouncedQuery);
     }, [load, debouncedQuery]),
   );
@@ -140,21 +152,29 @@ export default function RecapsScreen() {
           <SearchField value={query} onChangeText={setQuery} placeholder={t('home.searchPlaceholder')} />
         </Rise>
 
-        <Rise index={riseIndex++}>
-          <Pressable
-            onPress={() => router.push('/calendar')}
-            accessibilityRole="button"
-            accessibilityLabel={t('calendar.title')}
-            style={[styles.entryRow, { backgroundColor: th.surface, borderColor: th.line }]}>
-            <View style={[styles.entryDot, { backgroundColor: th.accent }]} />
-            <View style={{ flex: 1, gap: 1 }}>
-              <Text style={[Type.captionStrong, { color: th.text }]}>
-                {t('calendar.title')} <Text style={{ color: th.accentText }}>· {t('calendar.beta')}</Text>
-              </Text>
-              <Text style={[Type.meta, { color: th.text2 }]} numberOfLines={1}>{t('calendar.entrySub')}</Text>
-            </View>
-          </Pressable>
-        </Rise>
+        {nextDate ? (
+          <Rise index={riseIndex++}>
+            <Pressable
+              onPress={() => router.push('/calendar')}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('calendar.nextUp')}: ${nextDate.title}`}
+              style={[styles.nextBar, { backgroundColor: th.accentTint, borderColor: th.accentTint2 }]}>
+              <View style={[styles.datePlate, { backgroundColor: th.bg }]}>
+                <Text style={[Type.caption, { color: th.accentText, fontFamily: Type.captionStrong.fontFamily }]}>{monthShort(nextDate.startAt)}</Text>
+                <Text style={[Type.heroNumber, { color: th.text, fontSize: 22, lineHeight: 22 }]}>{new Date(nextDate.startAt).getDate()}</Text>
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={[Type.captionStrong, { color: th.accentText }]} numberOfLines={1}>
+                  {t('calendar.nextUp')} · {relativeDay(nextDate.startAt, now)}
+                </Text>
+                <Text style={[Type.body, { color: th.text }]} numberOfLines={1}>
+                  {nextDate.title}
+                </Text>
+              </View>
+              <Icon name="chevronRight" size={18} color={th.accentText} strokeWidth={2} />
+            </Pressable>
+          </Rise>
+        ) : null}
 
         {currentId ? (
           <Rise index={riseIndex++}>
@@ -269,6 +289,12 @@ export default function RecapsScreen() {
                     <View style={styles.metaRow}>
                       <Text style={[Type.metaStrong, { color: th.text }]}>{shortDuration(r.durationSeconds)}</Text>
                       {ctxName ? <Text style={[Type.meta, { color: th.text2 }]}>{ctxName}</Text> : null}
+                      {dateCounts[r.id] ? (
+                        <View style={styles.dateBadge}>
+                          <Icon name="calendar" size={13} color={th.accentText} />
+                          <Text style={[Type.metaStrong, { color: th.accentText }]}>{dateCounts[r.id]}</Text>
+                        </View>
+                      ) : null}
                       <Text style={[Type.meta, { color: th.text2, marginLeft: 'auto' }]}>{clock(r.startedAt)}</Text>
                     </View>
                     {row.snippet && row.matchedIn && row.matchedIn !== 'title' ? (
@@ -321,8 +347,9 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   row: { gap: 6, paddingVertical: 14, paddingHorizontal: 4 },
   queueBar: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingLeft: 14, borderRadius: 14, borderWidth: 1 },
-  entryRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, paddingLeft: 14, borderRadius: 14, borderWidth: 1 },
-  entryDot: { width: 10, height: 10, borderRadius: 5 },
+  nextBar: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, paddingHorizontal: 14, borderRadius: 18, borderWidth: 1 },
+  datePlate: { width: 44, alignItems: 'center', gap: 1, paddingVertical: 6, borderRadius: 12 },
+  dateBadge: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   stopBtn: { height: 36, paddingHorizontal: 12, borderRadius: 18, flexDirection: 'row', alignItems: 'center', gap: 8 },
   stopSquare: { width: 10, height: 10, borderRadius: 2 },
 });

@@ -13,7 +13,10 @@ import { Layout } from './tokens';
 import { Type } from './typography';
 import { useTheme } from './useTheme';
 
-const ICONS: Record<string, IconName> = { index: 'mic', contexts: 'contexts', settings: 'settings' };
+const ICONS: Record<string, IconName> = { index: 'mic', calendar: 'calendar', contexts: 'contexts', settings: 'settings' };
+
+/** 4 tabs + the record button: labels drop to 10 pt so nothing wraps at 375 pt (§4.1). */
+const TAB_LABEL = { ...Type.tabLabel, fontSize: 10 } as const;
 
 /** Minimal structural type for the `tabBar` render prop (avoids pinning a second copy of bottom-tabs). */
 interface TabBarProps {
@@ -49,8 +52,8 @@ export function FloatingTabBar({ state, navigation }: TabBarProps) {
                 if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
               }}
               style={[styles.tab, focused && { backgroundColor: activeBg }]}>
-              <Icon name={ICONS[route.name] ?? 'mic'} size={22} color={focused ? t.accent : t.text2} />
-              <Text style={[focused ? Type.tabLabel : { ...Type.tabLabel, fontFamily: 'HankenGrotesk_500Medium' }, { color: focused ? (t.scheme === 'light' ? t.onPrimaryBtn : t.text) : t.text2 }]}>
+              <Icon name={ICONS[route.name] ?? 'mic'} size={21} color={focused ? t.accent : t.text2} />
+              <Text numberOfLines={1} style={[focused ? TAB_LABEL : { ...TAB_LABEL, fontFamily: 'HankenGrotesk_500Medium' }, { color: focused ? (t.scheme === 'light' ? t.onPrimaryBtn : t.text) : t.text2 }]}>
                 {label}
               </Text>
             </Pressable>

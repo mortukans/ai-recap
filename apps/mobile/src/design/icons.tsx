@@ -28,7 +28,11 @@ export type IconName =
   | 'book'
   | 'bell'
   | 'clock'
+  | 'calendar'
   | 'calendarPlus'
+  | 'monthView'
+  | 'listView'
+  | 'pencil'
   | 'filter'
   | 'close'
   | 'trash';
@@ -199,11 +203,38 @@ export function Icon({ name, size = 22, color, strokeWidth = 1.8 }: Props) {
           <Path d="M12 7v5l3 2" {...common} />
         </Svg>
       );
+    case 'calendar':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+          <Rect x={3} y={5} width={18} height={16} rx={3} {...common} />
+          <Path d="M3 10h18M8 3v4M16 3v4" {...common} />
+        </Svg>
+      );
     case 'calendarPlus':
       return (
         <Svg width={size} height={size} viewBox="0 0 24 24">
           <Rect x={4} y={5} width={16} height={16} rx={3} {...common} />
           <Path d="M4 9h16M8 3v4M16 3v4M12 13v4M10 15h4" {...common} />
+        </Svg>
+      );
+    case 'monthView':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+          <Rect x={3} y={5} width={18} height={16} rx={3} {...common} />
+          <Path d="M3 10h18M9 10v11M15 10v11M3 15.5h18" {...common} />
+        </Svg>
+      );
+    case 'listView':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+          <Path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" {...common} />
+        </Svg>
+      );
+    case 'pencil':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+          <Path d="M4 20h4L19 9l-4-4L4 16v4z" {...common} />
+          <Path d="M13.5 6.5l4 4" {...common} />
         </Svg>
       );
     case 'filter':

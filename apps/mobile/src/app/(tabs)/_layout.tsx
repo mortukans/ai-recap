@@ -13,6 +13,7 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: t.bg },
       }}>
       <Tabs.Screen name="index" />
+      <Tabs.Screen name="calendar" />
       <Tabs.Screen name="contexts" />
       <Tabs.Screen name="settings" />
     </Tabs>

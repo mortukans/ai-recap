@@ -2,7 +2,7 @@ import type { TranslationKeys } from './en';
 
 export const lv: TranslationKeys = {
   app: { name: 'AI Recap' },
-  tabs: { recaps: 'Ieraksti', contexts: 'Konteksti', settings: 'Iestatījumi' },
+  tabs: { recaps: 'Ieraksti', calendar: 'Kalendārs', contexts: 'Konteksti', settings: 'Iestatījumi' },
   home: {
     startRecap: 'Sākt ierakstu',
     recent: 'Nesenie',
@@ -388,9 +388,14 @@ export const lv: TranslationKeys = {
     daysAgo_one: 'pirms {{count}} dienas',
     daysAgo_other: 'pirms {{count}} dienām',
     summary_zero: 'Vēl nav datumu',
-    summary_one: '{{count}} datums',
-    summary_other: '{{count}} datumi',
+    summary_one: '{{count}} datums no taviem ierakstiem',
+    summary_other: '{{count}} datumi no taviem ierakstiem',
     emptyFiltered: 'Nekas neatbilst šim filtram.',
+    emptyDay: 'Šajā dienā nekas nav ieplānots.',
+    month: 'Mēnesis',
+    list: 'Saraksts',
+    prevMonth: 'Iepriekšējais mēnesis',
+    nextMonth: 'Nākamais mēnesis',
     reminder: 'Atgādinājums',
     reminderHint: 'Atgādinājums tiek pievienots notikumam, kad to ieliec kalendārā.',
     addToDeviceCalendar: 'Pievienot kalendāram',
