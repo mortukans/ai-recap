@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calendar (light)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&amp;family=Hanken+Grotesk:wght@400;500;600;700&amp;display=swap">
+<style>
+  body{margin:0;background:#F4F5F7;color:#16181D;font-family:'Hanken Grotesk','Helvetica Neue',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  .screen{width:390px;height:844px;position:relative;box-sizing:border-box;padding:62px 20px 0;display:flex;flex-direction:column;gap:16px;background:#F4F5F7;overflow:hidden}
+  h1{margin:0;font-family:'Newsreader',Georgia,serif;font-weight:500;font-size:40px;line-height:1;letter-spacing:-0.02em}
+  .seg{display:flex;gap:2px;padding:3px;border-radius:12px;background:#EAECF0}
+  .seg .b{width:34px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#8A8F98}
+  .seg .b.on{background:#FFFFFF;color:#A8661A;box-shadow:0 2px 6px rgba(22,24,29,0.10)}
+  .card{padding:16px 14px 14px;border-radius:18px;background:#FFFFFF;border:1px solid #E1E4E9;box-shadow:0 8px 24px rgba(22,24,29,0.06)}
+  .mrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .mlabel{font-family:'Newsreader',Georgia,serif;font-size:21px;line-height:1;letter-spacing:-0.01em}
+  .nav-ico{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#656A73}
+  .today-btn{font-size:13px;font-weight:600;color:#A8661A;padding:6px 12px;border-radius:999px;background:#FBEFDC}
+  .wk{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:4px}
+  .wk span{text-align:center;font-size:11px;font-weight:600;color:#8A8F98}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px}
+  .cell{height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+  .num{font-size:14px;font-weight:500;color:#16181D;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:14px}
+  .num.mut{color:#C0C4CC;font-weight:400}
+  .num.today{border:1.5px solid #16181D}
+  .num.sel{background:#F6E2C0;color:#8A4E12;font-weight:600;border:1.5px solid #A8661A}
+  .dots{display:flex;gap:3px;height:5px}
+  .dot{width:5px;height:5px;border-radius:3px}
+  .d-ev{background:#E9A24A}.d-dl{background:#C4372A}.d-mn{background:#3A6E9A}
+  .legend{display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid #E1E4E9}
+  .legend span{display:flex;align-items:center;gap:6px;font-size:12px;color:#656A73}
+  .lgd{width:7px;height:7px;border-radius:4px}
+  .seldate{font-size:13px;font-weight:600;color:#656A73;margin:2px 2px 0}
+  .ev{display:flex;align-items:center;gap:11px;padding:11px 2px;border-bottom:1px solid #E1E4E9}
+  .evdot{width:9px;height:9px;border-radius:5px;flex:none}
+  .evttl{font-size:15px;font-weight:500;color:#16181D;line-height:1.25;flex:1}
+  .evtime{font-size:13px;color:#656A73;white-space:nowrap}
+  nav{position:absolute;left:16px;right:16px;bottom:30px;display:flex;align-items:center;gap:12px}
+  .bar{flex-grow:1;display:flex;height:60px;box-sizing:border-box;padding:6px;background:rgba(255,255,255,0.92);border:1px solid #E1E4E9;border-radius:30px;box-shadow:0 12px 32px rgba(22,24,29,0.12)}
+  .tab{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:24px;color:#656A73;font-size:10px;font-weight:500}
+  .tab.on{background:#16181D;color:#FFFFFF;font-weight:600}
+  .rec{position:relative;width:60px;height:60px;flex-shrink:0;border-radius:30px;background:#E0432F;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 32px rgba(224,67,47,0.30)}
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <div style="display:flex;align-items:flex-end;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;gap:3px">
+      <div style="font-size:13px;color:#656A73">9 dates · 4 upcoming</div>
+      <h1>Calendar</h1>
+    </div>
+    <div class="seg">
+      <div class="b on" aria-label="Month view"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M9 4v17M15 4v17M3 15h18"/></svg></div>
+      <div class="b" aria-label="List view"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="3.5" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="3.5" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="mrow">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="nav-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></div>
+        <div class="mlabel">November 2026</div>
+        <div class="nav-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+      </div>
+      <div class="today-btn">Today</div>
+    </div>
+
+    <div class="wk"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+
+    <div class="grid">
+      <!-- Row 1: Oct 26–31 (muted) + Nov 1 -->
+      <div class="cell"><div class="num mut">26</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">27</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">28</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">29</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">30</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">31</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">1</div><div class="dots"></div></div>
+      <!-- Row 2: Nov 2–8 -->
+      <div class="cell"><div class="num">2</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">3</div><div class="dots"><span class="dot d-mn"></span></div></div>
+      <div class="cell"><div class="num">4</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">5</div><div class="dots"><span class="dot d-ev"></span></div></div>
+      <div class="cell"><div class="num">6</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">7</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">8</div><div class="dots"></div></div>
+      <!-- Row 3: Nov 9–15 (11 = today/selected) -->
+      <div class="cell"><div class="num">9</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">10</div><div class="dots"></div></div>
+      <div class="cell"><div class="num sel">11</div><div class="dots"><span class="dot d-ev"></span></div></div>
+      <div class="cell"><div class="num">12</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">13</div><div class="dots"><span class="dot d-dl"></span></div></div>
+      <div class="cell"><div class="num">14</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">15</div><div class="dots"></div></div>
+      <!-- Row 4: Nov 16–22 -->
+      <div class="cell"><div class="num">16</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">17</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">18</div><div class="dots"><span class="dot d-ev"></span><span class="dot d-mn"></span></div></div>
+      <div class="cell"><div class="num">19</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">20</div><div class="dots"><span class="dot d-dl"></span></div></div>
+      <div class="cell"><div class="num">21</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">22</div><div class="dots"></div></div>
+      <!-- Row 5: Nov 23–29 -->
+      <div class="cell"><div class="num">23</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">24</div><div class="dots"><span class="dot d-ev"></span></div></div>
+      <div class="cell"><div class="num">25</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">26</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">27</div><div class="dots"><span class="dot d-mn"></span></div></div>
+      <div class="cell"><div class="num">28</div><div class="dots"></div></div>
+      <div class="cell"><div class="num">29</div><div class="dots"></div></div>
+      <!-- Row 6: Nov 30 + Dec 1–6 (muted) -->
+      <div class="cell"><div class="num">30</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">1</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">2</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">3</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">4</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">5</div><div class="dots"></div></div>
+      <div class="cell"><div class="num mut">6</div><div class="dots"></div></div>
+    </div>
+
+    <div class="legend">
+      <span><span class="lgd d-ev"></span>Events</span>
+      <span><span class="lgd d-dl"></span>Deadlines</span>
+      <span><span class="lgd d-mn"></span>Dates</span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:0">
+    <div class="seldate">Wednesday, 11 November</div>
+    <div class="ev"><span class="evdot d-ev"></span><span class="evttl">Q4 roadmap review</span><span class="evtime">14:00</span></div>
+    <div class="ev"><span class="evdot d-dl"></span><span class="evttl">Supplier contract — sign &amp; return</span><span class="evtime">Due today</span></div>
+  </div>
+
+  <nav>
+    <div class="bar">
+      <a class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>Recordings</a>
+      <a class="tab on"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#E9A24A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 3v4M16 3v4"/></svg>Calendar</a>
+      <a class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/></svg>Contexts</a>
+      <a class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/></svg>Settings</a>
+    </div>
+    <a class="rec" aria-label="Start recording"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></a>
+  </nav>
+</div>
+</body>
+</html>

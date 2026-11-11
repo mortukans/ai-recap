@@ -132,6 +132,7 @@ def english_mock(name: str) -> str:
 # (file stem, mock(s), caption, subcaption, theme)
 SHOTS = [
     ("01-home", ["HomeL.dc.html"], "Record once.<br>Remember everything.", "Meetings, calls and voice notes — transcribed and recapped in minutes.", LIGHT),
+    ("02-calendar", ["CalendarL.dc.html"], "Every date, caught.<br>On one calendar.", "AI Recap finds the dates in your recordings — month and list views, past and upcoming.", LIGHT),
     ("02-recording", ["RecordingL.dc.html"], "Latvian and English.<br>Even mixed.", "Live waveform, Dynamic Island controls, records with the screen locked.", LIGHT),
     ("03-recap", ["DetailL.dc.html"], "Decisions, tasks, dates.<br>Structured.", "Tick off action items. Regenerate with any context — every version is kept.", LIGHT),
     ("04-transcript", ["TranscriptL.dc.html"], "Tap a line.<br>Hear the moment.", "Speakers, search and playback that follows the text.", LIGHT),

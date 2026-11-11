@@ -1,7 +1,14 @@
 # Release 1.1.1 — App Store submission checklist
 
-First public release since **1.0.1**. Version `1.1.1` in `apps/mobile/app.config.ts`; CI build **48**
-(run 43072817009) is uploaded to App Store Connect. The headline is the **Calendar** feature.
+First public release since **1.0.2**. Version `1.1.1` in `apps/mobile/app.config.ts`; EAS build **54**
+(CI run 43072817009) uploaded to App Store Connect. The headline is the **Calendar** feature.
+
+> **STATUS: SUBMITTED 2026-11-11 — "Waiting for Review"** (build 54, auto-release after approval).
+> What's New (EN below) attached. Screenshots carried over from 1.0 (the new ASC product-page UI has
+> no inline portrait-carousel editor). A **landscape calendar hero** for the Search Results slot is
+> built at `design/store-screenshots/search-results-calendar-3840x2560.png` (via `make_hero.py`) but
+> the listing is **locked during review** — upload it to Product Page → Header and Search Results →
+> Search Results once 1.1.1 is approved. Promotional text can also be refreshed then (it's live-editable).
 
 ## In this release (since 1.0.1, all built to TestFlight first)
 - **Calendar is a real feature** (1.1.0): its own tab with **month + list** views, color-coded event
