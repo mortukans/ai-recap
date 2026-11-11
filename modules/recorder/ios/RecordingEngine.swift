@@ -92,6 +92,21 @@ final class RecordingEngine {
     self.accumulatedSeconds = 0
     self.lastEmittedSecond = -1
 
+    do {
+      try beginCapture()
+    } catch {
+      // The audio session/engine can be left in a bad state by prior playback, a system interruption,
+      // or another app briefly holding the mic — setActive/AVAudioEngine.start() then throws an avfaudio
+      // error (e.g. 560226676). Fully reset the stack and retry once; most of these clear on a fresh
+      // session. If the retry still fails the error propagates to JS, which shows a friendly message.
+      resetAudioStack()
+      self.chunkIndex = 0
+      self.accumulatedSeconds = 0
+      try beginCapture()
+    }
+  }
+
+  private func beginCapture() throws {
     try configureSession()
     self.recapDir = try RecapStorage.chunkDirectory(for: recapId)
 
@@ -103,6 +118,16 @@ final class RecordingEngine {
     audioEngine.prepare()
     try audioEngine.start()
     state = .recording
+  }
+
+  /// Tear the capture path down to a clean slate so a retried `start()` can acquire the mic afresh.
+  private func resetAudioStack() {
+    audioEngine.inputNode.removeTap(onBus: 0) // no-op if none installed
+    if audioEngine.isRunning { audioEngine.stop() }
+    audioEngine.reset()
+    currentFile = nil
+    framesInChunk = 0
+    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
   }
 
   func pause() throws {

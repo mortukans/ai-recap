@@ -114,7 +114,14 @@ export function useRecording() {
       publishWatchState('recording', 0);
     } catch (e) {
       setStatus('idle');
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      // The native recorder already resets the audio stack and retries once; a start() that still
+      // rejects is almost always the audio session/engine failing to acquire the mic (an avfaudio /
+      // AVAudioEngine error such as 560226676). Show a friendly, actionable message instead of the raw
+      // CoreAudio exception, and keep the detail in the log for diagnosis.
+      const isAudio = /avfaudio|avaudio|coreaudio|audio ?engine|AsyncFunctionDefinition|UnexpectedException/i.test(msg);
+      if (isAudio) console.warn('[recording] start failed (audio):', msg);
+      setError(isAudio ? 'audio' : msg);
     }
   }, []);
 

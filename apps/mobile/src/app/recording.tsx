@@ -132,6 +132,8 @@ export default function RecordingScreen() {
 
         {error === 'permission' ? (
           <Text style={[Type.meta, { color: th.record, textAlign: 'center' }]}>{t('recording.permissionNeeded')}</Text>
+        ) : error === 'audio' ? (
+          <Text style={[Type.caption, { color: th.record, textAlign: 'center', paddingHorizontal: 24 }]}>{t('recording.audioBusy')}</Text>
         ) : error ? (
           <Text style={[Type.caption, { color: th.record, textAlign: 'center', paddingHorizontal: 24 }]}>{error}</Text>
         ) : null}

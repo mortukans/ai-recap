@@ -23,6 +23,7 @@ export const en = {
     finish: 'Finish',
     savedContinuously: 'Audio saved continuously',
     permissionNeeded: 'Microphone access is required to record.',
+    audioBusy: 'Couldn’t start recording. Close other audio or recording apps, end any call, or restart your phone, then try again.',
     grantPermission: 'Grant microphone access',
   },
   contexts: {

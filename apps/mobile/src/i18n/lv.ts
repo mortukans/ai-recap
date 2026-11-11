@@ -25,6 +25,7 @@ export const lv: TranslationKeys = {
     finish: 'Pabeigt',
     savedContinuously: 'Audio tiek saglabāts nepārtraukti',
     permissionNeeded: 'Ierakstīšanai nepieciešama piekļuve mikrofonam.',
+    audioBusy: 'Neizdevās sākt ierakstu. Aizver citas audio vai ierakstu lietotnes, pabeidz zvanu vai pārstartē telefonu un mēģini vēlreiz.',
     grantPermission: 'Atļaut piekļuvi mikrofonam',
   },
   contexts: {
