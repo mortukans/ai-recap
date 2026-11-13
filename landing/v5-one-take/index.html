@@ -1,0 +1,1026 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Recap — Say it once. It's already written down.</title>
+<meta name="description" content="AI Recap records meetings, conversations and voice notes, transcribes them and writes a structured recap. Latvian and English, even mixed in one sentence.">
+<meta name="theme-color" content="#F4F5F7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%231D2025'/%3E%3Cg fill='%23E9A24A'%3E%3Crect x='11' y='18' width='4' height='12' rx='2'/%3E%3Crect x='18' y='13' width='4' height='22' rx='2'/%3E%3Crect x='25' y='9' width='4' height='30' rx='2'/%3E%3Crect x='32' y='16' width='4' height='16' rx='2'/%3E%3C/g%3E%3Ccircle cx='39' cy='33' r='2.4' fill='%23E0432F'/%3E%3C/svg%3E">
+<script>
+/* theme + language before first paint */
+(function () {
+  var d = document.documentElement, q = new URLSearchParams(location.search), t = q.get('theme'), l = q.get('lang');
+  try { if (t !== 'light' && t !== 'dark') t = localStorage.getItem('air-theme'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  d.setAttribute('data-theme', t);
+  try { if (l !== 'lv' && l !== 'en') l = localStorage.getItem('air-lang'); } catch (e) {}
+  if (l !== 'lv' && l !== 'en') l = /^lv/i.test(navigator.language || '') ? 'lv' : 'en';
+  d.lang = l; d.className = 'js';
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F4F5F7;--surface:#FFFFFF;--surface2:#EAECF0;--line:#E1E4E9;--text:#16181D;--text2:#656A73;--text3:#8A8F98;
+  --accent:#E9A24A;--accentText:#A8661A;--accentTint:#FBEFDC;--record:#E0432F;--btn:#16181D;--btnText:#FFFFFF;
+  --blue:#3A6E9A;--red:#C4372A;--shadow:0 8px 24px rgba(22,24,29,.06);--glass:rgba(244,245,247,.82);
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;--sans:'Hanken Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --tape:0px;--head:60px;
+}
+[data-theme=dark]{
+  --bg:#15171B;--surface:#1D2025;--surface2:#262A30;--line:#2E333A;--text:#F1EDE6;--text2:#A6A29B;--text3:#86827B;
+  --accentText:#E9A24A;--accentTint:#2A2418;--record:#F2543F;--btn:#F1EDE6;--btnText:#15171B;
+  --blue:#8FB7D6;--red:#F2543F;--shadow:0 8px 24px rgba(0,0,0,.32);--glass:rgba(21,23,27,.82);
+}
+@media (min-width:1100px){:root{--tape:84px;--head:64px}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:calc(var(--head) + 12px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:17px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;padding-left:var(--tape);transition:background-color .35s,color .35s}
+h1,h2,h3,p,ul{margin:0}ul{padding:0;list-style:none}
+a{color:inherit}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px}
+.serif{font-family:var(--serif);font-weight:500;letter-spacing:-.02em}
+.num{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- header ---------- */
+.head{position:fixed;z-index:50;top:0;left:var(--tape);right:0;height:var(--head);display:flex;align-items:center;gap:12px;
+  padding:0 clamp(14px,3vw,36px);background:var(--glass);-webkit-backdrop-filter:saturate(1.4) blur(14px);backdrop-filter:saturate(1.4) blur(14px);
+  border-bottom:1px solid transparent;transition:border-color .3s,background-color .35s}
+.head.scrolled{border-bottom-color:var(--line)}
+.brand{display:flex;align-items:center;gap:9px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:-.01em;white-space:nowrap}
+.brand svg{width:26px;height:26px;flex:none}
+.timer{margin-left:auto;display:flex;align-items:center;gap:8px;height:34px;padding:0 13px;border-radius:99px;background:var(--surface);
+  border:1px solid var(--line);font-size:13.5px;font-weight:600;color:var(--text);white-space:nowrap}
+.timer i{width:8px;height:8px;border-radius:50%;background:var(--record);flex:none;animation:blink 1.6s ease-in-out infinite}
+.timer .tot{color:var(--text3);font-weight:500}
+@keyframes blink{50%{opacity:.25}}
+.ctrl{display:flex;align-items:center;gap:8px}
+.seg{display:flex;height:34px;padding:3px;border-radius:99px;background:var(--surface2)}
+.seg button{min-width:34px;padding:0 9px;border-radius:99px;font-size:12.5px;font-weight:700;color:var(--text2);letter-spacing:.02em}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(22,24,29,.12)}
+.ico{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--surface2);color:var(--text)}
+.ico svg{width:17px;height:17px}
+.ico .moon,[data-theme=dark] .ico .sun{display:none}[data-theme=dark] .ico .moon{display:block}
+.get{display:none;height:34px;padding:0 15px;border-radius:99px;background:var(--btn);color:var(--btnText);font-size:13.5px;font-weight:600;
+  text-decoration:none;align-items:center;white-space:nowrap}
+@media (min-width:640px){.get{display:inline-flex}}
+@media (max-width:420px){.timer .tot{display:none}.head .brand span{display:none}}
+.prog{position:fixed;z-index:51;top:var(--head);left:0;right:0;height:2px;background:var(--accent);transform-origin:0 50%;transform:scaleX(0)}
+@media (min-width:1100px){.prog{display:none}}
+
+/* ---------- the tape (fixed vertical waveform = the whole page) ---------- */
+#tape{position:fixed;z-index:40;left:0;top:0;width:var(--tape);height:100vh;display:none;cursor:pointer;border-right:1px solid var(--line);background:var(--bg);transition:background-color .35s}
+@media (min-width:1100px){#tape{display:block}}
+
+/* ---------- hero ---------- */
+.hero{position:relative;min-height:100vh;min-height:100svh;padding:calc(var(--head) + 28px) 20px 34px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;overflow:hidden}
+#wave{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.hero>*:not(canvas){position:relative}
+.eyebrow{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accentText)}
+.hero h1{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:clamp(40px,7.4vw,108px);line-height:1;margin-top:18px;text-wrap:balance}
+.hero .sub{max-width:640px;margin-top:22px;font-size:clamp(16px,1.5vw,20px);line-height:1.5;color:var(--text2);text-wrap:pretty}
+.reczone{height:clamp(170px,26vh,240px);display:grid;place-items:center;width:100%;margin-top:6px}
+.rec{position:relative;width:96px;height:96px;border-radius:50%;background:var(--record);color:#fff;display:grid;place-items:center;
+  box-shadow:0 14px 34px color-mix(in srgb,var(--record) 38%,transparent),0 0 0 10px var(--bg);transition:transform .25s cubic-bezier(.3,1.4,.5,1)}
+.rec:hover{transform:scale(1.06)}.rec:active{transform:scale(.96)}
+.rec svg{width:36px;height:36px}
+.rec .sq{display:none;width:28px;height:28px;border-radius:7px;background:#fff}
+.playing .rec .mic{display:none}.playing .rec .sq{display:block}
+.rec::before,.rec::after{content:'';position:absolute;inset:-10px;border-radius:50%;border:1.5px solid var(--record);opacity:0;animation:ring 2.8s ease-out infinite}
+.rec::after{animation-delay:1.4s}
+@keyframes ring{0%{transform:scale(.9);opacity:.5}100%{transform:scale(1.55);opacity:0}}
+.reclabel{font-weight:700;font-size:15px}
+.hint{margin-top:4px;font-size:13.5px;color:var(--text3);max-width:420px}
+.cta-row{margin-top:26px;display:flex;flex-wrap:wrap;gap:14px 18px;align-items:center;justify-content:center}
+.badge{display:inline-flex;align-items:center;gap:11px;height:56px;padding:0 20px 0 16px;border-radius:15px;background:var(--btn);color:var(--btnText);
+  text-decoration:none;text-align:left;transition:transform .2s}
+.badge:hover{transform:translateY(-2px)}
+.badge svg{width:24px;height:24px;flex:none}
+.badge small{display:block;font-size:11px;line-height:1.1;font-weight:500;opacity:.8}
+.badge b{display:block;font-size:20px;line-height:1.15;font-weight:600;letter-spacing:-.01em}
+.note{font-size:13.5px;color:var(--text3)}
+.pill-play{position:fixed;z-index:60;left:calc(50% + var(--tape)/2);bottom:22px;transform:translate(-50%,80px);padding:10px 16px;border-radius:99px;
+  background:var(--btn);color:var(--btnText);font-size:13.5px;font-weight:600;display:flex;gap:9px;align-items:center;transition:transform .4s;white-space:nowrap;max-width:92vw}
+.pill-play i{width:8px;height:8px;border-radius:50%;background:var(--record);animation:blink 1.2s infinite}
+.playing .pill-play{transform:translate(-50%,0)}
+
+/* ---------- the take: sound -> words -> recap -> calendar ---------- */
+.track{position:relative}
+.stage{padding:72px clamp(16px,3vw,40px) 40px}
+.stage-in{max-width:1320px;margin:0 auto;width:100%}
+.steps{display:none}
+.heads{display:none}
+.demo-tag{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.cols{display:grid;gap:52px;max-width:580px;margin:22px auto 0}
+.ph{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:clamp(28px,5.4vw,40px);line-height:1.08;margin-bottom:18px;text-wrap:balance}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);transition:background-color .35s,border-color .35s}
+.pad{padding:20px}
+.card-h{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:14px}
+.card-h .r{margin-left:auto;font-weight:600;letter-spacing:0;text-transform:none}
+
+/* transcript */
+.ln{display:grid;grid-template-columns:30px 1fr;gap:0 12px;padding:11px 0;border-top:1px solid var(--line)}
+.ln:first-of-type{border-top:0;padding-top:2px}
+.av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--accentTint);color:var(--accentText)}
+.ln.s2 .av{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}
+.who{font-size:13px;font-weight:700;color:var(--accentText)}.ln.s2 .who{color:var(--blue)}
+.who span{font-weight:500;color:var(--text3);margin-left:6px}
+.say{font-size:16.5px;line-height:1.62;margin-top:1px}
+.w{display:inline-block;position:relative;transition:color .45s}
+.js .w{color:transparent}
+.js .w::before{content:'';position:absolute;left:1px;right:1px;top:50%;height:var(--h,60%);transform:translateY(-50%);border-radius:3px;
+  background:repeating-linear-gradient(90deg,var(--accent) 0 3px,transparent 3px 6px);opacity:.75;transition:opacity .35s,transform .45s}
+.js .w.on{color:var(--text)}
+.js .w.on::before{opacity:0;transform:translateY(-50%) scaleY(.15)}
+.m{border-radius:5px;padding:2px 3px;margin:0 -3px;-webkit-box-decoration-break:clone;box-decoration-break:clone;
+  background:linear-gradient(var(--mc),var(--mc)) no-repeat 0 50%/0% 100%;transition:background-size .6s cubic-bezier(.3,.7,.2,1)}
+.m.lit{background-size:100% 100%}
+.m[data-k=d]{--mc:color-mix(in srgb,var(--accent) 26%,transparent)}
+.m[data-k=t]{--mc:color-mix(in srgb,var(--text) 10%,transparent)}
+.m[data-k=dl]{--mc:color-mix(in srgb,var(--red) 16%,transparent)}
+.m[data-k=dt]{--mc:color-mix(in srgb,var(--blue) 20%,transparent)}
+.m[data-k=q]{--mc:var(--surface2)}
+.js .marked .w.on:not(.k){color:var(--text3)}
+.m.lit[data-k=dl] .w.on{color:var(--red)}.m.lit[data-k=dt] .w.on{color:var(--blue)}
+.m.ping{animation:ping .9s ease-out}
+@keyframes ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--accent) 70%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:12.5px;color:var(--text2);transition:opacity .5s}
+.js .legend{opacity:0}.js .marked .legend{opacity:1}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:10px;border-radius:3px;background:var(--mc)}
+.legend [data-k=d]{--mc:color-mix(in srgb,var(--accent) 45%,transparent)}.legend [data-k=t]{--mc:color-mix(in srgb,var(--text) 18%,transparent)}
+.legend [data-k=dl]{--mc:color-mix(in srgb,var(--red) 35%,transparent)}.legend [data-k=dt]{--mc:color-mix(in srgb,var(--blue) 40%,transparent)}
+.legend [data-k=q]{--mc:var(--surface2)}.legend [data-k=q] i{outline:1px solid var(--line)}
+
+/* recap */
+.rtitle{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:25px;line-height:1.12}
+.rmeta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:9px;font-size:13px;color:var(--text2)}
+.chip{display:inline-flex;align-items:center;height:26px;padding:0 11px;border-radius:99px;background:var(--accentTint);color:var(--accentText);font-size:12.5px;font-weight:700;white-space:nowrap}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);padding:3px;border-radius:12px;background:var(--surface2);margin:15px 0 4px;font-size:13.5px;font-weight:600;color:var(--text2);text-align:center}
+.tabs span{padding:7px 4px;border-radius:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tabs .on{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(22,24,29,.1)}
+.ri{position:relative}
+.ri>*{transition:opacity .5s,transform .5s}
+.js .ri:not(.on)>*{opacity:0;transform:translateY(6px)}
+.js .ri::after{content:'';position:absolute;left:0;right:0;top:9px;height:26px;pointer-events:none;opacity:0;transition:opacity .35s;
+  background:linear-gradient(var(--surface2),var(--surface2)) 0 0/82% 8px no-repeat,linear-gradient(var(--surface2),var(--surface2)) 0 100%/56% 8px no-repeat;border-radius:4px}
+.js .ri:not(.on)::after{opacity:1}
+.rsum{font-family:var(--serif);font-size:17.5px;line-height:1.42;padding:10px 0 4px;letter-spacing:-.01em}
+.rh{font-size:13px;font-weight:600;color:var(--text2);margin:13px 0 5px}
+.rb{display:grid;grid-template-columns:16px 1fr;font-size:15px;line-height:1.42;padding:4px 0}
+.rb::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:8px}
+.rb.q::before{background:none;border:1.5px solid var(--text3)}
+.task{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:14px;font-size:15px;line-height:1.35;align-items:start}
+.task .cb{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--text3);margin-top:1px}
+.task small{display:block;font-size:13px;color:var(--text2);margin-top:2px}
+.task small b{color:var(--red);font-weight:600}
+
+/* calendar */
+.cal-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cal-h .mname{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:22px;line-height:1.1}
+.cal-h .chip{margin-left:auto}
+.grid7{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.wd{font-size:11.5px;font-weight:700;color:var(--text3);padding:4px 0}
+.day{position:relative;height:36px;display:grid;place-items:start center;font-size:14px;font-weight:500;padding-top:2px}
+.day span{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid transparent;transition:background-color .4s,border-color .4s}
+.day.out{color:var(--text3);opacity:.55}
+.day.today span{background:var(--accentTint);border-color:var(--accent);color:var(--accentText);font-weight:700}
+.day i{position:absolute;bottom:1px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--dc);transition:transform .45s cubic-bezier(.3,1.8,.5,1),opacity .3s}
+.js .day i{transform:scale(0) translateY(-14px);opacity:0}
+.js .day.on i{transform:none;opacity:1}
+.day.on span{background:color-mix(in srgb,var(--dc) 14%,transparent)}
+.day.today.on span{background:var(--accentTint)}
+.k-e{--dc:var(--accent)}.k-d{--dc:var(--red)}.k-m{--dc:var(--blue)}
+.cal-lg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--text2);border-top:1px solid var(--line);margin-top:8px;padding-top:10px}
+.cal-lg span{display:inline-flex;align-items:center;gap:6px}.cal-lg i{width:7px;height:7px;border-radius:50%;background:var(--dc)}
+.crow{display:grid;grid-template-columns:10px 1fr auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14.5px;line-height:1.3}
+.crow>i{width:8px;height:8px;border-radius:50%;background:var(--dc)}
+.crow b{font-weight:600}.crow em{font-style:normal;font-size:13px;color:var(--text2);white-space:nowrap}
+.ri.crow::after{left:20px;top:11px;height:10px;background:linear-gradient(var(--surface2),var(--surface2)) 0 0/70% 8px no-repeat}
+.addcal{display:flex;align-items:center;gap:10px;margin-top:12px;height:44px;padding:0 14px;border-radius:13px;background:var(--btn);color:var(--btnText);font-size:14.5px;font-weight:600}
+.addcal svg{width:18px;height:18px;flex:none}
+.addcal{justify-content:center}.rem{text-align:center;font-size:12.5px;color:var(--text3);margin-top:8px}
+.newtag{display:inline-flex;height:20px;align-items:center;padding:0 8px;white-space:nowrap;color:#fff!important;font-weight:700!important;border-radius:99px;background:var(--record);color:#fff;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:none}
+
+/* stacked (light) path on wide screens: three columns with their own headings */
+@media (min-width:1000px){
+  .cols{grid-template-columns:1.12fr 1fr .94fr;gap:22px;max-width:none;align-items:start}
+  .ph{font-size:30px;min-height:2.16em;display:flex;align-items:flex-end}
+}
+/* scrubbed path: pinned stage driven by scroll */
+.scrub .track{height:560vh}
+.scrub .stage{position:sticky;top:0;height:100vh;padding:calc(var(--head) + 18px) clamp(20px,3vw,40px) 18px;overflow:hidden;display:flex}
+.scrub .steps{display:flex;align-items:center;gap:0;font-size:12.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+.scrub .steps span{transition:color .3s;white-space:nowrap}.scrub .steps span.on{color:var(--text)}
+.scrub .steps b{flex:1;height:2px;margin:0 14px;background:var(--line);border-radius:2px;position:relative;overflow:hidden;max-width:220px}
+.scrub .steps b::after{content:'';position:absolute;inset:0;background:var(--accent);transform-origin:0 50%;transform:scaleX(var(--f,0))}
+.scrub .steps .demo-tag{margin-left:auto;padding-left:20px}
+.scrub .heads{display:block;position:relative;height:2.16em;font-size:clamp(26px,min(3.5vw,5.4vh),52px);margin-top:16px}
+.scrub .heads h2{position:absolute;inset:0;font:inherit;font-family:var(--serif);font-weight:500;letter-spacing:-.02em;line-height:1.08;max-width:22em;
+  opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s;text-wrap:balance}
+.scrub .heads h2.on{opacity:1;transform:none}
+.scrub .ph{display:none}
+.scrub .stage>.stage-in>.demo-tag{display:none}
+.scrub .cols{align-items:start;margin-top:16px;transform:scale(var(--k,1));transform-origin:0 0;width:calc(100% / var(--k,1))}
+.scrub .col{transition:opacity .5s}
+.scrub .col.later{opacity:.42}
+
+@media (max-height:860px){
+  .scrub .tabs,.scrub .rem{display:none}
+  .scrub .pad{padding:16px 18px}
+  .scrub .day{height:31px}
+  .scrub .rsum{font-size:16px;padding-top:12px}
+  .scrub .say{font-size:15.5px;line-height:1.55}
+  .scrub .ln{padding:8px 0}
+  .scrub .rh{margin-top:9px}
+}
+/* ---------- chapters ---------- */
+.ch{padding:clamp(64px,10vw,128px) clamp(18px,4vw,56px);border-top:1px solid var(--line)}
+.ch-in{max-width:1180px;margin:0 auto;display:grid;gap:26px}
+.tc{display:flex;align-items:baseline;gap:12px}
+.tc .n{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:30px;line-height:1;color:var(--accentText);font-variant-numeric:tabular-nums}
+.tc .l{font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3)}
+.ch h2{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:clamp(32px,4.4vw,58px);line-height:1.04;text-wrap:balance}
+.ch .lead{margin-top:18px;font-size:clamp(16px,1.35vw,19px);color:var(--text2);max-width:34em;text-wrap:pretty}
+@media (min-width:900px){
+  .ch-in{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px 64px;align-items:center}
+  .tc{grid-column:1/-1}
+  .ch.flip .ch-txt{order:2}
+}
+.js .rv{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.js .rv.in{opacity:1;transform:none}
+.vis{max-width:520px;width:100%;justify-self:center}
+
+/* ask */
+.qa{display:grid;gap:10px}
+.bub{justify-self:end;max-width:86%;padding:11px 16px;border-radius:18px 18px 5px 18px;background:var(--btn);color:var(--btnText);font-size:15.5px;line-height:1.4}
+.ans{padding:16px 18px}
+.ans p{font-size:15.5px;line-height:1.5}
+.cite{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 8px;border-radius:99px;background:var(--accentTint);color:var(--accentText);font-size:12.5px;font-weight:700;margin-top:10px}
+.cite svg{width:11px;height:11px}
+.moment{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:center;padding:14px 16px;border-color:var(--accent)}
+.playb{width:34px;height:34px;border-radius:50%;background:var(--btn);color:var(--btnText);display:grid;place-items:center}
+.playb svg{width:13px;height:13px;margin-left:2px}
+.moment .who{color:var(--blue)}
+.moment .say{font-size:15px;line-height:1.45}
+.bars{display:flex;align-items:center;gap:3px;height:22px}
+.bars i{width:3px;border-radius:2px;background:var(--accent);height:var(--b,50%);transform-origin:50% 50%;animation:eq 1.1s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes eq{50%{transform:scaleY(.35)}}
+
+/* devices */
+.devs{display:flex;align-items:flex-end;justify-content:center;gap:clamp(14px,3vw,30px)}
+.phone{position:relative;width:min(270px,54vw);aspect-ratio:270/420;border-radius:44px 44px 0 0;padding:9px 9px 0;background:#0c0d10;box-shadow:0 0 0 1px #2E333A,var(--shadow);
+  -webkit-mask-image:linear-gradient(#000 78%,transparent);mask-image:linear-gradient(#000 78%,transparent)}
+.lock{height:100%;border-radius:36px 36px 0 0;background:linear-gradient(170deg,#262A30,#15171B 60%);color:#F1EDE6;padding:12px 12px 0;text-align:center;overflow:hidden}
+.island{margin:0 auto;width:74%;height:30px;border-radius:99px;background:#000;display:flex;align-items:center;gap:7px;padding:0 11px;font-size:12px;font-weight:600}
+.island>i{width:7px;height:7px;border-radius:50%;background:#F2543F;animation:blink 1.6s infinite}
+.island .bars{height:14px;gap:2px;margin-left:2px}.island .bars i{width:2px}
+.island span{margin-left:auto;color:#E9A24A;font-variant-numeric:tabular-nums}
+.lock .dt{margin-top:22px;font-size:12.5px;font-weight:500;opacity:.8}
+.lock .tm{font-size:clamp(44px,13vw,60px);line-height:1;font-weight:600;letter-spacing:-.03em;margin-top:2px}
+.la{margin-top:26px;border-radius:22px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1);padding:13px;text-align:left}
+.la .top{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.la .top svg{width:20px;height:20px}.la .top em{font-style:normal;margin-left:auto;color:#A6A29B;font-weight:500}
+.la .mid{display:flex;align-items:center;gap:12px;margin-top:8px}
+.la .t{font-family:var(--serif);font-weight:500;font-size:32px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.la .bars{flex:1;justify-content:flex-end}
+.la .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}
+.la .btns span{height:34px;border-radius:11px;display:grid;place-items:center;font-size:13px;font-weight:600;background:rgba(255,255,255,.13)}
+.la .btns span+span{background:#F2543F;color:#fff}
+.watch{position:relative;width:min(150px,30vw);aspect-ratio:150/182;border-radius:27%/22%;background:#000;box-shadow:0 0 0 5px #2A2D33,0 0 0 7px #0c0d10,var(--shadow);color:#F1EDE6;
+  padding:11% 9% 9%;display:flex;flex-direction:column;align-items:center;margin-bottom:34px}
+.watch::after{content:'';position:absolute;right:-12px;top:27%;width:6px;height:24px;border-radius:3px;background:#2A2D33}
+.watch .st{align-self:stretch;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#F2543F}
+.watch .st i{width:6px;height:6px;border-radius:50%;background:#F2543F;animation:blink 1.6s infinite}
+.watch .st em{font-style:normal;margin-left:auto;color:#86827B}
+.watch .t{font-family:var(--serif);font-weight:500;font-size:clamp(26px,7vw,34px);letter-spacing:-.02em;line-height:1;margin-top:9%}
+.watch .bars{height:20px;margin-top:6%}
+.watch .stop{margin-top:auto;width:36%;aspect-ratio:1;border-radius:50%;background:#F2543F;display:grid;place-items:center}
+.watch .stop::after{content:'';width:34%;height:34%;border-radius:3px;background:#fff}
+
+/* contexts */
+.ctx{padding:16px}
+.mine{padding:14px 15px;border:1px solid var(--accent);border-radius:14px;background:color-mix(in srgb,var(--accentTint) 60%,var(--surface))}
+.mine b{display:block;font-size:16px}.mine p{font-size:13.5px;color:var(--text2);margin-top:1px}
+.voc{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.voc span{height:26px;padding:0 10px;border-radius:8px;background:var(--surface);border:1px solid var(--line);font-size:12.5px;font-weight:600;display:inline-flex;align-items:center}
+.voc .plus{border-style:dashed;color:var(--text2);font-weight:500}
+.sech{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin:16px 2px 4px}
+.sech:first-child{margin-top:2px;margin-bottom:8px}
+.brow{display:grid;grid-template-columns:1fr;padding:9px 2px;border-bottom:1px solid var(--line)}
+.brow:last-child{border-bottom:0;padding-bottom:2px}
+.brow b{font-size:15px;font-weight:600}.brow span{font-size:13px;color:var(--text2);line-height:1.35}
+
+/* share */
+.notep{padding:20px 22px;position:relative}
+.notep h3{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:22px;line-height:1.15}
+.notep h4{font-size:15px;font-weight:700;margin:14px 0 4px}
+.notep li{font-size:14.5px;line-height:1.42;padding:3px 0 3px 22px;position:relative}
+.notep li::before{content:'';position:absolute;left:5px;top:11px;width:5px;height:5px;border-radius:50%;background:var(--text)}
+.notep li.c::before{left:1px;top:6px;width:13px;height:13px;border-radius:50%;background:none;border:1.5px solid var(--accent)}
+.dest{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.dest span{height:34px;padding:0 14px;border-radius:99px;background:var(--surface);border:1px solid var(--line);font-size:13.5px;font-weight:600;display:inline-flex;align-items:center;gap:7px}
+.dest span i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+/* private */
+.priv{padding:8px 18px}
+.prow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);font-size:15.5px;font-weight:600}
+.prow svg{width:18px;height:18px;color:var(--accentText);flex:none}
+.prow em{font-style:normal;margin-left:auto;font-size:13px;font-weight:500;color:var(--text2);text-align:right}
+.priv .no{display:flex;flex-wrap:wrap;gap:8px;padding:14px 0 10px}
+.priv .no span{height:30px;padding:0 12px;border-radius:99px;background:var(--surface2);font-size:13px;font-weight:600;display:inline-flex;align-items:center}
+
+/* plans */
+.plans-in{max-width:1180px;margin:0 auto}
+.plans{display:grid;gap:16px;margin-top:36px}
+@media (min-width:860px){.plans{grid-template-columns:repeat(3,1fr)}}
+.plan{padding:22px;display:flex;flex-direction:column;gap:6px}
+.plan.hot{border-color:var(--accent)}
+.plan .pn{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.plan .pp{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:44px;line-height:1.05;margin-top:6px}
+.plan .pp small{font-family:var(--sans);font-size:14px;letter-spacing:0;color:var(--text2);font-weight:500;margin-left:7px}
+.plan ul{margin-top:12px;display:grid;gap:8px}
+.plan li{display:grid;grid-template-columns:18px 1fr;gap:9px;font-size:14.5px;line-height:1.4;color:var(--text2)}
+.plan li::before{content:'';width:16px;height:16px;margin-top:2px;background:var(--accentText);
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/contain no-repeat}
+.fine{margin-top:18px;font-size:13px;color:var(--text3)}
+
+/* finish */
+.fin{text-align:center}
+.fin .tc{justify-content:center}
+.fin h2{margin-top:18px}
+.fin .recap{max-width:560px;margin:38px auto 0;text-align:left}
+.endmark{display:flex;align-items:center;justify-content:center;gap:5px;height:64px;margin:0 auto 4px}
+.endmark i{width:8px;border-radius:4px;background:var(--accent);height:var(--b)}
+.endmark i.dot{width:10px;height:10px;border-radius:50%;background:var(--record);align-self:flex-end;margin:0 0 9px 3px}
+a.task{text-decoration:none;border-color:var(--accent);background:color-mix(in srgb,var(--accentTint) 55%,var(--surface));transition:transform .2s}
+a.task:hover{transform:translateY(-2px)}
+a.task .cb{border-color:var(--accent)}
+.fin .cta-row{margin-top:30px}
+footer{padding:28px clamp(18px,4vw,56px) 40px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;font-size:13.5px;color:var(--text2)}
+footer .brand{color:var(--text)}
+footer .sp{margin-left:auto}
+@media (max-width:640px){footer .sp{margin-left:0;flex-basis:100%;height:0}}
+
+.still *,.still *::before,.still *::after{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .js .rv{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="tape" aria-hidden="true"></canvas>
+<div class="prog" id="prog" aria-hidden="true"></div>
+
+<header class="head" id="head">
+  <a class="brand" href="#top" aria-label="AI Recap">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="15" width="5.5" height="18" rx="2.75" fill="#E9A24A"/><rect x="14" y="8" width="5.5" height="32" rx="2.75" fill="#E9A24A"/><rect x="23" y="3" width="5.5" height="42" rx="2.75" fill="#E9A24A"/><rect x="32" y="12" width="5.5" height="24" rx="2.75" fill="#E9A24A"/><circle cx="43" cy="36" r="3.2" fill="#E0432F"/></svg>
+    <span>AI Recap</span>
+  </a>
+  <div class="timer num" role="img" data-i18n-attr="aria-label:timer.aria" aria-label="Position in the recording"><i></i><span id="tnow">00:00</span><span class="tot">/ 38:12</span></div>
+  <div class="ctrl">
+    <div class="seg" role="group" data-i18n-attr="aria-label:lang.aria" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="lv" aria-pressed="false">LV</button>
+    </div>
+    <button class="ico" id="themeBtn" type="button" data-i18n-attr="aria-label:theme.aria" aria-label="Switch light / dark theme">
+      <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+    </button>
+    <a class="get" href="https://apps.apple.com/app/id6813450802" data-i18n="get">Get the app</a>
+  </div>
+</header>
+
+<main>
+<!-- 00:00 -->
+<section class="hero" id="top" data-t="0">
+  <canvas id="wave" aria-hidden="true"></canvas>
+  <p class="eyebrow" data-i18n="hero.eyebrow">Record. Transcribe. Remember.</p>
+  <h1 data-i18n-html="hero.h1">Say it once.<br>It's already written down.</h1>
+  <p class="sub" data-i18n="hero.sub">AI Recap records meetings, conversations and voice notes, transcribes them and writes a structured recap. In Latvian and English — even mixed in one sentence.</p>
+  <div class="reczone">
+    <button class="rec" id="rec" type="button" data-i18n-attr="aria-label:hero.rec.aria" aria-label="Play the scripted demo">
+      <svg class="mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg>
+      <span class="sq" aria-hidden="true"></span>
+    </button>
+  </div>
+  <p class="reclabel" data-i18n="hero.rec">Press record. This page is one meeting.</p>
+  <p class="hint" data-i18n="hero.hint">A scripted demo — no microphone, nothing is recorded. Scroll to play it yourself.</p>
+  <div class="cta-row">
+    <a class="badge" href="https://apps.apple.com/app/id6813450802">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>
+      <span><small data-i18n="badge.s">Download on the</small><b>App Store</b></span>
+    </a>
+    <span class="note" data-i18n="hero.note">iPhone and Apple Watch · free to start</span>
+  </div>
+</section>
+
+<!-- 00:07 — the take -->
+<section class="track" id="take" data-t="7">
+  <div class="stage" id="stage">
+    <div class="stage-in">
+      <div class="steps" id="steps" aria-hidden="true">
+        <span data-i18n="st.0">Sound</span><b></b><span data-i18n="st.1">Words</span><b></b><span data-i18n="st.2">Recap</span><b></b><span data-i18n="st.3">Calendar</span>
+        <span class="demo-tag" data-i18n="demo">Demo · fictional meeting</span>
+      </div>
+      <div class="heads serif" id="heads" aria-hidden="true">
+        <h2 data-i18n="sh.0">First it is only sound.</h2>
+        <h2 data-i18n="sh.1">Then it is words — Latvian and English, even in one sentence.</h2>
+        <h2 data-i18n="sh.2">Then a recap: decisions, tasks, open questions.</h2>
+        <h2 data-i18n="sh.3">And every date lands on a calendar.</h2>
+      </div>
+      <span class="demo-tag" data-i18n="demo">Demo · fictional meeting</span>
+      <div class="cols" id="cols">
+        <div class="col" id="colT">
+          <h2 class="ph" data-i18n="sh.1">Then it is words — Latvian and English, even in one sentence.</h2>
+          <div class="card pad" id="tr">
+            <div class="card-h"><span data-i18n="tr.title">Transcript</span><span class="r num">00:58</span></div>
+            <div id="lines"></div>
+            <div class="legend">
+              <span data-k="d"><i></i><span data-i18n="lg.d">Decision</span></span>
+              <span data-k="t"><i></i><span data-i18n="lg.t">Task</span></span>
+              <span data-k="dl"><i></i><span data-i18n="lg.dl">Deadline</span></span>
+              <span data-k="dt"><i></i><span data-i18n="lg.dt">Date</span></span>
+              <span data-k="q"><i></i><span data-i18n="lg.q">Open question</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="col" id="colR">
+          <h2 class="ph" data-i18n="sh.2">Then a recap: decisions, tasks, open questions.</h2>
+          <div class="card pad recap">
+            <div class="rtitle" data-i18n="rc.title">Product team: Q4 roadmap review</div>
+            <div class="rmeta"><span data-i18n="rc.meta">38 min · Today 14:32 · 2 speakers</span><span class="chip" data-i18n="rc.ctx">Work Meeting</span></div>
+            <div class="tabs" aria-hidden="true"><span class="on" data-i18n="rc.tab1">Summary</span><span data-i18n="rc.tab2">Transcript</span><span data-i18n="rc.tab3">Ask AI</span></div>
+            <div class="ri"><p class="rsum" data-i18n="rc.sum">The team agreed to ship the onboarding redesign first and move the analytics dashboard to November. Annual pricing stays open.</p></div>
+            <div class="rh" data-i18n="rc.h.dec">Decisions</div>
+            <div class="ri" data-m="d1"><div class="rb"><span data-i18n="rc.d1">The onboarding redesign ships first; the analytics dashboard moves to November.</span></div></div>
+            <div class="ri" data-m="d2"><div class="rb"><span data-i18n="rc.d2">The weekly sync moves to Tuesdays at 10:00.</span></div></div>
+            <div class="rh" data-i18n="rc.h.task">Tasks</div>
+            <div class="ri" data-m="t1 dl"><div class="task"><span class="cb"></span><span><span data-i18n="rc.t1">Finalize the onboarding copy with design</span><small data-i18n-html="rc.t1m">Anna · <b>by Friday</b></small></span></div></div>
+            <div class="rh" data-i18n="rc.h.q">Open questions</div>
+            <div class="ri" data-m="q1"><div class="rb q"><span data-i18n="rc.q1">Do annual plans launch this quarter?</span></div></div>
+          </div>
+        </div>
+        <div class="col" id="colC">
+          <h2 class="ph" data-i18n="sh.3">And every date lands on a calendar.</h2>
+          <div class="card pad cal">
+            <div class="card-h"><span data-i18n="st.3">Calendar</span><span class="newtag r" data-i18n="cal.new">New in 1.1</span></div>
+            <div class="cal-h"><span class="mname" data-i18n="cal.title">November 2026</span><span class="chip" data-i18n="cal.today">Today</span></div>
+            <div class="grid7" id="wds" aria-hidden="true"></div>
+            <div class="grid7" id="days" aria-hidden="true"></div>
+            <div class="cal-lg"><span class="k-e"><i></i><span data-i18n="cal.lg.e">Events</span></span><span class="k-d"><i></i><span data-i18n="cal.lg.d">Deadlines</span></span><span class="k-m"><i></i><span data-i18n="cal.lg.m">Dates</span></span></div>
+            <div class="ri crow k-d ci" data-day="13" data-m="dl"><i></i><b data-i18n="cal.r1">Onboarding copy with design</b><em data-i18n="cal.r1d">Fri 13 Nov</em></div>
+            <div class="ri crow k-e ci" data-day="17" data-m="d2"><i></i><b data-i18n="cal.r2">Weekly sync</b><em data-i18n="cal.r2d">Tue 17 Nov, 10:00</em></div>
+            <div class="ri crow k-m ci" data-day="24" data-m="dt"><i></i><b data-i18n="cal.r3">Next meeting</b><em data-i18n="cal.r3d">Tue 24 Nov</em></div>
+            <div class="addcal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M12 13v4M10 15h4"/></svg><span data-i18n="cal.add">Add to Apple Calendar</span></div>
+            <p class="rem" data-i18n="cal.rem">Reminder · 1 day before</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12:04 -->
+<section class="ch" id="ask" data-t="724">
+  <div class="ch-in">
+    <div class="tc rv"><span class="n">12:04</span><span class="l" data-i18n="ask.k">Transcript · Ask AI</span></div>
+    <div class="ch-txt rv">
+      <h2 data-i18n="ask.h">Tap a line. Hear the moment.</h2>
+      <p class="lead" data-i18n="ask.p">The transcript keeps speakers apart and is searchable. Ask the recording a question, and the answer points to the moment it was said — one tap plays it.</p>
+    </div>
+    <div class="vis qa rv">
+      <div class="bub" data-i18n="ask.q">What did we decide on pricing?</div>
+      <div class="card ans"><p data-i18n="ask.a">Nothing final yet. Whether annual plans launch this quarter was left as an open question.</p><span class="cite num"><svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M2 1l9 5-9 5z"/></svg>00:21</span></div>
+      <div class="card moment">
+        <span class="playb"><svg viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M2 1l9 5-9 5z"/></svg></span>
+        <div><div class="who"><span data-i18n="sp.2" style="color:inherit;font-weight:700;margin:0">Speaker 2</span><span class="num">00:21</span></div>
+        <div class="say">Agreed. Bet pricing — vai annual plans palaižam šajā ceturksnī?</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 19:30 -->
+<section class="ch flip" id="anywhere" data-t="1170">
+  <div class="ch-in">
+    <div class="tc rv"><span class="n">19:30</span><span class="l">iPhone · Apple Watch</span></div>
+    <div class="ch-txt rv">
+      <h2 data-i18n="any.h">Lock the screen. It keeps recording.</h2>
+      <p class="lead" data-i18n="any.p">The timer lives in the Dynamic Island and on the Lock Screen, with pause and finish buttons. On Apple Watch, start from your wrist — the watch can record on its own and hand the audio to your iPhone.</p>
+    </div>
+    <div class="vis devs rv" role="img" data-i18n-attr="aria-label:any.alt" aria-label="An iPhone Lock Screen with the AI Recap recording timer and an Apple Watch recording">
+      <div class="phone"><div class="lock">
+        <div class="island"><i></i><div class="bars"><i style="--b:50%"></i><i style="--b:90%;--d:.2s"></i><i style="--b:65%;--d:.4s"></i><i style="--b:100%;--d:.1s"></i><i style="--b:40%;--d:.3s"></i></div><span>19:30</span></div>
+        <div class="dt" data-i18n="any.date">Wednesday, 11 November</div>
+        <div class="tm num">14:51</div>
+        <div class="la">
+          <div class="top"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="15" width="5.5" height="18" rx="2.75" fill="#E9A24A"/><rect x="14" y="8" width="5.5" height="32" rx="2.75" fill="#E9A24A"/><rect x="23" y="3" width="5.5" height="42" rx="2.75" fill="#E9A24A"/><rect x="32" y="12" width="5.5" height="24" rx="2.75" fill="#E9A24A"/><circle cx="43" cy="36" r="3.2" fill="#F2543F"/></svg>AI Recap<em data-i18n="any.rec">Recording</em></div>
+          <div class="mid"><span class="t">19:30</span><div class="bars"><i style="--b:40%"></i><i style="--b:80%;--d:.15s"></i><i style="--b:55%;--d:.3s"></i><i style="--b:100%;--d:.45s"></i><i style="--b:70%;--d:.2s"></i><i style="--b:45%;--d:.5s"></i><i style="--b:90%;--d:.1s"></i><i style="--b:60%;--d:.35s"></i><i style="--b:35%;--d:.25s"></i></div></div>
+          <div class="btns"><span data-i18n="any.pause">Pause</span><span data-i18n="any.finish">Finish</span></div>
+        </div>
+      </div></div>
+      <div class="watch">
+        <div class="st"><i></i><span data-i18n="any.rec">Recording</span><em class="num">14:51</em></div>
+        <div class="t num">19:30</div>
+        <div class="bars"><i style="--b:45%"></i><i style="--b:85%;--d:.2s"></i><i style="--b:60%;--d:.4s"></i><i style="--b:100%;--d:.1s"></i><i style="--b:70%;--d:.3s"></i><i style="--b:40%;--d:.5s"></i><i style="--b:80%;--d:.15s"></i></div>
+        <div class="stop"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 24:10 -->
+<section class="ch" id="contexts" data-t="1450">
+  <div class="ch-in">
+    <div class="tc rv"><span class="n">24:10</span><span class="l" data-i18n="ctx.k">Contexts</span></div>
+    <div class="ch-txt rv">
+      <h2 data-i18n="ctx.h">Contexts that speak your vocabulary.</h2>
+      <p class="lead" data-i18n="ctx.p">Pick a context — work meeting, sales call, interview, lecture, personal note — or create your own with vocabulary and instructions for how the recap should be written.</p>
+    </div>
+    <div class="vis card ctx rv">
+      <div class="sech" data-i18n="ctx.mine">Mine</div>
+      <div class="mine"><b data-i18n="ctx.m.n">Product team</b><p data-i18n="ctx.m.d">Weekly product syncs and roadmap reviews.</p>
+        <div class="voc"><span>Roadmap</span><span>Onboarding</span><span>Churn</span><span class="plus" data-i18n="ctx.plus">+ instructions</span></div></div>
+      <div class="sech" data-i18n="ctx.built">Built-in</div>
+      <div class="brow"><b data-i18n="ctx.b1">Work Meeting</b><span data-i18n="ctx.b1d">Internal team or project meeting</span></div>
+      <div class="brow"><b data-i18n="ctx.b2">Sales Call</b><span data-i18n="ctx.b2d">Conversation with a customer or prospect</span></div>
+      <div class="brow"><b data-i18n="ctx.b3">Interview</b><span data-i18n="ctx.b3d">Job, research or press interview</span></div>
+      <div class="brow"><b data-i18n="ctx.b4">Lecture</b><span data-i18n="ctx.b4d">Lecture, class or presentation</span></div>
+      <div class="brow"><b data-i18n="ctx.b5">Personal Note</b><span data-i18n="ctx.b5d">Personal note, idea or reminder</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 29:45 -->
+<section class="ch flip" id="share" data-t="1785">
+  <div class="ch-in">
+    <div class="tc rv"><span class="n">29:45</span><span class="l" data-i18n="shr.k">Share</span></div>
+    <div class="ch-txt rv">
+      <h2 data-i18n="shr.h">Share it anywhere. Formatting intact.</h2>
+      <p class="lead" data-i18n="shr.p">The recap lands in Apple Notes, Mail or Notion with headings, lists and checkbox tasks intact. Export Markdown, or the transcript as a .txt file.</p>
+    </div>
+    <div class="vis rv">
+      <div class="card notep">
+        <h3 data-i18n="rc.title">Product team: Q4 roadmap review</h3>
+        <h4 data-i18n="rc.h.dec">Decisions</h4>
+        <ul><li data-i18n="rc.d1">The onboarding redesign ships first; the analytics dashboard moves to November.</li><li data-i18n="rc.d2">The weekly sync moves to Tuesdays at 10:00.</li></ul>
+        <h4 data-i18n="rc.h.task">Tasks</h4>
+        <ul><li class="c" data-i18n="shr.t1">Finalize the onboarding copy with design — Anna, by Friday</li></ul>
+      </div>
+      <div class="dest"><span><i></i>Apple Notes</span><span><i></i>Mail</span><span><i></i>Notion</span><span><i></i>Markdown</span><span><i></i>.txt</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 33:00 -->
+<section class="ch" id="private" data-t="1980">
+  <div class="ch-in">
+    <div class="tc rv"><span class="n">33:00</span><span class="l" data-i18n="prv.k">Privacy</span></div>
+    <div class="ch-txt rv">
+      <h2 data-i18n="prv.h">Private by default.</h2>
+      <p class="lead" data-i18n="prv.p">Audio, transcripts and recaps stay on your device, in an encrypted database. No ads, no tracking.</p>
+    </div>
+    <div class="vis card priv rv">
+      <div class="prow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span data-i18n="prv.r1">Audio</span><em data-i18n="prv.on">on your device</em></div>
+      <div class="prow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span data-i18n="prv.r2">Transcripts</span><em data-i18n="prv.on">on your device</em></div>
+      <div class="prow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span data-i18n="prv.r3">Recaps</span><em data-i18n="prv.on">on your device</em></div>
+      <div class="no"><span data-i18n="prv.n1">Encrypted database</span><span data-i18n="prv.n2">No ads</span><span data-i18n="prv.n3">No tracking</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 36:20 -->
+<section class="ch" id="plans" data-t="2180">
+  <div class="plans-in">
+    <div class="tc rv"><span class="n">36:20</span><span class="l" data-i18n="pln.k">Plans</span></div>
+    <h2 class="rv" style="margin-top:26px" data-i18n="pln.h">Start free. Go longer when you need to.</h2>
+    <div class="plans">
+      <div class="card plan rv"><div class="pn" data-i18n="pln.f">Free</div><div class="pp">€0</div>
+        <ul><li data-i18n="pln.f1">Recordings up to 15 minutes</li><li data-i18n="pln.f2">5 recaps a day</li></ul></div>
+      <div class="card plan hot rv"><div class="pn">Unlimited</div><div class="pp">€19.99<small data-i18n="pln.mo">/ month</small></div>
+        <ul><li data-i18n="pln.u1">No daily limit</li><li data-i18n="pln.u2">Recordings up to 90 minutes</li><li data-i18n="pln.u3">Hosted AI — no API key needed</li></ul></div>
+      <div class="card plan rv"><div class="pn" data-i18n="pln.b">Bring your own key</div><div class="pp">€99.99<small data-i18n="pln.once">one-time</small></div>
+        <ul><li data-i18n="pln.b1">Your own OpenRouter key</li><li data-i18n="pln.u1">No daily limit</li><li data-i18n="pln.u2">Recordings up to 90 minutes</li></ul></div>
+    </div>
+    <p class="fine" data-i18n="pln.fine">Payments go through the App Store. Prices are set by the App Store for your region.</p>
+  </div>
+</section>
+
+<!-- 38:12 -->
+<section class="ch fin" id="finish" data-t="2292">
+  <div class="endmark rv" aria-hidden="true"><i style="--b:28px"></i><i style="--b:48px"></i><i style="--b:64px"></i><i style="--b:36px"></i><i class="dot"></i></div>
+  <div class="tc rv"><span class="n">38:12</span><span class="l" data-i18n="fin.k">Recording finished</span></div>
+  <h2 class="rv" data-i18n-html="fin.h">That was one meeting.<br>Here is its recap.</h2>
+  <div class="card pad recap rv">
+    <div class="rtitle" data-i18n="fin.title">AI Recap, the one-page version</div>
+    <div class="rmeta"><span data-i18n="fin.meta">38 min · Today · 1 speaker</span><span class="chip" data-i18n="fin.ctx">Landing page</span></div>
+    <p class="rsum" data-i18n="fin.sum">AI Recap records a conversation and turns it into a transcript, a structured recap and dates on a calendar — in Latvian and English, on iPhone and Apple Watch.</p>
+    <div class="rh" data-i18n="rc.h.dec">Decisions</div>
+    <div class="rb"><span data-i18n="fin.d1">Nobody takes notes in the next meeting.</span></div>
+    <div class="rb"><span data-i18n="fin.d2">Audio, transcripts and recaps stay on the device.</span></div>
+    <div class="rh" data-i18n="rc.h.task">Tasks</div>
+    <a class="task" href="https://apps.apple.com/app/id6813450802"><span class="cb"></span><span><span data-i18n="fin.t1">Download AI Recap from the App Store</span><small data-i18n-html="fin.t1m">You · <b>today</b></small></span></a>
+  </div>
+  <div class="cta-row rv">
+    <a class="badge" href="https://apps.apple.com/app/id6813450802">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>
+      <span><small data-i18n="badge.s">Download on the</small><b>App Store</b></span>
+    </a>
+    <span class="note" data-i18n="fin.note">iPhone and Apple Watch · iOS only</span>
+  </div>
+</section>
+</main>
+
+<footer>
+  <a class="brand" href="#top" aria-label="AI Recap"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="5" y="15" width="5.5" height="18" rx="2.75" fill="#E9A24A"/><rect x="14" y="8" width="5.5" height="32" rx="2.75" fill="#E9A24A"/><rect x="23" y="3" width="5.5" height="42" rx="2.75" fill="#E9A24A"/><rect x="32" y="12" width="5.5" height="24" rx="2.75" fill="#E9A24A"/><circle cx="43" cy="36" r="3.2" fill="#E0432F"/></svg><span>AI Recap</span></a>
+  <span data-i18n="foot.tag">Record. Transcribe. Remember.</span>
+  <span class="sp"></span>
+  <a href="https://mortukans.github.io/ai-recap/privacy.html" data-i18n="foot.privacy">Privacy</a>
+  <a href="https://mortukans.github.io/ai-recap/terms.html" data-i18n="foot.terms">Terms</a>
+  <a href="https://apps.apple.com/app/id6813450802">App Store</a>
+</footer>
+
+<div class="pill-play" aria-hidden="true"><i></i><span data-i18n="play.pill">Playing the demo — scroll to take over</span></div>
+
+<script>
+(function () {
+'use strict';
+var D = document, root = D.documentElement, Q = new URLSearchParams(location.search);
+var $ = function (s, r) { return (r || D).querySelector(s); }, $$ = function (s, r) { return Array.prototype.slice.call((r || D).querySelectorAll(s)); };
+var clamp = function (v) { return v < 0 ? 0 : v > 1 ? 1 : v; };
+var RM = matchMedia('(prefers-reduced-motion: reduce)');
+/* debug hooks for screenshots: ?p=0..1 (whole page) · ?stage=0..1 (inside the take) · ?flat=1 (force the stacked, non-pinned path); p/stage/flat freeze transitions */
+var DEBUG = Q.get('p') != null || Q.get('stage') != null || Q.get('flat') != null, FLAT = Q.get('flat') != null;
+if (DEBUG) root.classList.add('still');
+
+/* ------------------------------------------------------------------ i18n */
+var I = {
+en: {
+ title: "AI Recap — Say it once. It's already written down.",
+ 'timer.aria': 'Position in the recording', 'lang.aria': 'Language', 'theme.aria': 'Switch light / dark theme', get: 'Get the app',
+ 'hero.eyebrow': 'Record. Transcribe. Remember.', 'hero.h1': "Say it once.<br>It's already written down.",
+ 'hero.sub': 'AI Recap records meetings, conversations and voice notes, transcribes them and writes a structured recap. In Latvian and English — even mixed in one sentence.',
+ 'hero.rec': 'Press record. This page is one meeting.', 'hero.rec.aria': 'Play the scripted demo',
+ 'hero.hint': 'A scripted demo — no microphone, nothing is recorded. Scroll to play it yourself.',
+ 'badge.s': 'Download on the', 'hero.note': 'iPhone and Apple Watch · free to start', 'play.pill': 'Playing the demo — scroll to take over',
+ 'st.0': 'Sound', 'st.1': 'Words', 'st.2': 'Recap', 'st.3': 'Calendar', demo: 'Demo · fictional meeting',
+ 'sh.0': 'First it is only sound.', 'sh.1': 'Then it is words — Latvian and English, even in one sentence.',
+ 'sh.2': 'Then a recap: decisions, tasks, open questions.', 'sh.3': 'And every date lands on a calendar.',
+ 'tr.title': 'Transcript', 'sp.2': 'Speaker 2', 'lg.d': 'Decision', 'lg.t': 'Task', 'lg.dl': 'Deadline', 'lg.dt': 'Date', 'lg.q': 'Open question',
+ 'rc.title': 'Product team: Q4 roadmap review', 'rc.meta': '38 min · Today 14:32 · 2 speakers', 'rc.ctx': 'Work Meeting',
+ 'rc.tab1': 'Summary', 'rc.tab2': 'Transcript', 'rc.tab3': 'Ask AI',
+ 'rc.sum': 'The team agreed to ship the onboarding redesign first and move the analytics dashboard to November. Annual pricing stays open.',
+ 'rc.h.dec': 'Decisions', 'rc.d1': 'The onboarding redesign ships first; the analytics dashboard moves to November.', 'rc.d2': 'The weekly sync moves to Tuesdays at 10:00.',
+ 'rc.h.task': 'Tasks', 'rc.t1': 'Finalize the onboarding copy with design', 'rc.t1m': 'Anna · <b>by Friday</b>',
+ 'rc.h.q': 'Open questions', 'rc.q1': 'Do annual plans launch this quarter?',
+ 'cal.title': 'November 2026', 'cal.new': 'New in 1.1', 'cal.today': 'Today', 'cal.wd': 'M,T,W,T,F,S,S',
+ 'cal.lg.e': 'Events', 'cal.lg.d': 'Deadlines', 'cal.lg.m': 'Dates',
+ 'cal.r1': 'Onboarding copy with design', 'cal.r1d': 'Fri 13 Nov', 'cal.r2': 'Weekly sync', 'cal.r2d': 'Tue 17 Nov, 10:00', 'cal.r3': 'Next meeting', 'cal.r3d': 'Tue 24 Nov',
+ 'cal.add': 'Add to Apple Calendar', 'cal.rem': 'Reminder · 1 day before',
+ 'ask.k': 'Transcript · Ask AI', 'ask.h': 'Tap a line. Hear the moment.',
+ 'ask.p': 'The transcript keeps speakers apart and is searchable. Ask the recording a question, and the answer points to the moment it was said — one tap plays it.',
+ 'ask.q': 'What did we decide on pricing?', 'ask.a': 'Nothing final yet. Whether annual plans launch this quarter was left as an open question.',
+ 'any.h': 'Lock the screen. It keeps recording.',
+ 'any.p': 'The timer lives in the Dynamic Island and on the Lock Screen, with pause and finish buttons. On Apple Watch, start from your wrist — the watch can record on its own and hand the audio to your iPhone.',
+ 'any.alt': 'An iPhone Lock Screen with the AI Recap recording timer, and an Apple Watch recording', 'any.date': 'Wednesday, 11 November', 'any.rec': 'Recording', 'any.pause': 'Pause', 'any.finish': 'Finish',
+ 'ctx.k': 'Contexts', 'ctx.h': 'Contexts that speak your vocabulary.',
+ 'ctx.p': 'Pick a context — work meeting, sales call, interview, lecture, personal note — or create your own with vocabulary and instructions for how the recap should be written.',
+ 'ctx.mine': 'Mine', 'ctx.m.n': 'Product team', 'ctx.m.d': 'Weekly product syncs and roadmap reviews.', 'ctx.plus': '+ instructions', 'ctx.built': 'Built-in',
+ 'ctx.b1': 'Work Meeting', 'ctx.b1d': 'Internal team or project meeting', 'ctx.b2': 'Sales Call', 'ctx.b2d': 'Conversation with a customer or prospect',
+ 'ctx.b3': 'Interview', 'ctx.b3d': 'Job, research or press interview', 'ctx.b4': 'Lecture', 'ctx.b4d': 'Lecture, class or presentation', 'ctx.b5': 'Personal Note', 'ctx.b5d': 'Personal note, idea or reminder',
+ 'shr.k': 'Share', 'shr.h': 'Share it anywhere. Formatting intact.',
+ 'shr.p': 'The recap lands in Apple Notes, Mail or Notion with headings, lists and checkbox tasks intact. Export Markdown, or the transcript as a .txt file.',
+ 'shr.t1': 'Finalize the onboarding copy with design — Anna, by Friday',
+ 'prv.k': 'Privacy', 'prv.h': 'Private by default.', 'prv.p': 'Audio, transcripts and recaps stay on your device, in an encrypted database. No ads, no tracking.',
+ 'prv.r1': 'Audio', 'prv.r2': 'Transcripts', 'prv.r3': 'Recaps', 'prv.on': 'on your device', 'prv.n1': 'Encrypted database', 'prv.n2': 'No ads', 'prv.n3': 'No tracking',
+ 'pln.k': 'Plans', 'pln.h': 'Start free. Go longer when you need to.', 'pln.f': 'Free', 'pln.f1': 'Recordings up to 15 minutes', 'pln.f2': '5 recaps a day',
+ 'pln.mo': '/ month', 'pln.u1': 'No daily limit', 'pln.u2': 'Recordings up to 90 minutes', 'pln.u3': 'Hosted AI — no API key needed',
+ 'pln.b': 'Bring your own key', 'pln.once': 'one-time', 'pln.b1': 'Your own OpenRouter key',
+ 'pln.fine': 'Payments go through the App Store. Prices are set by the App Store for your region.',
+ 'fin.k': 'Recording finished', 'fin.h': 'That was one meeting.<br>Here is its recap.', 'fin.title': 'AI Recap, the one-page version',
+ 'fin.meta': '38 min · Today · 1 speaker', 'fin.ctx': 'Landing page',
+ 'fin.sum': 'AI Recap records a conversation and turns it into a transcript, a structured recap and dates on a calendar — in Latvian and English, on iPhone and Apple Watch.',
+ 'fin.d1': 'Nobody takes notes in the next meeting.', 'fin.d2': 'Audio, transcripts and recaps stay on the device.',
+ 'fin.t1': 'Download AI Recap from the App Store', 'fin.t1m': 'You · <b>today</b>', 'fin.note': 'iPhone and Apple Watch · iOS only',
+ 'foot.tag': 'Record. Transcribe. Remember.', 'foot.privacy': 'Privacy', 'foot.terms': 'Terms'
+},
+lv: {
+ title: 'AI Recap — Pasaki vienreiz. Tas jau ir pierakstīts.',
+ 'timer.aria': 'Vieta ierakstā', 'lang.aria': 'Valoda', 'theme.aria': 'Pārslēgt gaišo / tumšo motīvu', get: 'Lejupielādēt',
+ 'hero.eyebrow': 'Ieraksti. Transkribē. Atceries.', 'hero.h1': 'Pasaki vienreiz.<br>Tas jau ir pierakstīts.',
+ 'hero.sub': 'AI Recap ieraksta sanāksmes, sarunas un balss piezīmes, transkribē tās un uzraksta strukturētu kopsavilkumu. Latviski un angliski — arī tad, ja abas valodas ir vienā teikumā.',
+ 'hero.rec': 'Nospied ierakstu. Šī lapa ir viena sanāksme.', 'hero.rec.aria': 'Atskaņot iestudēto demonstrāciju',
+ 'hero.hint': 'Iestudēta demonstrācija — bez mikrofona, nekas netiek ierakstīts. Ritini, lai atskaņotu pats.',
+ 'badge.s': 'Lejupielādē', 'hero.note': 'iPhone un Apple Watch · sākt var bez maksas', 'play.pill': 'Demonstrācija tiek atskaņota — ritini, lai pārņemtu vadību',
+ 'st.0': 'Skaņa', 'st.1': 'Vārdi', 'st.2': 'Kopsavilkums', 'st.3': 'Kalendārs', demo: 'Demo · izdomāta sanāksme',
+ 'sh.0': 'Sākumā ir tikai skaņa.', 'sh.1': 'Tad tie ir vārdi — latviski un angliski, pat vienā teikumā.',
+ 'sh.2': 'Tad kopsavilkums: lēmumi, uzdevumi, atvērtie jautājumi.', 'sh.3': 'Un katrs datums nonāk kalendārā.',
+ 'tr.title': 'Transkripts', 'sp.2': 'Runātājs 2', 'lg.d': 'Lēmums', 'lg.t': 'Uzdevums', 'lg.dl': 'Termiņš', 'lg.dt': 'Datums', 'lg.q': 'Atvērts jautājums',
+ 'rc.title': 'Produkta komanda: Q4 plāna pārskats', 'rc.meta': '38 min · Šodien 14:32 · 2 runātāji', 'rc.ctx': 'Darba sanāksme',
+ 'rc.tab1': 'Kopsavilkums', 'rc.tab2': 'Transkripts', 'rc.tab3': 'Jautāt AI',
+ 'rc.sum': 'Komanda vienojās vispirms izlaist pārveidoto onboarding un analītikas paneli pārcelt uz novembri. Jautājums par gada plānu cenām paliek atvērts.',
+ 'rc.h.dec': 'Lēmumi', 'rc.d1': 'Pārveidotais onboarding iznāk pirmais; analītikas panelis pārcelts uz novembri.', 'rc.d2': 'Iknedēļas sinhronizācija pārcelta uz otrdienām plkst. 10:00.',
+ 'rc.h.task': 'Uzdevumi', 'rc.t1': 'Pabeigt onboarding tekstus kopā ar dizainu', 'rc.t1m': 'Anna · <b>līdz piektdienai</b>',
+ 'rc.h.q': 'Atvērtie jautājumi', 'rc.q1': 'Vai gada plānus palaižam šajā ceturksnī?',
+ 'cal.title': '2026. gada novembris', 'cal.new': 'Jaunums 1.1', 'cal.today': 'Šodien', 'cal.wd': 'P,O,T,C,P,S,Sv',
+ 'cal.lg.e': 'Notikumi', 'cal.lg.d': 'Termiņi', 'cal.lg.m': 'Datumi',
+ 'cal.r1': 'Onboarding teksti ar dizainu', 'cal.r1d': 'Pk., 13. nov.', 'cal.r2': 'Iknedēļas sinhronizācija', 'cal.r2d': 'Ot., 17. nov., 10:00', 'cal.r3': 'Nākamā tikšanās', 'cal.r3d': 'Ot., 24. nov.',
+ 'cal.add': 'Pievienot Apple kalendāram', 'cal.rem': 'Atgādinājums · 1 dienu pirms',
+ 'ask.k': 'Transkripts · Jautāt AI', 'ask.h': 'Pieskaries rindai. Dzirdi to brīdi.',
+ 'ask.p': 'Transkriptā runātāji ir atdalīti, un tajā var meklēt. Uzdod ierakstam jautājumu — atbilde norāda uz brīdi, kad tas tika pateikts, un ar vienu pieskārienu to var noklausīties.',
+ 'ask.q': 'Ko nolēmām par cenām?', 'ask.a': 'Galīga lēmuma vēl nav. Vai gada plānus palaist šajā ceturksnī, palika kā atvērts jautājums.',
+ 'any.h': 'Aizslēdz ekrānu. Ieraksts turpinās.',
+ 'any.p': 'Taimeris redzams Dynamic Island un bloķēšanas ekrānā, ar pauzes un pabeigšanas pogām. Ar Apple Watch sāc ierakstu no plaukstas — pulkstenis var ierakstīt pats un nosūtīt audio telefonam.',
+ 'any.alt': 'iPhone bloķēšanas ekrāns ar AI Recap ieraksta taimeri un Apple Watch, kas ieraksta', 'any.date': 'Trešdiena, 11. novembris', 'any.rec': 'Ieraksta', 'any.pause': 'Pauzēt', 'any.finish': 'Pabeigt',
+ 'ctx.k': 'Konteksti', 'ctx.h': 'Konteksti, kas zina tavus terminus.',
+ 'ctx.p': 'Izvēlies kontekstu — darba sanāksme, pārdošanas zvans, intervija, lekcija, personīga piezīme — vai izveido savu ar vārdnīcu un norādījumiem, kā rakstīt kopsavilkumu.',
+ 'ctx.mine': 'Mani', 'ctx.m.n': 'Produkta komanda', 'ctx.m.d': 'Iknedēļas produkta sinhronizācijas un plāna pārskati.', 'ctx.plus': '+ norādījumi', 'ctx.built': 'Iebūvētie',
+ 'ctx.b1': 'Darba sanāksme', 'ctx.b1d': 'Iekšējā komandas vai projekta sanāksme', 'ctx.b2': 'Pārdošanas zvans', 'ctx.b2d': 'Saruna ar klientu vai potenciālo pircēju',
+ 'ctx.b3': 'Intervija', 'ctx.b3d': 'Darba, pētījuma vai preses intervija', 'ctx.b4': 'Lekcija', 'ctx.b4d': 'Lekcija, nodarbība vai prezentācija', 'ctx.b5': 'Personīga piezīme', 'ctx.b5d': 'Personīga piezīme, ideja vai atgādinājums',
+ 'shr.k': 'Kopīgošana', 'shr.h': 'Kopīgo jebkur. Formatējums saglabājas.',
+ 'shr.p': 'Kopsavilkums ar virsrakstiem, sarakstiem un uzdevumu ķekšiem nonāk Apple Notes, Mail vai Notion tieši tā, kā tam jāizskatās. Eksportē Markdown vai transkriptu .txt failā.',
+ 'shr.t1': 'Pabeigt onboarding tekstus kopā ar dizainu — Anna, līdz piektdienai',
+ 'prv.k': 'Privātums', 'prv.h': 'Privātums pēc noklusējuma.', 'prv.p': 'Audio, transkripti un kopsavilkumi paliek tavā ierīcē, šifrētā datubāzē. Nav reklāmu, nav izsekošanas.',
+ 'prv.r1': 'Audio', 'prv.r2': 'Transkripti', 'prv.r3': 'Kopsavilkumi', 'prv.on': 'tavā ierīcē', 'prv.n1': 'Šifrēta datubāze', 'prv.n2': 'Nav reklāmu', 'prv.n3': 'Nav izsekošanas',
+ 'pln.k': 'Plāni', 'pln.h': 'Sāc bez maksas. Ieraksti ilgāk, kad vajag.', 'pln.f': 'Bezmaksas', 'pln.f1': 'Ieraksti līdz 15 minūtēm', 'pln.f2': '5 kopsavilkumi dienā',
+ 'pln.mo': '/ mēnesī', 'pln.u1': 'Nav dienas limita', 'pln.u2': 'Ieraksti līdz 90 minūtēm', 'pln.u3': 'Mūsu AI apstrāde — API atslēga nav vajadzīga',
+ 'pln.b': 'Sava atslēga', 'pln.once': 'vienreiz', 'pln.b1': 'Tava OpenRouter atslēga',
+ 'pln.fine': 'Maksājumi notiek caur App Store. Cenas nosaka App Store tavam reģionam.',
+ 'fin.k': 'Ieraksts pabeigts', 'fin.h': 'Tā bija viena sanāksme.<br>Lūk, tās kopsavilkums.', 'fin.title': 'AI Recap vienā lapā',
+ 'fin.meta': '38 min · Šodien · 1 runātājs', 'fin.ctx': 'Mājaslapa',
+ 'fin.sum': 'AI Recap ieraksta sarunu un pārvērš to transkriptā, strukturētā kopsavilkumā un datumos kalendārā — latviski un angliski, iPhone un Apple Watch.',
+ 'fin.d1': 'Nākamajā sanāksmē neviens vairs nepieraksta.', 'fin.d2': 'Audio, transkripti un kopsavilkumi paliek ierīcē.',
+ 'fin.t1': 'Lejupielādēt AI Recap no App Store', 'fin.t1m': 'Tu · <b>šodien</b>', 'fin.note': 'iPhone un Apple Watch · tikai iOS',
+ 'foot.tag': 'Ieraksti. Transkribē. Atceries.', 'foot.privacy': 'Privātums', 'foot.terms': 'Noteikumi'
+}};
+
+/* ------------------------------------------------- the scripted meeting (same mixed LV+EN transcript in both UI languages) */
+var LINES = [
+ { s: 1, t: '00:07', p: [['Labi, sākam.'], ['Onboarding redesign laižam pirmo', 'd', 'd1'], [',', 0, 0, 1], ['analytics dashboard pārceļam uz novembri', 'd', 'd1'], ['.', 0, 0, 1]] },
+ { s: 2, t: '00:21', p: [['Agreed. Bet pricing —'], ['vai annual plans palaižam šajā ceturksnī', 'q', 'q1'], ['?', 0, 0, 1]] },
+ { s: 1, t: '00:34', p: [['Good question, atstājam atvērtu. Es'], ['pabeigšu onboarding tekstus ar dizainu', 't', 't1'], ['līdz piektdienai', 'dl', 'dl'], ['.', 0, 0, 1]] },
+ { s: 2, t: '00:46', p: [['Un'], ['weekly sync pārceļam uz otrdienām desmitos', 'd', 'd2'], ['. Nākamā tikšanās —', 0, 0, 1], ['24. novembrī', 'dt', 'dt'], ['.', 0, 0, 1]] }
+];
+var words = [], marks = [], seed = 7;
+function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+(function buildTranscript() {
+  var host = $('#lines');
+  LINES.forEach(function (L) {
+    var ln = D.createElement('div'); ln.className = 'ln s' + L.s;
+    ln.innerHTML = '<span class="av">' + (L.s === 1 ? 'A' : '2') + '</span><div><div class="who">' + (L.s === 1 ? 'Anna' : '<b data-i18n="sp.2" style="font-weight:inherit">Speaker 2</b>') + '<span class="num">' + L.t + '</span></div><div class="say"></div></div>';
+    var say = $('.say', ln);
+    L.p.forEach(function (part) {
+      var target = say;
+      if (!part[3] && say.childNodes.length) say.appendChild(D.createTextNode(' '));
+      if (part[1]) { target = D.createElement('span'); target.className = 'm'; target.dataset.k = part[1]; target.dataset.id = part[2]; marks.push(target); }
+      part[0].split(' ').forEach(function (tok, i) {
+        if (i) target.appendChild(D.createTextNode(' '));
+        var w = D.createElement('span'); w.className = 'w' + (part[1] ? ' k' : ''); w.textContent = tok;
+        w.style.setProperty('--h', Math.round(28 + rnd() * 62) + '%');
+        target.appendChild(w); words.push(w);
+      });
+      if (part[1]) say.appendChild(target);
+    });
+    host.appendChild(ln);
+  });
+})();
+var days = {};
+(function buildCalendar() {
+  var host = $('#days'), kinds = { 13: 'k-d', 17: 'k-e', 24: 'k-m' };
+  for (var i = 0; i < 42; i++) {
+    var n = i - 5, out = n < 1 || n > 30, label = n < 1 ? 31 + n : n > 30 ? n - 30 : n;   // grid starts Mon 26 Oct 2026
+    var d = D.createElement('div'); d.className = 'day' + (out ? ' out' : '') + (!out && n === 11 ? ' today' : '') + (!out && kinds[n] ? ' ' + kinds[n] : '');
+    d.innerHTML = '<span class="num">' + label + '</span>' + (!out && kinds[n] ? '<i></i>' : '');
+    if (!out) days[n] = d; host.appendChild(d);
+  }
+})();
+
+var lang = root.lang === 'lv' ? 'lv' : 'en';
+function setLang(l, save) {
+  lang = l; root.lang = l; var S = I[l];
+  $$('[data-i18n]').forEach(function (e) { var v = S[e.dataset.i18n]; if (v != null) e.textContent = v; });
+  $$('[data-i18n-html]').forEach(function (e) { var v = S[e.dataset.i18nHtml]; if (v != null) e.innerHTML = v; });
+  $$('[data-i18n-attr]').forEach(function (e) { e.dataset.i18nAttr.split(';').forEach(function (p) { var a = p.split(':'); if (S[a[1]]) e.setAttribute(a[0], S[a[1]]); }); });
+  D.title = S.title;
+  $('#wds').innerHTML = S['cal.wd'].split(',').map(function (x) { return '<div class="wd">' + x + '</div>'; }).join('');
+  $$('.seg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === l)); });
+  if (save) { try { localStorage.setItem('air-lang', l); } catch (e) {} }
+  layout();
+}
+$$('.seg button').forEach(function (b) { b.addEventListener('click', function () { setLang(b.dataset.lang, true); }); });
+
+/* ------------------------------------------------------------------ theme */
+var C = {};
+function readColors() {
+  var cs = getComputedStyle(root);
+  ['accent', 'line', 'text3', 'record', 'bg', 'text2'].forEach(function (k) { C[k] = cs.getPropertyValue('--' + k).trim(); });
+  var m = $('meta[name=theme-color]'); if (m) m.content = C.bg;
+  dirty = true;
+}
+$('#themeBtn').addEventListener('click', function () {
+  var t = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', t); try { localStorage.setItem('air-theme', t); } catch (e) {}
+  readColors();
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+  var stored = null; try { stored = localStorage.getItem('air-theme'); } catch (x) {}
+  if (!stored && !Q.get('theme')) { root.setAttribute('data-theme', e.matches ? 'dark' : 'light'); readColors(); }
+});
+
+/* ------------------------------------------------------------------ stage: sound -> words -> recap -> calendar */
+var track = $('#take'), stage = $('#stage'), cols = $('#cols'), trCard = $('#tr');
+var recapItems = $$('#colR .ri'), calItems = $$('#colC .ci'), headEls = $$('#heads h2'), stepEls = $$('#steps > span:not(.demo-tag)'), stepBars = $$('#steps b');
+var S = { w: 0, m: 0, r: 0, c: 0 }, cur = { w: -1, m: -1, r: -1, c: -1, ph: -1 }, scrub = false;
+function byId(ids) { return marks.filter(function (m) { return ids.indexOf(m.dataset.id) > -1; }); }
+function ping(el) { if (!scrub || !el.dataset.m) return; byId(el.dataset.m.split(' ')).forEach(function (m) { m.classList.remove('ping'); void m.offsetWidth; m.classList.add('ping'); }); }
+function render() {
+  var n, i;
+  n = Math.round(S.w * words.length);
+  if (n !== cur.w) { for (i = 0; i < words.length; i++) words[i].classList.toggle('on', i < n); cur.w = n; }
+  n = Math.round(S.m * marks.length);
+  if (n !== cur.m) { for (i = 0; i < marks.length; i++) marks[i].classList.toggle('lit', i < n); trCard.classList.toggle('marked', n > 0); cur.m = n; }
+  n = Math.round(S.r * recapItems.length);
+  if (n !== cur.r) { for (i = 0; i < recapItems.length; i++) { var was = recapItems[i].classList.contains('on'); recapItems[i].classList.toggle('on', i < n); if (!was && i < n && cur.r >= 0) ping(recapItems[i]); } cur.r = n; }
+  n = Math.round(S.c * calItems.length);
+  if (n !== cur.c) { for (i = 0; i < calItems.length; i++) { var on = i < n, w2 = calItems[i].classList.contains('on'); calItems[i].classList.toggle('on', on); days[calItems[i].dataset.day].classList.toggle('on', on); if (!w2 && on && cur.c >= 0) ping(calItems[i]); } cur.c = n; }
+}
+function stageFromP(p) {
+  S.w = clamp((p - 0.07) / 0.31); S.m = clamp((p - 0.41) / 0.11); S.r = clamp((p - 0.55) / 0.22); S.c = clamp((p - 0.81) / 0.13);
+  var ph = p < 0.07 ? 0 : p < 0.53 ? 1 : p < 0.79 ? 2 : 3;
+  if (ph !== cur.ph) {
+    headEls.forEach(function (h, i) { h.classList.toggle('on', i === ph); });
+    stepEls.forEach(function (s, i) { s.classList.toggle('on', i <= ph); });
+    $('#colR').classList.toggle('later', ph < 2); $('#colC').classList.toggle('later', ph < 3);
+    cur.ph = ph;
+  }
+  stepBars[0].style.setProperty('--f', clamp(p / 0.07)); stepBars[1].style.setProperty('--f', clamp((p - 0.07) / 0.46)); stepBars[2].style.setProperty('--f', clamp((p - 0.53) / 0.26));
+  render();
+}
+function tween(key, ms, done) {
+  var t0 = performance.now();
+  (function step(now) { var k = clamp((now - t0) / ms); S[key] = Math.max(S[key], k); render(); if (k < 1 && !scrub) requestAnimationFrame(step); else if (done) done(); })(t0);
+}
+var seen = {};
+var panelIO = 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+  es.forEach(function (e) {
+    if (!e.isIntersecting || scrub || seen[e.target.id]) return; seen[e.target.id] = 1;
+    if (e.target.id === 'colT') tween('w', 3200, function () { tween('m', 1400); });
+    if (e.target.id === 'colR') tween('r', 2200);
+    if (e.target.id === 'colC') tween('c', 1500);
+  });
+}, { threshold: 0.3 }) : null;
+function setMode() {
+  var want = innerWidth >= 1000 && innerHeight >= 640 && !RM.matches && !FLAT;
+  if (want !== scrub || cur.ph === -1) {
+    scrub = want; root.classList.toggle('scrub', scrub); cur.ph = -1;
+    if (!scrub) {
+      $('#colR').classList.remove('later'); $('#colC').classList.remove('later');
+      if (RM.matches || !panelIO || DEBUG) { S.w = S.m = S.r = S.c = 1; }
+      else { ['w', 'm', 'r', 'c'].forEach(function (k) { S[k] = 0; }); seen = {}; ['colT', 'colR', 'colC'].forEach(function (id) { panelIO.unobserve($('#' + id)); panelIO.observe($('#' + id)); }); }
+      cols.style.removeProperty('--k'); render();
+    }
+  }
+  if (scrub) {
+    cols.style.setProperty('--k', 1);
+    var avail = innerHeight - cols.getBoundingClientRect().top + stage.getBoundingClientRect().top - 16, need = cols.scrollHeight;
+    cols.style.setProperty('--k', Math.max(0.6, Math.min(1, avail / need)).toFixed(3));
+  }
+}
+
+/* ------------------------------------------------------------------ scroll bookkeeping: timer, tape, progress */
+var chapters = [], docMax = 1, frac = 0, dirty = true;
+function layout() {
+  setMode();
+  docMax = Math.max(1, D.documentElement.scrollHeight - innerHeight);
+  chapters = $$('[data-t]').map(function (el) { return { f: clamp((el.getBoundingClientRect().top + scrollY) / docMax), t: +el.dataset.t }; });
+  sizeCanvases(); onScroll();
+}
+function fmt(s) { s = Math.round(s); return (s < 600 ? '0' : '') + Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+var tnow = $('#tnow'), prog = $('#prog'), head = $('#head'), lastT = '';
+function onScroll() {
+  var y = scrollY; frac = clamp(y / docMax);
+  var t = 0;
+  for (var i = chapters.length - 1; i >= 0; i--) {
+    if (frac >= chapters[i].f) { var a = chapters[i], b = chapters[i + 1] || { f: 1.0001, t: a.t }; t = a.t + (b.t - a.t) * clamp((frac - a.f) / Math.max(1e-6, b.f - a.f)); break; }
+  }
+  var s = fmt(t); if (s !== lastT) { tnow.textContent = s; lastT = s; }
+  prog.style.transform = 'scaleX(' + frac.toFixed(4) + ')';
+  head.classList.toggle('scrolled', y > 8);
+  if (scrub) { var r = track.getBoundingClientRect(); stageFromP(clamp(-r.top / Math.max(1, r.height - innerHeight))); }
+  dirty = true;
+}
+var ticking = false;
+addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(function () { ticking = false; onScroll(); }); } }, { passive: true });
+var rz; addEventListener('resize', function () { clearTimeout(rz); rz = setTimeout(layout, 120); });
+RM.addEventListener('change', layout);
+
+/* ------------------------------------------------------------------ canvases: hero wave + the tape */
+var wave = $('#wave'), wctx = wave.getContext && wave.getContext('2d'), tape = $('#tape'), tctx = tape.getContext && tape.getContext('2d');
+var hero = $('#top'), recBtn = $('#rec'), W = 0, H = 0, TW = 0, TH = 0, dpr = 1, heroVisible = true, energy = 0.42, energyTo = 0.42, tapeSeed = [];
+function hash(k) { var x = Math.sin(k * 127.1 + 11.3) * 43758.5453; return x - Math.floor(x); }
+function noise(u) { var i = Math.floor(u), f = u - i; f = f * f * (3 - 2 * f); return hash(i) * (1 - f) + hash(i + 1) * f; }
+function sizeCanvases() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (wctx) { W = hero.clientWidth; H = hero.clientHeight; wave.width = W * dpr; wave.height = H * dpr; }
+  TW = tape.clientWidth; TH = innerHeight;
+  if (tctx && TW) { tape.width = TW * dpr; tape.height = TH * dpr; }
+  dirty = true;
+}
+function rr(ctx, x, y, w, h) { var r = Math.min(w, h) / 2; ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.fill(); }
+function drawWave(t) {
+  if (!wctx || !W) return;
+  var hb = hero.getBoundingClientRect(), b = recBtn.getBoundingClientRect(), bx = b.left + b.width / 2 - hb.left, cy = b.top + b.height / 2 - hb.top;
+  var small = W < 640, step = small ? 8 : 10, bw = small ? 3 : 4, maxA = (small ? 62 : 96) * energy, gap = b.width / 2 + 18, shift = t * (14 + energy * 46);
+  wctx.setTransform(dpr, 0, 0, dpr, 0, 0); wctx.clearRect(0, 0, W, H);
+  for (var x = bx % step; x < W; x += step) {
+    var dx = x - bx; if (Math.abs(dx) < gap) continue;
+    var u = (x + shift) / step, n = 0.62 * noise(u * 0.9) + 0.38 * noise(u * 0.23 + 40);
+    var env = Math.pow(Math.sin(Math.PI * clamp(x / W)), 0.55) * (0.55 + 0.45 * Math.sin(u * 0.07 + 1) * Math.sin(u * 0.07 + 1));
+    var h = 3 + maxA * 2 * env * (0.12 + 0.88 * n * n);
+    if (dx < 0) { wctx.globalAlpha = 0.9; wctx.fillStyle = C.accent; } else { wctx.globalAlpha = 0.55; wctx.fillStyle = C.text3; }
+    rr(wctx, x - bw / 2, cy - h / 2, bw, h);
+  }
+  wctx.globalAlpha = 1;
+}
+for (var i = 0; i < 400; i++) tapeSeed.push(0.15 + 0.85 * Math.pow(0.6 * noise(i * 0.31) + 0.4 * hash(i * 3.7), 1.5));
+function drawTape(t) {
+  if (!tctx || !TW) return;
+  var top = 84, bot = TH - 26, ax = TW - 26, live = !RM.matches, py = top + frac * (bot - top);
+  tctx.setTransform(dpr, 0, 0, dpr, 0, 0); tctx.clearRect(0, 0, TW, TH);
+  for (var y = top, i = 0; y <= bot; y += 5, i++) {
+    var len = 2 + tapeSeed[i % 400] * 13, d = Math.abs(y - py);
+    if (live && d < 44) len += (1 - d / 44) * 7 * (0.5 + 0.5 * Math.sin(t * 5 + i * 1.9));
+    tctx.fillStyle = y <= py ? C.accent : C.line;
+    rr(tctx, ax - len, y - 1.25, len * 2, 2.5);
+  }
+  tctx.font = '600 10.5px "Hanken Grotesk",system-ui,sans-serif'; tctx.textAlign = 'right'; tctx.textBaseline = 'middle';
+  chapters.forEach(function (c, idx) {
+    var y = top + c.f * (bot - top); if (idx && y - (top + chapters[idx - 1].f * (bot - top)) < 13) return;
+    tctx.fillStyle = c.f <= frac + 0.0005 ? C.text2 : C.text3; tctx.fillText(fmt(c.t), ax - 21, y);
+  });
+  tctx.fillStyle = C.record; rr(tctx, ax - 22, py - 1, 44, 2);
+  tctx.beginPath(); tctx.arc(ax, py, 5, 0, 6.2832); tctx.fill();
+}
+tape.addEventListener('click', function (e) { stopPlay(); var f = clamp((e.clientY - 84) / (innerHeight - 110)); scrollTo({ top: f * docMax, behavior: RM.matches ? 'auto' : 'smooth' }); });
+if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { heroVisible = es[0].isIntersecting; }).observe(hero);
+var t0 = performance.now();
+function frame(now) {
+  var t = (now - t0) / 1000;
+  energy += (energyTo - energy) * 0.06;
+  if (RM.matches) { if (dirty) { drawWave(3.2); drawTape(0); dirty = false; } }
+  else { if (heroVisible && !D.hidden) drawWave(t); if (TW && !D.hidden) drawTape(t); }
+  requestAnimationFrame(frame);
+}
+
+/* ------------------------------------------------------------------ press record: play the scripted demo by driving the scroll */
+var playing = false, playRaf = 0;
+function stopPlay() { if (!playing) return; playing = false; cancelAnimationFrame(playRaf); D.body.classList.remove('playing'); energyTo = 0.42; }
+function startPlay() {
+  if (playing) { stopPlay(); return; }
+  var from = scrollY, tTop = track.getBoundingClientRect().top + scrollY;
+  if (!scrub) { energyTo = 1; setTimeout(function () { energyTo = 0.42; }, 1600); scrollTo({ top: tTop - (parseInt(getComputedStyle(root).getPropertyValue('--head')) || 60) + 20, behavior: RM.matches ? 'auto' : 'smooth' }); return; }
+  var to = tTop + track.offsetHeight - innerHeight; if (from >= to - 4) from = 0;
+  playing = true; D.body.classList.add('playing'); energyTo = 1;
+  var lead = 900, dur = 1400 + (to - Math.max(from, tTop)) / (track.offsetHeight - innerHeight) * 19000, s0 = performance.now();
+  (function step(now) {
+    if (!playing) return;
+    var k = clamp((now - s0 - lead) / dur), e = k * 0.7 + (k * k * (3 - 2 * k)) * 0.3;
+    if (k > 0) scrollTo(0, from + (to - from) * e);
+    if (k < 1) playRaf = requestAnimationFrame(step); else stopPlay();
+  })(s0);
+}
+recBtn.addEventListener('click', startPlay);
+['wheel', 'touchmove'].forEach(function (ev) { addEventListener(ev, stopPlay, { passive: true }); });
+addEventListener('keydown', function (e) { if (['Escape', 'ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].indexOf(e.key) > -1 && D.activeElement !== recBtn) stopPlay(); });
+
+/* ------------------------------------------------------------------ reveal on scroll */
+if ('IntersectionObserver' in window && !RM.matches && !DEBUG) {
+  var rio = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); rio.unobserve(e.target); } }); }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+  $$('.rv').forEach(function (el, i) { el.style.transitionDelay = (el.classList.contains('plan') ? (i % 3) * 90 : el.classList.contains('vis') ? 120 : 0) + 'ms'; rio.observe(el); });
+} else $$('.rv').forEach(function (el) { el.classList.add('in'); });
+
+/* ------------------------------------------------------------------ boot (+ debug hooks: ?p=0..1 whole page, ?stage=0..1 inside the take) */
+readColors(); setLang(lang, false); requestAnimationFrame(frame);
+function boot() {
+  layout();
+  var p = Q.get('p'), st = Q.get('stage');
+  if (st != null) { var r = track.getBoundingClientRect(); scrollTo(0, r.top + scrollY + clamp(+st) * Math.max(0, r.height - innerHeight)); if (!scrub) { S.w = S.m = S.r = S.c = 1; seen = { colT: 1, colR: 1, colC: 1 }; render(); } }
+  else if (p != null) scrollTo(0, clamp(+p) * docMax);
+  onScroll();
+}
+if (D.fonts && D.fonts.ready) D.fonts.ready.then(boot);
+addEventListener('load', boot);
+})();
+</script>
+</body>
+</html>

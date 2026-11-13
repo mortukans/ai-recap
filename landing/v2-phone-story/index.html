@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI Recap — record a meeting, get the recap and the dates</title>
+<meta name="description" content="AI Recap for iPhone and Apple Watch records meetings and voice notes, transcribes them in Latvian and English, writes a structured recap and puts the dates on a calendar.">
+<meta name="theme-color" content="#F4F5F7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231B1D22'/%3E%3Crect x='17' y='25' width='5' height='14' rx='2.5' fill='%23E9A24A'/%3E%3Crect x='25' y='20' width='5' height='24' rx='2.5' fill='%23E9A24A'/%3E%3Crect x='33' y='16' width='5' height='32' rx='2.5' fill='%23E9A24A'/%3E%3Crect x='41' y='23' width='5' height='18' rx='2.5' fill='%23E9A24A'/%3E%3Ccircle cx='50' cy='41' r='2.6' fill='%23E0432F'/%3E%3C/svg%3E">
+<script>
+(function(){var d=document.documentElement,q=new URLSearchParams(location.search),t=q.get('theme'),s=null;
+try{s=localStorage.getItem('air-theme')}catch(e){}
+if(t!=='light'&&t!=='dark')t=(s==='light'||s==='dark')?s:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+d.setAttribute('data-theme',t);
+if(q.get('rm')==='1'||matchMedia('(prefers-reduced-motion: reduce)').matches)d.classList.add('rm');
+d.classList.add('js');})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..600;1,6..72,300..600&family=Hanken+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F4F5F7;--surface:#FFFFFF;--surface2:#EAECF0;--line:#E1E4E9;--text:#16181D;--text2:#656A73;--text3:#8A8F98;
+  --accent:#E9A24A;--accentText:#A8661A;--accentTint:#FBEFDC;--record:#E0432F;--pbg:#16181D;--ptext:#FFFFFF;
+  --blue:#3A6E9A;--danger:#C4372A;--sep:#C9CDD4;--wave2:#DCC6A2;--wave3:#D5D9E0;--selbg:#F6E2C0;--seltx:#8A4E12;
+  --navbg:rgba(255,255,255,.92);--tabon:#16181D;--tabontx:#FFFFFF;--mut:#C0C4CC;--dangerTint:#FBE9E6;--blueTint:#E6EEF5;
+  --shadow:0 8px 24px rgba(22,24,29,.06);--shadow2:0 12px 32px rgba(22,24,29,.12);--recsh:rgba(224,67,47,.30);
+  --device:#0E0F12;--devring:rgba(22,24,29,.18);--halo:rgba(233,162,74,.22);--hdr:rgba(244,245,247,.82);
+  --serif:'Newsreader',Georgia,'Times New Roman',serif;--sans:'Hanken Grotesk','Helvetica Neue',system-ui,-apple-system,sans-serif;
+}
+html[data-theme=dark]{
+  --bg:#15171B;--surface:#1D2025;--surface2:#262A30;--line:#2E333A;--text:#F1EDE6;--text2:#A6A29B;--text3:#86827B;
+  --accentText:#E9A24A;--accentTint:#2A2418;--record:#F2543F;--pbg:#F1EDE6;--ptext:#15171B;
+  --blue:#8FB7D6;--danger:#F2543F;--sep:#3A3F47;--wave2:#6B5A3C;--wave3:#3A3F47;--selbg:#3A2E17;--seltx:#E9A24A;
+  --navbg:rgba(29,32,37,.96);--tabon:#262A30;--tabontx:#F1EDE6;--mut:#4A4F57;--dangerTint:#33201D;--blueTint:#1F2A33;
+  --shadow:0 8px 24px rgba(0,0,0,.28);--shadow2:0 12px 32px rgba(0,0,0,.45);--recsh:rgba(242,84,63,.35);
+  --device:#08090B;--devring:rgba(241,237,230,.16);--halo:rgba(233,162,74,.14);--hdr:rgba(21,23,27,.82);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+html.rm{scroll-behavior:auto}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:clip}
+a{color:inherit}
+button{font:inherit;color:inherit;cursor:pointer}
+h1,h2,h3,p{margin:0}
+.serif{font-family:var(--serif);font-weight:500;letter-spacing:-.02em}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+
+/* ---------- header ---------- */
+.hdr{position:fixed;inset:0 0 auto 0;z-index:100;height:60px;background:var(--hdr);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .3s}
+.hdr.scrolled{border-bottom-color:var(--line)}
+.hdr .wrap{height:100%;display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:700;font-size:17px;letter-spacing:-.01em;margin-right:auto}
+.brand svg{display:block;border-radius:8px}
+.seg{display:flex;padding:3px;border-radius:12px;background:var(--surface2)}
+.seg button{border:0;background:transparent;height:30px;min-width:38px;padding:0 9px;border-radius:9px;font-size:13px;font-weight:600;color:var(--text2)}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--text);box-shadow:0 2px 6px rgba(22,24,29,.10)}
+.icobtn{width:36px;height:36px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:grid;place-items:center;color:var(--text)}
+.icobtn .moon{display:none}html[data-theme=dark] .icobtn .moon{display:block}html[data-theme=dark] .icobtn .sun{display:none}
+.getbtn{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 14px;border-radius:18px;background:var(--pbg);color:var(--ptext);font-size:14px;font-weight:600;text-decoration:none}
+@media (max-width:520px){.getbtn{display:none}.wrap{padding:0 18px}}
+
+/* ---------- story ---------- */
+.story{position:relative;height:700vh;height:calc(100svh + 605svh)}
+.stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:grid;grid-template-columns:minmax(0,470px) auto 150px;grid-template-areas:"copy phone rail";column-gap:72px;justify-content:center;align-items:center;padding:60px 32px 0}
+.intro,.caps{grid-area:copy}
+.caps{position:relative;height:460px}
+.phone-area{grid-area:phone;position:relative;display:grid;place-items:center}
+.glow{position:absolute;left:50%;top:50%;width:150%;aspect-ratio:1;transform:translate(-50%,-50%);background:radial-gradient(circle,var(--halo) 0%,transparent 62%);pointer-events:none}
+.rail{grid-area:rail}
+
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--accentText);background:var(--accentTint);padding:6px 12px;border-radius:999px}
+.intro{position:relative;z-index:2}
+.intro h1{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:clamp(44px,5.2vw,72px);line-height:1.02;margin:22px 0 20px;text-wrap:balance}
+.intro p.lead{font-size:19px;line-height:1.5;color:var(--text2);max-width:440px;text-wrap:pretty}
+.intro .ctas{display:flex;flex-wrap:wrap;align-items:center;gap:14px 20px;margin-top:30px}
+.hint{display:flex;align-items:center;gap:10px;margin-top:38px;font-size:14px;color:var(--text2)}
+.hint i{width:22px;height:34px;border-radius:12px;border:1.5px solid var(--text3);position:relative;flex:none}
+.hint i::after{content:"";position:absolute;left:50%;top:6px;width:4px;height:7px;margin-left:-2px;border-radius:2px;background:var(--record);animation:wheel 1.8s ease-in-out infinite}
+@keyframes wheel{0%{transform:translateY(0);opacity:1}70%{transform:translateY(11px);opacity:0}100%{transform:translateY(0);opacity:0}}
+
+.badge{display:inline-flex;align-items:center;gap:11px;height:54px;padding:0 20px 0 16px;border-radius:14px;background:var(--pbg);color:var(--ptext);text-decoration:none;transition:transform .2s}
+.badge:hover{transform:translateY(-2px)}
+.badge span{display:flex;flex-direction:column;line-height:1.1}
+.badge small{font-size:11px;font-weight:500;opacity:.8}
+.badge b{font-size:20px;font-weight:600;letter-spacing:-.01em}
+.sub-note{font-size:13px;color:var(--text3)}
+
+.cap{position:absolute;left:0;right:0;top:50%;opacity:0;visibility:hidden;will-change:transform,opacity}
+.cap .num{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--text2);letter-spacing:.02em}
+.cap .num b{font-family:var(--serif);font-weight:500;font-size:22px;color:var(--accentText);letter-spacing:-.02em}
+.cap .num em{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ptext);background:var(--record);padding:3px 8px;border-radius:999px}
+.cap h2{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:clamp(34px,3.7vw,50px);line-height:1.06;margin:14px 0 16px;text-wrap:balance}
+.cap p{font-size:18px;line-height:1.55;color:var(--text2);max-width:440px;text-wrap:pretty}
+.cap ul{list-style:none;margin:20px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.cap li{font-size:13px;font-weight:600;color:var(--text);background:var(--surface);border:1px solid var(--line);padding:6px 12px;border-radius:999px}
+
+.rail{display:flex;flex-direction:column;gap:6px;transition:opacity .4s}
+.rs{--f:0;display:flex;align-items:center;gap:12px;border:0;background:none;padding:7px 0;text-align:left;color:var(--text3);font-size:13px;font-weight:600}
+.rs .trk{width:3px;height:30px;border-radius:2px;background:var(--line);overflow:hidden;flex:none}
+.rs .trk i{display:block;width:100%;height:100%;background:var(--accent);transform-origin:0 0;transform:scaleY(var(--f))}
+.rs .n{font-family:var(--serif);font-weight:500;font-size:15px;width:20px}
+.rs.on{color:var(--text)}.rs.on .n{color:var(--accentText)}.rs.done{color:var(--text2)}
+.rs:hover{color:var(--text)}
+
+/* phone */
+.phone-wrap{--s:.8;width:calc(410px*var(--s));height:calc(864px*var(--s));position:relative;will-change:transform}
+.phone{position:absolute;left:0;top:0;width:410px;height:864px;transform:scale(var(--s));transform-origin:0 0;padding:10px;border-radius:58px;background:var(--device);box-shadow:0 0 0 1.5px var(--devring),0 40px 90px rgba(10,12,16,.28),0 12px 28px rgba(10,12,16,.16);font-size:15px;line-height:1.4;user-select:none;-webkit-user-select:none}
+.phone::before,.phone::after{content:"";position:absolute;width:4px;border-radius:2px;background:var(--device);box-shadow:0 0 0 1px var(--devring)}
+.phone::before{left:-4px;top:190px;height:64px}.phone::after{right:-4px;top:250px;height:96px}
+.screen{position:relative;width:390px;height:844px;border-radius:48px;overflow:hidden;background:var(--bg);color:var(--text);isolation:isolate}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);will-change:transform,opacity}
+.sbar{position:absolute;left:0;right:0;top:0;height:54px;z-index:40;display:flex;align-items:center;justify-content:space-between;padding:8px 30px 0 40px;font-size:16px;font-weight:600;color:var(--text);pointer-events:none}
+.sbar .ic{display:flex;align-items:center;gap:6px}
+.island{position:absolute;z-index:60;top:11px;left:50%;height:35px;width:122px;margin-left:-61px;border-radius:18px;background:#000;overflow:hidden}
+.island .in{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 12px;color:#F2543F;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mini{display:flex;align-items:center;gap:2px;height:14px}
+.mini i{width:2.5px;height:14px;border-radius:2px;background:#E9A24A;transform-origin:center;animation:bar 1.1s ease-in-out infinite}
+.mini i:nth-child(2){animation-delay:.2s}.mini i:nth-child(3){animation-delay:.45s}.mini i:nth-child(4){animation-delay:.1s}.mini i:nth-child(5){animation-delay:.6s}
+@keyframes bar{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+.homebar{position:absolute;z-index:61;left:50%;bottom:8px;width:134px;height:5px;margin-left:-67px;border-radius:3px;background:var(--text);opacity:.85}
+.tap{position:absolute;z-index:70;left:0;top:0;width:54px;height:54px;border-radius:50%;background:rgba(233,162,74,.28);border:2px solid var(--accent);box-shadow:0 0 0 8px rgba(233,162,74,.12);opacity:0;pointer-events:none;will-change:transform,opacity}
+
+/* home */
+.s-home{padding:62px 20px 0;gap:20px;z-index:1}
+.h-top{display:flex;align-items:flex-end;justify-content:space-between}
+.muted13{font-size:13px;color:var(--text2)}
+.h-title{font-family:var(--serif);font-weight:500;font-size:40px;line-height:1;letter-spacing:-.02em;margin-top:2px}
+.h-stat{text-align:right;padding-bottom:4px}.h-stat b{display:block;font-family:var(--serif);font-weight:400;font-size:24px;line-height:1;color:var(--accentText)}.h-stat span{font-size:12px;color:var(--text2)}
+.field{display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-size:15px;color:var(--text3);flex:none}
+.grp{display:flex;flex-direction:column}
+.grp>.lbl{font-size:13px;font-weight:600;color:var(--text2);padding:0 2px 2px}
+.item{display:flex;flex-direction:column;gap:6px;padding:13px 4px;border-bottom:1px solid var(--line)}
+.item b{font-size:17px;font-weight:500;line-height:1.3}
+.item div{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+.item div span:first-child{font-weight:600;color:var(--text)}.item div span:last-child{margin-left:auto}
+.nav{position:absolute;left:16px;right:16px;bottom:30px;display:flex;align-items:center;gap:12px}
+.nav .bar{flex:1;display:flex;height:60px;padding:6px;background:var(--navbg);border:1px solid var(--line);border-radius:30px;box-shadow:var(--shadow2)}
+.nav .tab{flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:24px;color:var(--text2);font-size:10px;font-weight:500}
+.nav .tab.on{background:var(--tabon);color:var(--tabontx);font-weight:600}.nav .tab.on svg{stroke:#E9A24A}
+.recbtn{position:relative;width:60px;height:60px;flex:none;border-radius:30px;background:var(--record);display:grid;place-items:center;box-shadow:0 12px 32px var(--recsh)}
+.recbtn::before{content:"";position:absolute;inset:0;border-radius:50%;border:2px solid var(--record);animation:ring 2.2s ease-out infinite}
+@keyframes ring{0%{transform:scale(1);opacity:.5}100%{transform:scale(1.7);opacity:0}}
+.flood{position:absolute;z-index:2;width:60px;height:60px;border-radius:50%;background:var(--record);opacity:0;will-change:transform}
+
+/* recording */
+.s-rec{padding:62px 20px 34px;z-index:3;opacity:0;visibility:hidden}
+.r-halo{position:absolute;left:35px;top:300px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,var(--halo) 0%,transparent 70%);animation:halo 3s ease-in-out infinite}
+@keyframes halo{0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.1);opacity:1}}
+.r-top{position:relative;display:flex;align-items:center;justify-content:space-between}
+.r-live{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--record)}
+.r-live i{width:8px;height:8px;border-radius:50%;background:var(--record);animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.r-ctx{display:flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:18px;background:var(--accentTint);color:var(--accentText);font-size:13px;font-weight:600}
+.r-mid{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px}
+.r-time{font-family:var(--serif);font-weight:300;font-size:104px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums;text-align:center}
+.r-wave{width:350px;height:120px;display:flex;align-items:center;justify-content:center;gap:4px;overflow:hidden}
+.r-wave i{width:4px;border-radius:2px;background:var(--accent);transform-origin:center;animation:wv 1.1s ease-in-out infinite}
+.r-wave i.dim{background:var(--wave2)}
+@keyframes wv{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+.r-meta{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--text2)}
+.r-meta i{width:4px;height:4px;border-radius:50%;background:var(--sep)}
+.r-btns{position:relative;display:flex;gap:12px}
+.r-btns div{height:64px;border-radius:32px;display:flex;align-items:center;justify-content:center;gap:10px;font-size:17px;font-weight:600}
+.r-pause{flex:1 1 0;background:var(--surface);border:1px solid var(--line)}
+.r-fin{flex:1.4 1 0;background:var(--pbg);color:var(--ptext);box-shadow:0 12px 32px rgba(22,24,29,.2)}
+
+/* lock screen */
+.lock{position:absolute;inset:0;z-index:45;opacity:0;visibility:hidden;color:#fff;background:radial-gradient(ellipse 90% 50% at 50% 100%,#3a2a14 0%,transparent 70%),linear-gradient(180deg,#0b0c0f 0%,#17181c 60%,#1d1a16 100%);display:flex;flex-direction:column;align-items:center;padding-top:76px}
+.lock .sbar{color:#fff}
+.lock .l-date{font-size:19px;font-weight:600;opacity:.85;margin-top:14px}
+.lock .l-time{font-size:96px;font-weight:600;line-height:1;letter-spacing:-.03em;margin-top:2px}
+.lock .l-note{display:flex;align-items:center;gap:7px;margin-top:auto;margin-bottom:14px;font-size:13px;font-weight:500;color:rgba(255,255,255,.6)}
+.la{width:358px;margin-bottom:46px;padding:16px;border-radius:28px;background:rgba(0,0,0,.72);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;gap:14px}
+.la .ico{width:44px;height:44px;border-radius:11px;background:#1B1D22;display:grid;place-items:center;flex:none}
+.la .tx{flex:1;min-width:0}
+.la .tx small{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#F2543F}
+.la .tx small i{width:6px;height:6px;border-radius:50%;background:#F2543F;animation:blink 1.6s ease-in-out infinite}
+.la .tx b{display:block;font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.05;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.la .cb{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.14);flex:none}
+.la .cb.stop{background:#F1EDE6;color:#15171B}
+
+/* detail */
+.s-det{padding:58px 20px 0;gap:16px;z-index:4;visibility:hidden}
+.d-hd{display:flex;align-items:center;justify-content:space-between;height:44px;flex:none}
+.d-hd span{display:flex;gap:20px}
+.d-title{font-family:var(--serif);font-weight:500;font-size:29px;line-height:1.12;letter-spacing:-.015em;text-wrap:pretty}
+.d-meta{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-top:10px}
+.d-meta i{width:3px;height:3px;border-radius:50%;background:var(--sep)}
+.pill{margin-left:auto;padding:4px 10px;border-radius:12px;background:var(--accentTint);color:var(--accentText);font-weight:600;font-size:12px;white-space:nowrap}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.d-player{padding:12px 16px;display:flex;flex-direction:column;gap:8px;flex:none}
+.d-player .row{display:flex;align-items:center;gap:14px}
+.playbtn{width:44px;height:44px;border-radius:50%;background:var(--pbg);color:var(--ptext);display:grid;place-items:center;flex:none}
+.playbtn .pa{display:none}.playing-on .playbtn .pa{display:block}.playing-on .playbtn .pl{display:none}
+.d-wave{flex:1;height:40px;display:flex;align-items:center;gap:3px;overflow:hidden}
+.d-wave i{width:3px;border-radius:2px;background:var(--wave3);flex:none;transition:background .3s}
+.d-wave i.p{background:var(--accent)}
+.d-times{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums}
+.d-times b{color:var(--text);font-weight:600}
+.d-tabs{position:relative;display:flex;height:40px;padding:3px;border-radius:12px;background:var(--surface2);flex:none}
+.d-tabs .sl{position:absolute;left:3px;top:3px;bottom:3px;width:calc((100% - 6px)/3);border-radius:9px;background:var(--surface);box-shadow:0 2px 6px rgba(22,24,29,.10)}
+.d-tabs span{position:relative;flex:1 1 0;display:grid;place-items:center;font-size:14px;font-weight:500;color:var(--text2);transition:color .2s}
+.d-tabs span.on{color:var(--text);font-weight:600}
+.d-body{position:relative;flex:1;min-height:0;margin:-10px -20px 0;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 14px);mask-image:linear-gradient(180deg,transparent 0,#000 14px)}
+.pane{position:absolute;left:20px;right:20px;top:12px;will-change:transform,opacity}
+.d-fade{position:absolute;left:0;right:0;bottom:0;height:120px;z-index:3;background:linear-gradient(180deg,transparent 0%,var(--bg) 62%);display:flex;align-items:flex-end;justify-content:center;padding-bottom:34px;pointer-events:none}
+.regen{height:46px;padding:0 20px;border-radius:24px;border:1px solid var(--line);background:var(--navbg);font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:var(--shadow2)}
+.proc{position:absolute;left:20px;right:20px;top:36px;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
+.proc .mini{height:26px;gap:4px}.proc .mini i{width:5px;height:26px;border-radius:3px}
+.proc b{font-family:var(--serif);font-weight:500;font-size:24px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.proc .pb{width:220px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.proc .pb i{display:block;height:100%;width:100%;border-radius:2px;background:linear-gradient(90deg,#E9A24A,#F6CE8E,#E9A24A);background-size:160px 100%;animation:shim 1.6s linear infinite;transform-origin:0 0;transform:scaleX(0)}
+@keyframes shim{from{background-position:-160px 0}to{background-position:160px 0}}
+.proc>span{font-size:13px;color:var(--text2)}
+/* transcript */
+.t-tools{display:flex;gap:8px;margin-bottom:18px}
+.t-tools .field{flex:1;height:40px;border-radius:12px;font-size:14px;padding:0 12px}
+.t-spk{height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.t-spk i{width:8px;height:8px;border-radius:50%;background:var(--accent)}.t-spk i+i{background:var(--blue);margin-left:-10px;box-shadow:0 0 0 2px var(--surface)}
+.tl{display:flex;gap:12px;margin-bottom:20px}
+.tl .ts{width:44px;flex:none;font-size:12px;color:var(--text2);font-variant-numeric:tabular-nums;padding-top:3px;display:flex;flex-direction:column;gap:6px;transition:color .2s}
+.tl .ts .mini{height:10px;opacity:0;transition:opacity .2s}.tl .ts .mini i{width:2px;height:10px}
+.tl .bx{flex:1;padding:10px 12px;margin:-10px -12px;border-radius:14px;transition:background .3s}
+.tl .who{font-size:12px;font-weight:600;color:var(--accentText);margin-bottom:4px}
+.tl .who.s2{color:var(--blue)}
+.tl p{font-size:16px;line-height:1.5}
+.tl.playing .bx{background:var(--accentTint)}.tl.playing .ts{color:var(--text);font-weight:600}.tl.playing .ts .mini{opacity:1}
+.w{opacity:0;transition:opacity .22s}.w.on{opacity:1}
+/* summary */
+.sum{font-family:var(--serif);font-size:20px;line-height:1.4;text-wrap:pretty;margin-bottom:18px}
+.sec-l{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.bul{display:flex;gap:12px;font-size:15px;line-height:1.4;margin-bottom:10px}
+.bul::before{content:"";width:6px;height:6px;margin-top:7px;flex:none;border-radius:50%;background:var(--accent)}
+.task{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--line);font-size:15px;line-height:1.35;margin-bottom:8px}
+.task svg{flex:none}
+.task .tt{transition:color .25s}
+.task small{display:block;font-size:12px;color:var(--text2);margin-top:2px}
+.task.done .tt{color:var(--text2);text-decoration:line-through;text-decoration-color:var(--sep)}
+.gap18{height:10px}
+.dstat{font-weight:600;color:var(--accentText);display:inline-grid}
+.dstat>*{grid-area:1/1;text-align:right;transition:opacity .25s}
+.drow{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--line);margin-bottom:8px;transition:border-color .25s,box-shadow .25s,opacity .25s}
+.drow .tile{width:42px;height:44px;border-radius:10px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--accentTint);color:var(--accentText)}
+.drow .tile small{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1}
+.drow .tile b{font-family:var(--serif);font-weight:500;font-size:20px;line-height:1.05}
+.drow.dl .tile{background:var(--dangerTint);color:var(--danger)}.drow.mn .tile{background:var(--blueTint);color:var(--blue)}
+.drow .dx{min-width:0;flex:1}
+.drow .dx b{display:block;font-size:15px;font-weight:500;line-height:1.25}
+.drow .dx span{font-size:12px;color:var(--text2)}
+.drow.hl{border-color:var(--accent);box-shadow:0 0 0 3px rgba(233,162,74,.22),var(--shadow2)}
+.drow.ghost{opacity:.38;border-style:dashed}
+.chip{position:absolute;z-index:65;left:0;top:0;margin:0;visibility:hidden;transform-origin:33px 50%;border-color:var(--accent);box-shadow:0 0 0 3px rgba(233,162,74,.22),var(--shadow2);will-change:transform,opacity}
+
+/* calendar */
+.s-cal{padding:62px 20px 0;gap:16px;z-index:5;opacity:0;visibility:hidden}
+.c-seg{display:flex;gap:2px;padding:3px;border-radius:12px;background:var(--surface2)}
+.c-seg i{width:34px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--text3)}
+.c-seg i.on{background:var(--surface);color:var(--accentText);box-shadow:0 2px 6px rgba(22,24,29,.10)}
+.c-card{padding:16px 14px 14px;flex:none}
+.c-m{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.c-m>div{display:flex;align-items:center;gap:8px;color:var(--text2)}
+.c-m b{font-family:var(--serif);font-weight:400;font-size:21px;line-height:1;letter-spacing:-.01em;color:var(--text)}
+.c-today{font-size:13px;font-weight:600;color:var(--accentText);padding:6px 12px;border-radius:999px;background:var(--accentTint)}
+.c-wk,.c-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.c-wk{margin-bottom:4px}.c-wk span{text-align:center;font-size:11px;font-weight:600;color:var(--text3)}
+.c-grid{row-gap:2px}
+.cell{position:relative;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.cell .n{font-size:14px;font-weight:500;width:28px;height:28px;display:grid;place-items:center;border-radius:50%;border:1.5px solid transparent;transition:background .25s,color .25s,border-color .25s}
+.cell .n.mut{color:var(--mut);font-weight:400}
+.cell .n.today{border-color:var(--text)}
+.cell .n.sel{background:var(--selbg);color:var(--seltx);font-weight:600;border-color:var(--accentText)}
+.cell .ds{display:flex;gap:3px;height:5px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--accent)}.dot.dl{background:var(--danger)}.dot.mn{background:var(--blue)}
+.cell .rp{position:absolute;left:50%;top:50%;width:34px;height:34px;margin:-19px 0 0 -17px;border-radius:50%;border:2px solid var(--accent);opacity:0;pointer-events:none}
+.c-leg{display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:var(--text2)}
+.c-leg span{display:flex;align-items:center;gap:6px}.c-leg .dot{width:7px;height:7px}
+.c-day{position:relative;height:120px}
+.c-day>div{position:absolute;left:0;right:0;top:0}
+.c-day .dl2{font-size:13px;font-weight:600;color:var(--text2);margin:2px 2px 0}
+.ev{display:flex;align-items:center;gap:11px;padding:11px 2px;border-bottom:1px solid var(--line);font-size:15px;font-weight:500}
+.ev .dot{width:9px;height:9px;flex:none}.ev b{flex:1;font-weight:500;line-height:1.25}.ev span{font-size:13px;font-weight:400;color:var(--text2);white-space:nowrap}
+.scrim{position:absolute;inset:0;z-index:6;background:#0b0c0f;opacity:0;visibility:hidden}
+.sheet{position:absolute;z-index:7;left:0;right:0;bottom:0;padding:10px 20px 38px;border-radius:30px 30px 0 0;background:var(--surface);box-shadow:0 -12px 40px rgba(10,12,16,.22);visibility:hidden;will-change:transform}
+.sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--sep);margin:0 auto 16px}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--accentText);background:var(--accentTint);padding:4px 10px;border-radius:999px}
+.sheet h4{margin:10px 0 4px;font-family:var(--serif);font-weight:500;font-size:26px;line-height:1.12;letter-spacing:-.015em}
+.sheet .when{font-size:15px;color:var(--text2)}
+.sheet .src{display:flex;align-items:center;gap:10px;margin:14px 0 16px;padding:11px 12px;border-radius:14px;background:var(--bg);font-size:13px;color:var(--text2)}
+.sheet .src b{color:var(--text);font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sheet .rl{font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.opts span{height:36px;padding:0 13px;border-radius:18px;border:1px solid var(--line);font-size:13px;font-weight:500;display:flex;align-items:center;color:var(--text2);transition:background .2s,color .2s,border-color .2s}
+.opts span.on{background:var(--accentTint);border-color:var(--accent);color:var(--accentText);font-weight:600}
+.addbtn{position:relative;height:54px;border-radius:27px;background:var(--pbg);color:var(--ptext);font-size:16px;font-weight:600;display:grid;place-items:center;transition:background .3s,color .3s}
+.addbtn>span{grid-area:1/1;display:flex;align-items:center;gap:9px;transition:opacity .25s,transform .25s}
+.addbtn .b2{opacity:0;transform:translateY(8px)}
+.addbtn.done{background:var(--accentTint);color:var(--accentText)}
+.addbtn.done .b1{opacity:0;transform:translateY(-8px)}.addbtn.done .b2{opacity:1;transform:none}
+
+/* ---------- static (reduced motion) ---------- */
+.static-list{display:none}
+.story.static{height:auto}
+.story.static .stage{position:relative;height:auto;display:block;padding:clamp(84px,12vw,120px) 24px 20px;max-width:760px;margin:0 auto;overflow:visible}
+.story.static .intro{position:static}
+.story.static .phone-area,.story.static .rail,.story.static .caps,.story.static .hint{display:none}
+.story.static .static-list{display:block;max-width:980px;margin:0 auto;padding:20px 24px 40px}
+.st-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:56px;align-items:center;padding:44px 0;border-top:1px solid var(--line)}
+.st-row .cap{position:static;opacity:1;visibility:visible;transform:none}
+@media (max-width:760px){.st-row{grid-template-columns:1fr;gap:26px;justify-items:center}.st-row .cap{justify-self:start}}
+html.rm *,html.rm *::before,html.rm *::after{animation:none!important;transition:none!important}
+
+/* ---------- lower sections ---------- */
+section.blk{padding:110px 0}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accentText)}
+.blk h2{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:clamp(34px,4.2vw,54px);line-height:1.06;margin:14px 0 0;max-width:760px;text-wrap:balance}
+.blk .lede{font-size:19px;color:var(--text2);max-width:600px;margin-top:18px;text-wrap:pretty}
+.that{padding:90px 0 20px;text-align:center}
+.that p{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;font-size:clamp(28px,3.6vw,44px);line-height:1.15;max-width:820px;margin:0 auto;text-wrap:balance}
+.that p em{font-style:italic;color:var(--accentText)}
+.flow{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 6px;margin-top:30px;font-size:14px;font-weight:600;color:var(--text2)}
+.flow span{display:flex;align-items:center;gap:6px}
+.flow span:not(:last-child)::after{content:"→";color:var(--text3);margin-left:6px}
+.flow b{color:var(--text);font-weight:600;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+.feats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:48px}
+.feat{padding:26px;display:flex;flex-direction:column;gap:22px;overflow:hidden}
+.feat h3{font-family:var(--serif);font-weight:500;font-size:27px;line-height:1.12;letter-spacing:-.02em}
+.feat p{color:var(--text2);font-size:16px;margin-top:8px;text-wrap:pretty}
+.viz{min-height:170px;border-radius:14px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:14px;padding:16px;overflow:hidden;font-size:13px}
+.watch{position:relative;width:104px;height:126px;border-radius:30px;background:#000;border:4px solid #2A2D33;box-shadow:0 0 0 2px #111;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:#F1EDE6;font-size:11px;font-weight:600;flex:none}
+.watch::before,.watch::after{content:"";position:absolute;left:18px;right:18px;height:30px;background:var(--surface2);border:1px solid var(--line)}
+.watch::before{bottom:calc(100% + 4px);border-radius:10px 10px 0 0;border-bottom:0}.watch::after{top:calc(100% + 4px);border-radius:0 0 10px 10px;border-top:0}
+.watch i{width:46px;height:46px;border-radius:50%;background:#F2543F;display:grid;place-items:center}
+.watch small{font-size:9px;font-weight:500;color:#A6A29B}
+.handoff{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text2);font-size:12px;font-weight:600;text-align:center;max-width:110px}
+.handoff svg{color:var(--accent)}
+.miniphone{width:66px;height:126px;border-radius:16px;background:var(--surface);border:3px solid var(--device);display:flex;flex-direction:column;justify-content:center;gap:6px;padding:9px;flex:none}
+.miniphone i{height:5px;border-radius:3px;background:var(--surface2)}.miniphone i:first-child{background:var(--accent);width:70%}.miniphone i:nth-child(3){width:80%}.miniphone i:nth-child(5){width:55%}
+.chips{flex-wrap:wrap;align-content:center;gap:8px}
+.chips span{padding:7px 13px;border-radius:999px;background:var(--surface);border:1px solid var(--line);font-weight:600;color:var(--text2)}
+.chips span.on{background:var(--accentTint);border-color:var(--accent);color:var(--accentText)}
+.chips span.add{border-style:dashed;color:var(--text)}
+.qa{flex-direction:column;align-items:stretch;justify-content:center;gap:10px}
+.qa .q{align-self:flex-end;max-width:85%;padding:9px 14px;border-radius:16px 16px 4px 16px;background:var(--pbg);color:var(--ptext);font-weight:500;font-size:14px}
+.qa .a{align-self:flex-start;max-width:92%;padding:10px 14px;border-radius:16px 16px 16px 4px;background:var(--surface);border:1px solid var(--line);font-size:14px;line-height:1.45}
+.qa .cite{display:inline-flex;align-items:center;gap:5px;margin-left:6px;padding:2px 8px;border-radius:999px;background:var(--accentTint);color:var(--accentText);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.share{gap:20px}
+.doc{width:150px;padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:7px;flex:none}
+.doc b{font-family:var(--serif);font-weight:500;font-size:14px;line-height:1.1}
+.doc i{height:5px;border-radius:3px;background:var(--surface2)}
+.doc .ck{display:flex;align-items:center;gap:6px}.doc .ck::before{content:"";width:9px;height:9px;border-radius:3px;border:1.5px solid var(--text3);flex:none}.doc .ck.y::before{background:var(--accent);border-color:var(--accent)}.doc .ck i{flex:1}
+.dest{display:flex;flex-direction:column;gap:7px}
+.dest span{white-space:nowrap;padding:5px 12px;border-radius:9px;background:var(--surface);border:1px solid var(--line);font-weight:600;color:var(--text)}
+.priv{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:40px;align-items:center;padding:52px;border-radius:28px;background:var(--pbg);color:var(--ptext)}
+.priv .kicker{color:var(--accent)}
+.priv h2{margin-top:12px}
+.priv .lede{color:inherit;opacity:.72}
+.priv ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.priv li{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:16px;background:rgba(128,128,128,.16);font-weight:600;font-size:16px}
+.priv li svg{color:var(--accent);flex:none}
+.plans{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:48px}
+.plan{padding:28px 26px;display:flex;flex-direction:column;gap:6px}
+.plan.hi{border-color:var(--accent);box-shadow:0 0 0 3px rgba(233,162,74,.18),var(--shadow)}
+.plan h3{font-size:16px;font-weight:600;color:var(--text2)}
+.plan .pr{font-family:var(--serif);font-weight:500;font-size:46px;line-height:1.1;letter-spacing:-.02em}
+.plan .pr small{font-family:var(--sans);font-size:14px;font-weight:500;color:var(--text2);letter-spacing:0;margin-left:6px}
+.plan ul{list-style:none;margin:18px 0 0;padding:18px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px;font-size:15px}
+.plan li{display:flex;gap:10px;align-items:flex-start}
+.plan li::before{content:"";width:16px;height:16px;flex:none;margin-top:4px;background:var(--accentText);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5L20 7'/%3E%3C/svg%3E") center/contain no-repeat}
+.fine{font-size:13px;color:var(--text3);margin-top:20px}
+.final{text-align:center;padding:120px 0 130px}
+.final .mark{display:inline-block;border-radius:22px;box-shadow:var(--shadow2)}
+.final h2{margin:28px auto 0}
+.final .lede{margin:16px auto 30px}
+footer{border-top:1px solid var(--line);padding:28px 0 40px;font-size:14px;color:var(--text2)}
+footer .wrap{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center}
+footer a{text-decoration:none}footer a:hover{color:var(--text);text-decoration:underline}
+footer .sp{margin-right:auto}
+html.js:not(.rm) .rv{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+html.js:not(.rm) .rv.in{opacity:1;transform:none}
+
+/* ---------- mobile stage ---------- */
+@media (max-width:1180px){.stage{grid-template-columns:minmax(0,440px) auto 26px;column-gap:48px}.rs .n,.rs .l{display:none}}
+@media (max-width:860px){
+  .stage{display:flex;flex-direction:column;align-items:stretch;padding:66px 20px 0}
+  .rail{flex-direction:row;gap:5px;height:16px;flex:none;opacity:calc(1 - var(--intro,0))}
+  .rs{flex:1;padding:6px 0}
+  .rs .trk{width:100%;height:3px}.rs .trk i{transform:scaleX(var(--f))}
+  .phone-area{order:2;flex:1;min-height:0;align-items:start;padding-top:6px}
+  .caps{order:3;flex:none;height:190px}
+  .cap{top:0}
+  .cap .num{font-size:12px}.cap .num b{font-size:18px}
+  .cap h2{font-size:25px;margin:5px 0 7px;line-height:1.1}
+  .cap p{font-size:14.5px;line-height:1.45;max-width:none}
+  .cap ul{display:none}
+  .intro{position:absolute;left:20px;right:20px;top:70px}
+  .intro h1{font-size:clamp(34px,10.4vw,44px);margin:14px 0 12px}
+  .intro p.lead{font-size:15.5px;line-height:1.45}
+  .intro .ctas{margin-top:18px}
+  .badge{height:48px}.badge b{font-size:18px}
+  .hint{margin-top:16px;font-size:13px}
+  .glow{width:210%}
+  section.blk{padding:72px 0}
+  .feats,.plans,.priv{grid-template-columns:1fr}
+  .priv{padding:32px 24px;gap:28px}
+  .final{padding:84px 0 96px}
+}
+@media (max-width:440px){.viz.share{gap:10px}.viz.share>svg{display:none}.doc{width:112px;padding:12px}.handoff{max-width:80px}}
+</style>
+</head>
+<body>
+
+<header class="hdr" id="hdr">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="AI Recap">
+      <svg width="32" height="32" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#1B1D22"/><rect x="17" y="25" width="5" height="14" rx="2.5" fill="#E9A24A"/><rect x="25" y="20" width="5" height="24" rx="2.5" fill="#E9A24A"/><rect x="33" y="16" width="5" height="32" rx="2.5" fill="#E9A24A"/><rect x="41" y="23" width="5" height="18" rx="2.5" fill="#E9A24A"/><circle cx="50" cy="41" r="2.6" fill="#E0432F"/></svg>
+      AI Recap
+    </a>
+    <div class="seg" role="group" data-i-aria="langLabel">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="lv" aria-pressed="false">LV</button>
+    </div>
+    <button type="button" class="icobtn" id="themeBtn" data-i-aria="themeLabel">
+      <svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.5 1.5M17.2 17.2l1.5 1.5M5.3 18.7l1.5-1.5M17.2 6.8l1.5-1.5"/></svg>
+      <svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+    </button>
+    <a class="getbtn" href="https://apps.apple.com/app/id6813450802" data-i="get">Get the app</a>
+  </div>
+</header>
+
+<main id="top">
+<section class="story" id="story" data-i-aria="storyLabel">
+  <div class="stage" id="stage">
+
+    <div class="intro" id="intro">
+      <span class="eyebrow" data-i="eyebrow">For iPhone and Apple Watch</span>
+      <h1 data-i="h1">Record once. Remember everything.</h1>
+      <p class="lead" data-i="lead"></p>
+      <div class="ctas">
+        <a class="badge" href="https://apps.apple.com/app/id6813450802" data-i-aria="badgeAria">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.05 12.04c-.03-2.9 2.37-4.29 2.48-4.36-1.35-1.98-3.46-2.25-4.21-2.28-1.79-.18-3.5 1.05-4.41 1.05-.91 0-2.31-1.03-3.8-1-1.96.03-3.77 1.14-4.78 2.9-2.04 3.54-.52 8.78 1.46 11.65.97 1.4 2.12 2.98 3.63 2.92 1.46-.06 2.01-.94 3.77-.94 1.76 0 2.26.94 3.8.91 1.57-.03 2.56-1.43 3.52-2.84 1.11-1.63 1.57-3.21 1.59-3.29-.03-.02-3.05-1.17-3.08-4.62zM14.2 4.38c.81-.98 1.35-2.34 1.2-3.69-1.16.05-2.57.77-3.4 1.75-.75.86-1.4 2.24-1.23 3.56 1.29.1 2.61-.65 3.43-1.62z"/></svg>
+          <span><small data-i="badgeSmall">Download on the</small><b>App Store</b></span>
+        </a>
+        <span class="sub-note" data-i="freeNote">Free to start</span>
+      </div>
+      <div class="hint"><i aria-hidden="true"></i><span data-i="hint">Scroll to follow one recording all the way to the calendar</span></div>
+    </div>
+
+    <div class="caps" id="caps">
+      <article class="cap" data-step="1"><div class="num"><b>01</b><span data-i="s1k">Start</span></div><h2 data-i="s1h"></h2><p data-i="s1p"></p><ul><li data-i="s1a"></li><li data-i="s1b"></li><li data-i="s1c"></li></ul></article>
+      <article class="cap" data-step="2"><div class="num"><b>02</b><span data-i="s2k">Recording</span></div><h2 data-i="s2h"></h2><p data-i="s2p"></p><ul><li data-i="s2a"></li><li data-i="s2b"></li><li data-i="s2c"></li></ul></article>
+      <article class="cap" data-step="3"><div class="num"><b>03</b><span data-i="s3k">Transcript</span></div><h2 data-i="s3h"></h2><p data-i="s3p"></p><ul><li data-i="s3a"></li><li data-i="s3b"></li><li data-i="s3c"></li></ul></article>
+      <article class="cap" data-step="4"><div class="num"><b>04</b><span data-i="s4k">Recap</span></div><h2 data-i="s4h"></h2><p data-i="s4p"></p><ul><li data-i="s4a"></li><li data-i="s4b"></li><li data-i="s4c"></li></ul></article>
+      <article class="cap" data-step="5"><div class="num"><b>05</b><span data-i="s5k">Dates</span></div><h2 data-i="s5h"></h2><p data-i="s5p"></p><ul><li data-i="s5a"></li><li data-i="s5b"></li><li data-i="s5c"></li></ul></article>
+      <article class="cap" data-step="6"><div class="num"><b>06</b><span data-i="s6k">Calendar</span><em data-i="new11">New in 1.1</em></div><h2 data-i="s6h"></h2><p data-i="s6p"></p><ul><li data-i="s6a"></li><li data-i="s6b"></li><li data-i="s6c"></li></ul></article>
+    </div>
+
+    <div class="phone-area" id="phoneArea">
+      <div class="glow" aria-hidden="true"></div>
+      <div class="phone-wrap" id="phoneWrap">
+        <div class="phone" role="img" data-i-aria="phoneAlt">
+          <div class="screen" aria-hidden="true">
+            <div class="sbar"><span>14:32</span><span class="ic">
+              <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+              <svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".5" y=".5" width="22" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="16" height="9" rx="2" fill="currentColor"/><rect x="24" y="4.5" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg></span></div>
+            <div class="island"><div class="in"><span class="mini"><i></i><i></i><i></i><i></i></span><span class="tm">00:00</span></div></div>
+
+            <!-- 1 · home -->
+            <div class="scr s-home">
+              <div class="h-top">
+                <div><div class="muted13" data-i="pDate">Wednesday, 11 November</div><div class="h-title" data-i="pRecs">Recordings</div></div>
+                <div class="h-stat"><b>58 min</b><span data-i="pMonth">recorded this month</span></div>
+              </div>
+              <div class="field"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg><span data-i="pSearch">Search recordings and recaps</span></div>
+              <div class="grp"><div class="lbl" data-i="pToday">Today</div>
+                <div class="item"><b data-i="pI1"></b><div><span>16 s</span><span data-i="cxNote">Personal note</span><span>09:41</span></div></div>
+                <div class="item"><b data-i="pI2"></b><div><span>25 s</span><span data-i="cxNote">Personal note</span><span>08:39</span></div></div>
+              </div>
+              <div class="grp"><div class="lbl" data-i="pYest">Yesterday</div>
+                <div class="item"><b data-i="pI3"></b><div><span>24 min</span><span data-i="cxSales">Sales call</span><span>16:05</span></div></div>
+                <div class="item"><b data-i="pI5"></b><div><span>47 min</span><span data-i="cxLecture">Lecture</span><span>11:30</span></div></div>
+                <div class="item"><b data-i="pI4"></b><div><span>1 min</span><span data-i="cxNote">Personal note</span><span>09:12</span></div></div>
+              </div>
+              <div class="nav">
+                <div class="bar">
+                  <span class="tab on"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span data-i="pRecs">Recordings</span></span>
+                  <span class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 3v4M16 3v4"/></svg><span data-i="pCal">Calendar</span></span>
+                  <span class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/></svg><span data-i="pCtx">Contexts</span></span>
+                  <span class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/></svg><span data-i="pSet">Settings</span></span>
+                </div>
+                <span class="recbtn h-rec"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span>
+              </div>
+            </div>
+            <div class="flood"></div>
+
+            <!-- 2 · recording -->
+            <div class="scr s-rec">
+              <div class="r-halo"></div>
+              <div class="r-top"><div class="r-live"><i></i><span data-i="pRecording">Recording</span></div><div class="r-ctx"><span data-i="cxWork">Work meeting</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+              <div class="r-mid">
+                <div><div class="r-time tm">00:00</div><div class="muted13" style="text-align:center;margin-top:6px" data-i="pRecSub"></div></div>
+                <div class="r-wave"></div>
+                <div class="r-meta"><span data-i="pSegs">4 segments sent</span><i></i><span>LV + EN</span></div>
+              </div>
+              <div class="r-btns">
+                <div class="r-pause"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg><span data-i="pPause">Pause</span></div>
+                <div class="r-fin"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg><span data-i="pFinish">Finish</span></div>
+              </div>
+            </div>
+            <div class="lock">
+              <div class="sbar"><span></span><span class="ic"><svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg><svg width="26" height="13" viewBox="0 0 26 13" fill="none"><rect x=".5" y=".5" width="22" height="12" rx="3.5" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="16" height="9" rx="2" fill="currentColor"/></svg></span></div>
+              <svg width="22" height="26" viewBox="0 0 22 26" fill="#fff"><path d="M5 11V7.5a6 6 0 0 1 12 0V11h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3h1zm2.4 0h7.2V7.5a3.6 3.6 0 0 0-7.2 0V11z"/></svg>
+              <div class="l-date" data-i="pDate">Wednesday, 11 November</div>
+              <div class="l-time">14:35</div>
+              <div class="l-note"><svg width="13" height="15" viewBox="0 0 22 26" fill="currentColor"><path d="M5 11V7.5a6 6 0 0 1 12 0V11h1a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H4a3 3 0 0 1-3-3v-8a3 3 0 0 1 3-3h1zm2.4 0h7.2V7.5a3.6 3.6 0 0 0-7.2 0V11z"/></svg><span data-i="pLocked">Screen locked — still recording</span></div>
+              <div class="la">
+                <span class="ico"><svg width="30" height="30" viewBox="12 12 42 40"><rect x="17" y="25" width="5" height="14" rx="2.5" fill="#E9A24A"/><rect x="25" y="20" width="5" height="24" rx="2.5" fill="#E9A24A"/><rect x="33" y="16" width="5" height="32" rx="2.5" fill="#E9A24A"/><rect x="41" y="23" width="5" height="18" rx="2.5" fill="#E9A24A"/><circle cx="50" cy="41" r="2.6" fill="#E0432F"/></svg></span>
+                <span class="tx"><small><i></i><span data-i="pRecording">Recording</span></small><b class="tm">00:00</b></span>
+                <span class="cb"><svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg></span>
+                <span class="cb stop"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="3"/></svg></span>
+              </div>
+            </div>
+
+            <!-- 3–5 · detail -->
+            <div class="scr s-det">
+              <div class="d-hd"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg><span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7h14v-7"/></svg><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></span></div>
+              <div><div class="d-title" data-i="pTitle"></div>
+                <div class="d-meta"><span>4 min</span><i></i><span data-i="pWhen">Today 14:32</span><i></i><span data-i="pSpk2">2 speakers</span><span class="pill" data-i="cxWork">Work meeting</span></div></div>
+              <div class="card d-player">
+                <div class="row"><span class="playbtn"><svg class="pl" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg class="pa" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1.5"/><rect x="14" y="4" width="4" height="16" rx="1.5"/></svg></span><div class="d-wave"></div></div>
+                <div class="d-times"><b class="cur">0:00</b><span>1×</span><span>4:12</span></div>
+              </div>
+              <div class="d-tabs"><i class="sl"></i><span class="tb-s" data-i="pSummary">Summary</span><span class="tb-t" data-i="pTranscript">Transcript</span><span data-i="pAsk">Ask AI</span></div>
+              <div class="d-body">
+                <div class="proc"><span class="mini"><i></i><i></i><i></i><i></i><i></i></span><b><span data-i="pTranscribing">Transcribing…</span> <span class="pct">0%</span></b><div class="pb"><i></i></div><span>LV + EN</span></div>
+                <div class="pane p-tr">
+                  <div class="t-tools"><div class="field"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg><span data-i="pTSearch">Search transcript</span></div><div class="t-spk"><i></i><i></i><span data-i="pSpeakers">Speakers</span></div></div>
+                  <div class="tl"><div class="ts">01:48</div><div class="bx"><div class="who">Anna</div><p data-i="pL1" data-words></p></div></div>
+                  <div class="tl l2"><div class="ts">02:04<span class="mini"><i></i><i></i><i></i></span></div><div class="bx"><div class="who s2" data-i="pS2">Speaker 2</div><p data-i="pL2" data-words></p></div></div>
+                  <div class="tl"><div class="ts">02:31</div><div class="bx"><div class="who">Anna</div><p data-i="pL3" data-words></p></div></div>
+                </div>
+                <div class="pane p-sum">
+                  <p class="sum" data-i="pSum" data-words></p>
+                  <div class="sec-l ri" data-i="pDecisions">Decisions</div>
+                  <div class="bul ri" data-i="pD1"></div>
+                  <div class="bul ri" data-i="pD2"></div>
+                  <div class="gap18"></div>
+                  <div class="sec-l ri" data-i="pTasks">Action items</div>
+                  <div class="task t1 ri"><svg class="ckb" width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--sep)" stroke-width="1.8"/><circle class="cf" cx="12" cy="12" r="11" fill="#E9A24A" style="transform-origin:12px 12px"/><path class="cd" d="M7 12.5l3.2 3.2L17 9" stroke="#1A1408" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="22" stroke-dashoffset="22"/></svg><span class="tt"><span data-i="pT1"></span><small data-i="pT1m"></small></span></div>
+                  <div class="task ri"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="var(--sep)" stroke-width="1.8"/></svg><span class="tt"><span data-i="pT2"></span><small data-i="pT2m"></small></span></div>
+                  <div class="gap18"></div>
+                  <div class="dsec">
+                    <div class="sec-l dhead"><span data-i="pDates">Important dates</span><span class="dstat"><span class="scan" data-i="pScan">Finding dates…</span><span class="cnt" data-i="pCnt">3 dates</span></span></div>
+                    <div class="drow dl dr"><span class="tile"><small data-i="pNov">Nov</small><b>13</b></span><span class="dx"><b data-i="pR1"></b><span data-i="pR1m"></span></span></div>
+                    <div class="drow dr r2"><span class="tile"><small data-i="pNov">Nov</small><b>17</b></span><span class="dx"><b data-i="pR2"></b><span data-i="pR2m"></span></span></div>
+                    <div class="drow mn dr"><span class="tile"><small data-i="pNov">Nov</small><b>27</b></span><span class="dx"><b data-i="pR3"></b><span data-i="pR3m"></span></span></div>
+                  </div>
+                </div>
+                <div class="d-fade"><div class="regen"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accentText)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/></svg><span data-i="pRegen">Regenerate with notes</span></div></div>
+              </div>
+            </div>
+
+            <!-- 6 · calendar -->
+            <div class="scr s-cal">
+              <div class="h-top">
+                <div><div class="muted13" data-i="pCalSub">12 dates from your recaps</div><div class="h-title" data-i="pCal">Calendar</div></div>
+                <div class="c-seg"><i class="on"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2.5"/><path d="M3 9h18M9 4v17M15 4v17M3 15h18"/></svg></i><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></i></div>
+              </div>
+              <div class="card c-card">
+                <div class="c-m"><div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg><b data-i="pMonthName">November 2026</b><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div><span class="c-today" data-i="pToday">Today</span></div>
+                <div class="c-wk"><span data-i="wd0">M</span><span data-i="wd1">T</span><span data-i="wd2">W</span><span data-i="wd3">T</span><span data-i="wd4">F</span><span data-i="wd5">S</span><span data-i="wd6">S</span></div>
+                <div class="c-grid"></div>
+                <div class="c-leg"><span><i class="dot"></i><span data-i="pEvents">Events</span></span><span><i class="dot dl"></i><span data-i="pDeadlines">Deadlines</span></span><span><i class="dot mn"></i><span data-i="pDatesL">Dates</span></span></div>
+              </div>
+              <div class="c-day">
+                <div class="day-a"><div class="dl2" data-i="pDate">Wednesday, 11 November</div><div class="ev"><i class="dot"></i><b data-i="pEvA1"></b><span>14:00</span></div><div class="ev"><i class="dot dl"></i><b data-i="pEvA2"></b><span data-i="pDue">Due today</span></div></div>
+                <div class="day-b"><div class="dl2" data-i="pDate17">Tuesday, 17 November</div><div class="ev ev17"><i class="dot"></i><b data-i="pR2"></b><span>10:00</span></div></div>
+              </div>
+              <div class="nav">
+                <div class="bar">
+                  <span class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><span data-i="pRecs">Recordings</span></span>
+                  <span class="tab on"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 3v4M16 3v4"/></svg><span data-i="pCal">Calendar</span></span>
+                  <span class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 10h18"/></svg><span data-i="pCtx">Contexts</span></span>
+                  <span class="tab"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M19 7h1M4 17h3M13 17h7"/><circle cx="16" cy="7" r="2.5"/><circle cx="10" cy="17" r="2.5"/></svg><span data-i="pSet">Settings</span></span>
+                </div>
+                <span class="recbtn"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></span>
+              </div>
+            </div>
+            <div class="scrim"></div>
+            <div class="sheet">
+              <div class="grab"></div>
+              <span class="tag"><i class="dot"></i><span data-i="pEvent">Event</span></span>
+              <h4 data-i="pR2"></h4>
+              <div class="when" data-i="pWhen17"></div>
+              <div class="src"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg><b data-i="pTitle"></b><span data-i="pOpen">Open recap</span></div>
+              <div class="rl"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7 2.5 7h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span data-i="pReminder">Reminder</span></div>
+              <div class="opts"><span class="o-none on" data-i="pO0">No reminder</span><span data-i="pO1">10 minutes before</span><span class="o-hour" data-i="pO2">1 hour before</span><span data-i="pO3">1 day before</span></div>
+              <div class="addbtn"><span class="b1"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M3 9.5h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5"/></svg><span data-i="pAdd">Add to Apple Calendar</span></span><span class="b2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path class="ok" d="M5 12.5l4.5 4.5L19 7.5" stroke-dasharray="22" stroke-dashoffset="22"/></svg><span data-i="pAdded">Added to Apple Calendar</span></span></div>
+            </div>
+
+            <div class="drow chip"><span class="tile"><small data-i="pNov">Nov</small><b>17</b></span><span class="dx"><b data-i="pR2"></b><span data-i="pR2m"></span></span></div>
+            <div class="tap"></div>
+            <div class="homebar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="rail" id="rail" data-i-aria="railLabel">
+      <button type="button" class="rs" data-go="1"><span class="trk"><i></i></span><span class="n">1</span><span class="l" data-i="s1k">Start</span></button>
+      <button type="button" class="rs" data-go="2"><span class="trk"><i></i></span><span class="n">2</span><span class="l" data-i="s2k">Recording</span></button>
+      <button type="button" class="rs" data-go="3"><span class="trk"><i></i></span><span class="n">3</span><span class="l" data-i="s3k">Transcript</span></button>
+      <button type="button" class="rs" data-go="4"><span class="trk"><i></i></span><span class="n">4</span><span class="l" data-i="s4k">Recap</span></button>
+      <button type="button" class="rs" data-go="5"><span class="trk"><i></i></span><span class="n">5</span><span class="l" data-i="s5k">Dates</span></button>
+      <button type="button" class="rs" data-go="6"><span class="trk"><i></i></span><span class="n">6</span><span class="l" data-i="s6k">Calendar</span></button>
+    </nav>
+  </div>
+  <div class="static-list" id="staticList"></div>
+</section>
+
+<section class="that"><div class="wrap rv">
+  <p data-ih="thatP"></p>
+  <div class="flow" aria-hidden="true"><span><b data-i="s1k">Start</b></span><span><b data-i="s2k">Recording</b></span><span><b data-i="s3k">Transcript</b></span><span><b data-i="s4k">Recap</b></span><span><b data-i="s5k">Dates</b></span><span><b data-i="s6k">Calendar</b></span></div>
+</div></section>
+
+<section class="blk" id="more"><div class="wrap">
+  <div class="rv"><div class="kicker" data-i="moreK">Also inside</div><h2 data-i="moreH"></h2></div>
+  <div class="feats">
+    <article class="card feat rv">
+      <div class="viz" aria-hidden="true">
+        <div class="watch"><i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg></i><span data-i="wRecord">Record</span></div>
+        <div class="handoff"><svg width="54" height="16" viewBox="0 0 54 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h48M43 2l7 6-7 6" /></svg><span data-i="wHand">audio handed to iPhone</span></div>
+        <div class="miniphone"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div><h3 data-i="f1h"></h3><p data-i="f1p"></p></div>
+    </article>
+    <article class="card feat rv">
+      <div class="viz chips" aria-hidden="true"><span class="on" data-i="cxWork"></span><span data-i="cxSales"></span><span data-i="cxInterview"></span><span data-i="cxLecture"></span><span data-i="cxNote"></span><span class="add" data-i="cxOwn"></span></div>
+      <div><h3 data-i="f2h"></h3><p data-i="f2p"></p></div>
+    </article>
+    <article class="card feat rv">
+      <div class="viz qa" aria-hidden="true"><div class="q" data-i="qQ"></div><div class="a"><span data-i="qA"></span><span class="cite"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>02:04</span></div></div>
+      <div><h3 data-i="f3h"></h3><p data-i="f3p"></p></div>
+    </article>
+    <article class="card feat rv">
+      <div class="viz share" aria-hidden="true">
+        <div class="doc"><b data-i="pTitleShort"></b><i></i><i style="width:70%"></i><span class="ck y"><i></i></span><span class="ck"><i></i></span></div>
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h22M18 2l7 6-7 6"/></svg>
+        <div class="dest"><span>Apple Notes</span><span>Mail</span><span>Notion</span><span>Markdown · txt</span></div>
+      </div>
+      <div><h3 data-i="f4h"></h3><p data-i="f4p"></p></div>
+    </article>
+  </div>
+</div></section>
+
+<section class="blk" id="privacy" style="padding-top:0"><div class="wrap">
+  <div class="priv rv">
+    <div><div class="kicker" data-i="prK">Privacy</div><h2 data-i="prH"></h2><p class="lede" data-i="prP"></p></div>
+    <ul>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span data-i="pr1"></span></li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg><span data-i="pr2"></span></li>
+      <li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l18 18M10.6 6.2A9.7 9.7 0 0 1 12 6c6 0 9.5 6 9.5 6a16 16 0 0 1-2.6 3.3M6.5 7.6A16 16 0 0 0 2.5 12S6 18 12 18a9 9 0 0 0 3.4-.7"/></svg><span data-i="pr3"></span></li>
+    </ul>
+  </div>
+</div></section>
+
+<section class="blk" id="plans" style="padding-top:0"><div class="wrap">
+  <div class="rv"><div class="kicker" data-i="plK">Plans</div><h2 data-i="plH"></h2></div>
+  <div class="plans">
+    <article class="card plan rv"><h3 data-i="pl1n">Free</h3><div class="pr">€0</div><ul><li data-i="pl1a"></li><li data-i="pl1b"></li></ul></article>
+    <article class="card plan hi rv"><h3>Unlimited</h3><div class="pr">€19.99<small data-i="perMonth">/ month</small></div><ul><li data-i="plNoLimit"></li><li data-i="pl90"></li><li data-i="pl2c"></li></ul></article>
+    <article class="card plan rv"><h3 data-i="pl3n">Bring your own key</h3><div class="pr">€99.99<small data-i="oneTime">one-time</small></div><ul><li data-i="pl3a"></li><li data-i="plNoLimit"></li><li data-i="pl90"></li></ul></article>
+  </div>
+  <p class="fine" data-i="plFine"></p>
+</div></section>
+
+<section class="final" id="get"><div class="wrap rv">
+  <svg class="mark" width="84" height="84" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" fill="#1B1D22"/><rect x="17" y="25" width="5" height="14" rx="2.5" fill="#E9A24A"/><rect x="25" y="20" width="5" height="24" rx="2.5" fill="#E9A24A"/><rect x="33" y="16" width="5" height="32" rx="2.5" fill="#E9A24A"/><rect x="41" y="23" width="5" height="18" rx="2.5" fill="#E9A24A"/><circle cx="50" cy="41" r="2.6" fill="#E0432F"/></svg>
+  <div class="blk" style="padding:0"><h2 data-i="fiH"></h2><p class="lede" data-i="fiP"></p></div>
+  <a class="badge" href="https://apps.apple.com/app/id6813450802" data-i-aria="badgeAria">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.05 12.04c-.03-2.9 2.37-4.29 2.48-4.36-1.35-1.98-3.46-2.25-4.21-2.28-1.79-.18-3.5 1.05-4.41 1.05-.91 0-2.31-1.03-3.8-1-1.96.03-3.77 1.14-4.78 2.9-2.04 3.54-.52 8.78 1.46 11.65.97 1.4 2.12 2.98 3.63 2.92 1.46-.06 2.01-.94 3.77-.94 1.76 0 2.26.94 3.8.91 1.57-.03 2.56-1.43 3.52-2.84 1.11-1.63 1.57-3.21 1.59-3.29-.03-.02-3.05-1.17-3.08-4.62zM14.2 4.38c.81-.98 1.35-2.34 1.2-3.69-1.16.05-2.57.77-3.4 1.75-.75.86-1.4 2.24-1.23 3.56 1.29.1 2.61-.65 3.43-1.62z"/></svg>
+    <span><small data-i="badgeSmall">Download on the</small><b>App Store</b></span>
+  </a>
+  <p class="fine" data-i="fiFine"></p>
+</div></section>
+</main>
+
+<footer><div class="wrap">
+  <span class="sp">© 2026 AI Recap</span>
+  <a href="https://mortukans.github.io/ai-recap/privacy.html" data-i="ftPrivacy">Privacy policy</a>
+  <a href="https://mortukans.github.io/ai-recap/terms.html" data-i="ftTerms">Terms of use</a>
+  <a href="https://apps.apple.com/app/id6813450802">App Store</a>
+</div></footer>
+
+<script>
+(function(){
+'use strict';
+var I18N={
+en:{
+ title:'AI Recap — record a meeting, get the recap and the dates',
+ langLabel:'Language',themeLabel:'Switch between light and dark mode',get:'Get the app',storyLabel:'How AI Recap works, step by step',
+ railLabel:'Steps',phoneAlt:'An iPhone showing the AI Recap app: from tapping record, through the transcript and recap, to a date added to the calendar',
+ eyebrow:'For iPhone and Apple Watch',h1:'Record once. Remember everything.',
+ lead:'AI Recap records your meetings, conversations and voice notes, then writes the recap for you — summary, decisions, action items and dates. In Latvian and English, even mixed.',
+ badgeSmall:'Download on the',badgeAria:'Download AI Recap on the App Store',freeNote:'Free to start · iOS only',
+ hint:'Scroll to follow one recording all the way to the calendar',
+ s1k:'Start',s2k:'Recording',s3k:'Transcript',s4k:'Recap',s5k:'Dates',s6k:'Calendar',new11:'New in 1.1',
+ s1h:'Tap the red button.',s1p:'That is the whole setup. Pick a context if you like — work meeting, sales call, lecture — or just start talking.',
+ s1a:'One tap',s1b:'iPhone',s1c:'Apple Watch',
+ s2h:'Put the phone down. It keeps listening.',s2p:'It records with the screen locked. The timer, pause and finish sit in the Dynamic Island and on the Lock Screen. Speak Latvian, English, or both in one sentence.',
+ s2a:'Screen locked',s2b:'Dynamic Island',s2c:'LV + EN, even mixed',
+ s3h:'Every word, and who said it.',s3p:'Tap Finish and the transcript appears, split by speaker and searchable. Tap any line to hear that exact moment again.',
+ s3a:'Speakers',s3b:'Search',s3c:'Tap a line to listen',
+ s4h:'The recap writes itself.',s4p:'A short summary, the decisions, and action items with an owner and a deadline. Tick them off as you get them done.',
+ s4a:'Summary',s4b:'Decisions',s4c:'Action items',
+ s5h:'It catches the dates you said out loud.',s5p:'“Tuesday the 17th at ten” — mentioned once, in passing. AI Recap finds every date and deadline in the recording automatically.',
+ s5a:'Events',s5b:'Deadlines',s5c:'Found automatically',
+ s6h:'From a spoken word to your calendar.',s6p:'Every date lands on a calendar inside the app, with month and list views, upcoming and past. Add any of them to Apple Calendar with a reminder. Done.',
+ s6a:'Month + list views',s6b:'Apple Calendar',s6c:'Reminders',
+ thatP:'One tap to start, one tap to finish. <em>Everything in between is done for you.</em>',
+ moreK:'Also inside',moreH:'A few more things it does quietly.',
+ f1h:'Start from your wrist',f1p:'Start a recording on Apple Watch. The watch can record on its own and hand the audio to your iPhone.',
+ f2h:'Contexts that know your vocabulary',f2p:'Work meeting, sales call, interview, lecture, personal note — or your own, with vocabulary and instructions.',
+ f3h:'Ask the recording',f3p:'Ask a question about what was said. The answer cites the moment in the transcript.',
+ f4h:'Share it, formatting intact',f4p:'Send the recap to Apple Notes, Mail or Notion with headings, lists and checkboxes intact. Export Markdown or txt.',
+ wRecord:'Record',wHand:'audio handed to iPhone',cxOwn:'+ Your own',
+ qQ:'What did we decide on pricing?',qA:'It was left open — to be confirmed before the next sync.',
+ prK:'Privacy',prH:'Private by default.',prP:'Audio, transcripts and recaps stay on your device, in an encrypted database.',
+ pr1:'Stored on your device, encrypted',pr2:'No ads',pr3:'No tracking',
+ plK:'Plans',plH:'Start free. Upgrade when you need more.',pl1n:'Free',pl1a:'Recordings up to 15 minutes',pl1b:'5 recaps a day',
+ perMonth:'/ month',oneTime:'one-time',plNoLimit:'No daily limit',pl90:'Recordings up to 90 minutes',pl2c:'Hosted AI — no key needed',
+ pl3n:'Bring your own key',pl3a:'Uses your own OpenRouter key',
+ plFine:'Purchases go through the App Store. Prices are set by the App Store for your region.',
+ fiH:'Your next meeting, already written up.',fiP:'Record it once. The recap, the tasks and the dates take care of themselves.',fiFine:'iPhone and Apple Watch · iOS only',
+ ftPrivacy:'Privacy policy',ftTerms:'Terms of use',
+ pDate:'Wednesday, 11 November',pRecs:'Recordings',pMonth:'recorded this month',pSearch:'Search recordings and recaps',pToday:'Today',pYest:'Yesterday',
+ pI1:'Remember to book the venue for the…',pI2:'On my shopping list, I need to…',pI3:'Supplier contract review – terms and deadlines',pI4:'Idea: tag recordings automatically from the calendar',pI5:'Lecture: introduction to statistics',
+ cxNote:'Personal note',cxSales:'Sales call',cxLecture:'Lecture',cxWork:'Work meeting',cxInterview:'Interview',
+ pCal:'Calendar',pCtx:'Contexts',pSet:'Settings',
+ pRecording:'Recording',pRecSub:'of 15 min · audio is saved continuously',pSegs:'4 segments sent',pPause:'Pause',pFinish:'Finish',pLocked:'Screen locked — still recording',
+ pTitle:'Product team: Q4 roadmap review',pTitleShort:'Q4 roadmap review',pWhen:'Today 14:32',pSpk2:'2 speakers',pSummary:'Summary',pTranscript:'Transcript',pAsk:'Ask AI',
+ pTranscribing:'Transcribing…',pTSearch:'Search transcript',pSpeakers:'Speakers',pS2:'Speaker 2',
+ pL1:'Onboarding is our biggest drop-off. Let’s ship the redesign first.',
+ pL2:'Labi, agreed. But pricing — vai annual plans go live this quarter?',
+ pL3:'Let’s leave it open until the next sync — Tuesday the 17th at ten.',
+ pSum:'The team agreed to ship the new onboarding flow by the end of November. Still open: annual pricing — this quarter or next.',
+ pDecisions:'Decisions',pD1:'The onboarding redesign ships first; analytics moves to December.',pD2:'The weekly sync moves to Tuesdays at 10:00.',
+ pTasks:'Action items',pT1:'Finalize the onboarding copy with design',pT1m:'Anna · by Friday',pT2:'Confirm annual pricing with sales',pT2m:'Speaker 2 · next meeting',
+ pDates:'Important dates',pScan:'Finding dates…',pCnt:'3 dates',pNov:'Nov',
+ pR1:'Onboarding copy — final',pR1m:'Friday · Deadline',pR2:'Weekly sync with design',pR2m:'Tuesday · 10:00 · Event',pR3:'Annual pricing decision',pR3m:'Friday · Date',
+ pRegen:'Regenerate with notes',pCalSub:'12 dates from your recaps',pMonthName:'November 2026',
+ wd0:'M',wd1:'T',wd2:'W',wd3:'T',wd4:'F',wd5:'S',wd6:'S',pEvents:'Events',pDeadlines:'Deadlines',pDatesL:'Dates',
+ pEvA1:'Q4 roadmap review',pEvA2:'Supplier contract — sign & return',pDue:'Due today',pDate17:'Tuesday, 17 November',
+ pEvent:'Event',pWhen17:'Tuesday, 17 November · 10:00',pOpen:'Open recap',pReminder:'Reminder',pO0:'No reminder',pO1:'10 minutes before',pO2:'1 hour before',pO3:'1 day before',
+ pAdd:'Add to Apple Calendar',pAdded:'Added to Apple Calendar'
+},
+lv:{
+ title:'AI Recap — ieraksti sanāksmi, saņem kopsavilkumu un datumus',
+ langLabel:'Valoda',themeLabel:'Pārslēgt gaišo un tumšo režīmu',get:'Lejupielādēt',storyLabel:'Kā AI Recap darbojas — soli pa solim',
+ railLabel:'Soļi',phoneAlt:'iPhone ar AI Recap lietotni: no ieraksta pogas nospiešanas caur transkriptu un kopsavilkumu līdz datumam, kas pievienots kalendāram',
+ eyebrow:'iPhone un Apple Watch',h1:'Ieraksti vienreiz. Atceries visu.',
+ lead:'AI Recap ieraksta sanāksmes, sarunas un balss piezīmes un pats uzraksta kopsavilkumu — īsu pārskatu, lēmumus, uzdevumus un datumus. Latviski un angliski, arī jaukti.',
+ badgeSmall:'Lejupielādēt',badgeAria:'Lejupielādēt AI Recap no App Store',freeNote:'Sākt var bez maksas · tikai iOS',
+ hint:'Ritini un izseko vienam ierakstam līdz pat kalendāram',
+ s1k:'Sākums',s2k:'Ieraksts',s3k:'Transkripts',s4k:'Kopsavilkums',s5k:'Datumi',s6k:'Kalendārs',new11:'Jaunums 1.1',
+ s1h:'Nospied sarkano pogu.',s1p:'Tā ir visa sagatavošanās. Ja gribi, izvēlies kontekstu — darba sanāksme, pārdošanas zvans, lekcija — vai vienkārši sāc runāt.',
+ s1a:'Viens pieskāriens',s1b:'iPhone',s1c:'Apple Watch',
+ s2h:'Noliec telefonu. Tas turpina klausīties.',s2p:'Ieraksts turpinās arī ar aizslēgtu ekrānu. Taimeris, pauze un pabeigšana ir Dynamic Island un bloķēšanas ekrānā. Runā latviski, angliski vai abās valodās vienā teikumā.',
+ s2a:'Aizslēgts ekrāns',s2b:'Dynamic Island',s2c:'LV + EN, arī jaukti',
+ s3h:'Katrs vārds — un kurš to teica.',s3p:'Nospied „Pabeigt”, un parādās transkripts — sadalīts pa runātājiem un ar meklēšanu. Pieskaries jebkurai rindai, lai vēlreiz dzirdētu tieši to brīdi.',
+ s3a:'Runātāji',s3b:'Meklēšana',s3c:'Pieskaries rindai un klausies',
+ s4h:'Kopsavilkums uzrakstās pats.',s4p:'Īss pārskats, lēmumi un uzdevumi ar atbildīgo un termiņu. Atzīmē tos, kad izdarīts.',
+ s4a:'Pārskats',s4b:'Lēmumi',s4c:'Uzdevumi',
+ s5h:'Tas pamana datumus, ko pateici skaļi.',s5p:'„Otrdien, septiņpadsmitajā, desmitos” — pieminēts vienreiz, garāmejot. AI Recap automātiski atrod visus ierakstā minētos datumus un termiņus.',
+ s5a:'Notikumi',s5b:'Termiņi',s5c:'Atrasti automātiski',
+ s6h:'No pateikta vārda līdz tavam kalendāram.',s6p:'Katrs datums nonāk lietotnes kalendārā — ar mēneša un saraksta skatu, gaidāmajiem un pagājušajiem. Jebkuru pievieno Apple kalendāram ar atgādinājumu. Gatavs.',
+ s6a:'Mēneša un saraksta skati',s6b:'Apple kalendārs',s6c:'Atgādinājumi',
+ thatP:'Viens pieskāriens, lai sāktu, viens — lai pabeigtu. <em>Visu pa vidu izdara tavā vietā.</em>',
+ moreK:'Vēl lietotnē',moreH:'Vēl dažas lietas, ko tā paveic klusi.',
+ f1h:'Sāc no plaukstas',f1p:'Sāc ierakstu Apple Watch. Pulkstenis var ierakstīt pats un pēc tam nodot audio tavam iPhone.',
+ f2h:'Konteksti, kas zina tavu vārdnīcu',f2p:'Darba sanāksme, pārdošanas zvans, intervija, lekcija, personīga piezīme — vai savs konteksts ar vārdnīcu un norādījumiem.',
+ f3h:'Jautā ierakstam',f3p:'Uzdod jautājumu par to, kas tika teikts. Atbildē ir atsauce uz attiecīgo brīdi transkriptā.',
+ f4h:'Kopīgo, saglabājot noformējumu',f4p:'Nosūti kopsavilkumu uz Apple Notes, Mail vai Notion — virsraksti, saraksti un ķekši paliek savās vietās. Eksportē Markdown vai txt.',
+ wRecord:'Ierakstīt',wHand:'audio nodots iPhone',cxOwn:'+ Savs konteksts',
+ qQ:'Ko nolēmām par cenām?',qA:'Jautājums palika atvērts — jānoskaidro līdz nākamajai sanāksmei.',
+ prK:'Privātums',prH:'Privāts pēc noklusējuma.',prP:'Audio, transkripti un kopsavilkumi paliek tavā ierīcē, šifrētā datubāzē.',
+ pr1:'Glabājas tavā ierīcē, šifrēti',pr2:'Bez reklāmām',pr3:'Bez izsekošanas',
+ plK:'Plāni',plH:'Sāc bez maksas. Paplašini, kad vajag vairāk.',pl1n:'Bezmaksas',pl1a:'Ieraksti līdz 15 minūtēm',pl1b:'5 kopsavilkumi dienā',
+ perMonth:'/ mēnesī',oneTime:'vienreizējs pirkums',plNoLimit:'Bez dienas limita',pl90:'Ieraksti līdz 90 minūtēm',pl2c:'Mūsu AI apstrāde — atslēga nav vajadzīga',
+ pl3n:'Sava atslēga',pl3a:'Izmanto tavu OpenRouter atslēgu',
+ plFine:'Pirkumi notiek caur App Store. Cenas tavam reģionam nosaka App Store.',
+ fiH:'Tava nākamā sanāksme — jau pierakstīta.',fiP:'Ieraksti vienreiz. Kopsavilkums, uzdevumi un datumi sakārtojas paši.',fiFine:'iPhone un Apple Watch · tikai iOS',
+ ftPrivacy:'Privātuma politika',ftTerms:'Lietošanas noteikumi',
+ pDate:'Trešdiena, 11. novembris',pRecs:'Ieraksti',pMonth:'ierakstīts šomēnes',pSearch:'Meklēt ierakstos un kopsavilkumos',pToday:'Šodien',pYest:'Vakar',
+ pI1:'Jāatceras rezervēt telpu pasākumam…',pI2:'Iepirkumu sarakstā man vajag…',pI3:'Piegādātāja līguma pārskats – nosacījumi un termiņi',pI4:'Ideja: automātiski marķēt ierakstus pēc kalendāra',pI5:'Lekcija: ievads statistikā',
+ cxNote:'Personīga piezīme',cxSales:'Pārdošanas zvans',cxLecture:'Lekcija',cxWork:'Darba sanāksme',cxInterview:'Intervija',
+ pCal:'Kalendārs',pCtx:'Konteksti',pSet:'Iestatījumi',
+ pRecording:'Ieraksta',pRecSub:'no 15 min · audio tiek saglabāts nepārtraukti',pSegs:'4 fragmenti nosūtīti',pPause:'Pauzēt',pFinish:'Pabeigt',pLocked:'Ekrāns aizslēgts — ieraksts turpinās',
+ pTitle:'Produkta komanda: Q4 plāna pārskats',pTitleShort:'Q4 plāna pārskats',pWhen:'Šodien 14:32',pSpk2:'2 runātāji',pSummary:'Kopsavilkums',pTranscript:'Transkripts',pAsk:'Jautāt AI',
+ pTranscribing:'Transkribē…',pTSearch:'Meklēt transkriptā',pSpeakers:'Runātāji',pS2:'Runātājs 2',
+ pL1:'Onboarding ir mūsu lielākais drop-off. Pārtaisīto versiju laižam pirmo.',
+ pL2:'Labi, agreed. Bet pricing — vai annual plans palaižam šajā ceturksnī?',
+ pL3:'Atstājam atvērtu līdz nākamajam sync — otrdien, septiņpadsmitajā, desmitos.',
+ pSum:'Komanda vienojās jauno onboarding plūsmu izlaist līdz novembra beigām. Atvērts jautājums — gada cenas šajā ceturksnī vai nākamajā.',
+ pDecisions:'Lēmumi',pD1:'Vispirms iznāk pārtaisītais onboarding; analītika pārcelta uz decembri.',pD2:'Iknedēļas sanāksme pārcelta uz otrdienām plkst. 10:00.',
+ pTasks:'Uzdevumi',pT1:'Pabeigt onboarding tekstus kopā ar dizainu',pT1m:'Anna · līdz piektdienai',pT2:'Saskaņot gada cenas ar pārdošanu',pT2m:'Runātājs 2 · nākamā sanāksme',
+ pDates:'Svarīgi datumi',pScan:'Meklē datumus…',pCnt:'3 datumi',pNov:'Nov',
+ pR1:'Onboarding teksti — gala versija',pR1m:'Piektdiena · Termiņš',pR2:'Iknedēļas sanāksme ar dizainu',pR2m:'Otrdiena · 10:00 · Notikums',pR3:'Lēmums par gada cenām',pR3m:'Piektdiena · Datums',
+ pRegen:'Pārģenerēt ar piezīmēm',pCalSub:'12 datumi no taviem ierakstiem',pMonthName:'2026. g. novembris',
+ wd0:'P',wd1:'O',wd2:'T',wd3:'C',wd4:'P',wd5:'S',wd6:'Sv',pEvents:'Notikumi',pDeadlines:'Termiņi',pDatesL:'Datumi',
+ pEvA1:'Q4 plāna pārskats',pEvA2:'Piegādātāja līgums — parakstīt un nosūtīt',pDue:'Termiņš šodien',pDate17:'Otrdiena, 17. novembris',
+ pEvent:'Notikums',pWhen17:'Otrdiena, 17. novembris · 10:00',pOpen:'Atvērt kopsavilkumu',pReminder:'Atgādinājums',pO0:'Bez atgādinājuma',pO1:'10 minūtes pirms',pO2:'1 stundu pirms',pO3:'1 dienu pirms',
+ pAdd:'Pievienot Apple kalendāram',pAdded:'Pievienots Apple kalendāram'
+}};
+
+var doc=document,root=doc.documentElement,qs=new URLSearchParams(location.search);
+var $=function(s,r){return (r||doc).querySelector(s)},$$=function(s,r){return Array.prototype.slice.call((r||doc).querySelectorAll(s))};
+var RM=root.classList.contains('rm');
+var clamp=function(x,a,b){return Math.min(b===undefined?1:b,Math.max(a===undefined?0:a,x))};
+var seg=function(t,a,b){return clamp((t-a)/(b-a))};
+var eio=function(x){return x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2};
+var eo=function(x){return 1-Math.pow(1-x,3)};
+var ei=function(x){return x*x*x};
+var back=function(x){var c=2.2;return x<=0?0:x>=1?1:1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
+var lerp=function(a,b,k){return a+(b-a)*k};
+function S(el,k,v){var c=el.__c||(el.__c={});if(c[k]!==v){c[k]=v;el.style[k]=v}}
+function C(el,k,on){var c=el.__c||(el.__c={}),key='.'+k;if(c[key]!==on){c[key]=on;el.classList.toggle(k,on)}}
+function T(el,v){var c=el.__c||(el.__c={});if(c.t!==v){c.t=v;el.textContent=v}}
+function V(el,on){S(el,'visibility',on?'visible':'hidden')}
+
+/* ---------- language ---------- */
+var lang='en';
+(function(){var q=qs.get('lang'),s=null;try{s=localStorage.getItem('air-lang')}catch(e){}
+ if(q==='lv'||q==='en')lang=q;else if(s==='lv'||s==='en')lang=s;else lang=/^lv/i.test(navigator.language||'')?'lv':'en';})();
+function applyI18n(){
+ var d=I18N[lang];root.lang=lang;doc.title=d.title;
+ $$('[data-i]').forEach(function(el){var v=d[el.getAttribute('data-i')];if(v===undefined)return;
+  if(el.hasAttribute('data-words')){el.innerHTML=v.split(' ').map(function(w){return '<span class="w">'+w.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</span>'}).join(' ');el.__k=-1}
+  else el.textContent=v;});
+ $$('[data-ih]').forEach(function(el){el.innerHTML=d[el.getAttribute('data-ih')]});
+ $$('[data-i-aria]').forEach(function(el){el.setAttribute('aria-label',d[el.getAttribute('data-i-aria')])});
+ $$('[data-lang]').forEach(function(b){b.setAttribute('aria-pressed',String(b.getAttribute('data-lang')===lang))});
+ var m=$('meta[name=description]');if(m)m.content=d.lead;
+}
+
+/* ---------- phone construction ---------- */
+var mainPhone=$('#phoneWrap .phone');
+(function build(){
+ var hs=[8,14,22,36,54,72,88,64,40,26,18,30,48,70,96,110,84,58,34,20,14,24,42,66,90,104,78,52,30,16,10,20,38,60,82,96,70,46,28,14,8,12,18,10];
+ $('.r-wave',mainPhone).innerHTML=hs.map(function(h,i){return '<i'+(i>=33?' class="dim"':'')+' style="height:'+h+'px;animation-delay:'+(((i*7)%11)/10)+'s"></i>'}).join('');
+ var ds=[6,10,16,24,30,22,14,10,18,28,36,30,20,12,8,14,22,32,38,28,18,10,6,12,20,30,34,24,16,10,8,14,24,32,26,18,12,8,10,18,26,30,22,14,8,6,12,18];
+ $('.d-wave',mainPhone).innerHTML=ds.map(function(h){return '<i style="height:'+h+'px"></i>'}).join('');
+ var dots={3:['mn'],5:['e'],11:['e'],18:['e','mn'],20:['dl'],24:['e']},nw={13:'dl',17:'e',27:'mn'},h='';
+ for(var i=0;i<42;i++){var day=i-5,n,mut=false;if(day<1){n=31+day;mut=true}else if(day>30){n=day-30;mut=true}else n=day;
+  var d='';if(!mut){(dots[n]||[]).forEach(function(k){d+='<i class="dot '+k+'"></i>'});if(nw[n])d+='<i class="dot nd '+nw[n]+'" data-d="'+n+'"></i>'}
+  h+='<div class="cell"'+(mut?'':' data-day="'+n+'"')+'>'+(n===17&&!mut?'<i class="rp"></i>':'')+'<div class="n'+(mut?' mut':'')+(n===11&&!mut?' today':'')+'">'+n+'</div><div class="ds">'+d+'</div></div>'}
+ $('.c-grid',mainPhone).innerHTML=h;
+})();
+
+function Phone(el){
+ var q=function(s){return el.querySelector(s)},qa=function(s){return $$(s,el)};
+ var scr=q('.screen');
+ var E={home:q('.s-home'),recBtn:q('.h-rec'),flood:q('.flood'),rec:q('.s-rec'),recMid:q('.r-mid'),fin:q('.r-fin'),lock:q('.lock'),la:q('.la'),
+  island:q('.island'),islIn:q('.island .in'),tms:qa('.tm'),det:q('.s-det'),proc:q('.proc'),pct:q('.pct'),pbar:q('.pb i'),sl:q('.sl'),tbS:q('.tb-s'),tbT:q('.tb-t'),
+  pTr:q('.p-tr'),tools:q('.t-tools'),lines:qa('.tl'),l2:q('.l2'),l2bx:q('.l2 .bx'),player:q('.d-player'),wave:qa('.d-wave i'),cur:q('.cur'),
+  pSum:q('.p-sum'),sum:q('.sum'),ri:qa('.ri'),t1:q('.t1'),ckb:q('.ckb'),cf:q('.cf'),cd:q('.cd'),dsec:q('.dsec'),dhead:q('.dhead'),scan:q('.scan'),cnt:q('.cnt'),
+  dr:qa('.dr'),r2:q('.r2'),chip:q('.chip'),regen:q('.d-fade'),cal:q('.s-cal'),c17:q('[data-day="17"]'),n17:q('[data-day="17"] .n'),n11:q('[data-day="11"] .n'),rp:q('.rp'),
+  nd:qa('.nd'),dayA:q('.day-a'),dayB:q('.day-b'),ev17:q('.ev17'),scrim:q('.scrim'),sheet:q('.sheet'),oNone:q('.o-none'),oHour:q('.o-hour'),add:q('.addbtn'),ok:q('.ok'),tap:q('.tap'),sbar:q('.screen > .sbar')};
+ var M={};
+ function pos(n){var x=0,y=0,e=n;while(e&&e!==scr){x+=e.offsetLeft;y+=e.offsetTop;e=e.offsetParent}return{x:x,y:y,w:n.offsetWidth,h:n.offsetHeight,cx:x+n.offsetWidth/2,cy:y+n.offsetHeight/2}}
+ function measure(){
+  M.rec=pos(E.recBtn);M.fin=pos(E.fin);M.l2=pos(E.l2bx);M.ck=pos(E.t1);M.r2=pos(E.r2);M.c17=pos(E.c17);M.ev17=pos(E.ev17);M.oh=pos(E.oHour);M.add=pos(E.add);
+  M.s1=70;M.scroll=Math.max(M.s1,E.dsec.offsetTop-150);
+  S(E.flood,'left',M.rec.x+'px');S(E.flood,'top',M.rec.y+'px');
+  S(E.chip,'width',M.r2.w+'px');
+ }
+ function words(p,k){var w=p.children,n=Math.round(k*w.length);if(p.__k===n)return;p.__k=n;for(var i=0;i<w.length;i++)w[i].classList.toggle('on',i<n)}
+ function rise(n,t,a){var k=seg(t,a,a+.08);S(n,'opacity',k);S(n,'transform','translateY('+((1-eo(k))*12).toFixed(1)+'px)')}
+ function fmt(s){return (s<600?'0':'')+Math.floor(s/60)+':'+('0'+s%60).slice(-2)}
+ function render(t){
+  var k,i;
+  /* home → flood */
+  V(E.home,t<2.06);
+  k=seg(t,1.62,1.7)*(1-seg(t,1.7,1.76));S(E.recBtn,'transform','scale('+(1-.1*k).toFixed(3)+')');
+  k=ei(seg(t,1.72,2));S(E.flood,'opacity',t>=1.72&&t<2.1?1:0);S(E.flood,'transform','scale('+(1+k*32).toFixed(2)+')');
+  /* recording */
+  var rIn=seg(t,1.92,2.04),dIn=eo(seg(t,2.97,3.14));
+  V(E.rec,rIn>0&&t<3.14);S(E.rec,'opacity',rIn);S(E.rec,'transform','scale('+(1-.05*dIn).toFixed(3)+')');
+  S(E.recMid,'transform','translateY('+((1-eo(seg(t,1.95,2.2)))*24).toFixed(1)+'px)');
+  k=eio(seg(t,1.95,2.12))*(1-eio(seg(t,2.97,3.1)));S(E.island,'width',(122+74*k).toFixed(1)+'px');S(E.island,'marginLeft',(-(122+74*k)/2).toFixed(1)+'px');S(E.islIn,'opacity',seg(k,.6,1));
+  var tm=fmt(Math.round(252*seg(t,2.02,2.92)));for(i=0;i<E.tms.length;i++)T(E.tms[i],tm);
+  k=seg(t,2.36,2.46)*(1-seg(t,2.72,2.82));V(E.lock,k>0);S(E.lock,'opacity',k);S(E.la,'transform','translateY('+((1-eo(k))*40).toFixed(1)+'px)');
+  k=seg(t,2.93,2.97)*(1-seg(t,2.97,3.02));S(E.fin,'transform','scale('+(1-.06*k).toFixed(3)+')');
+  /* detail */
+  var dOut=seg(t,6,6.14);
+  V(E.det,t>2.97&&dOut<1);S(E.det,'transform','translateY('+((1-dIn)*844).toFixed(1)+'px) scale('+(1-.04*dOut).toFixed(3)+')');S(E.det,'opacity',1-dOut);
+  k=seg(t,3.06,3.12)*(1-seg(t,3.36,3.42));S(E.proc,'opacity',k);V(E.proc,k>0);
+  k=seg(t,3.1,3.36);T(E.pct,Math.round(k*100)+'%');S(E.pbar,'transform','scaleX('+k.toFixed(3)+')');
+  var toSum=seg(t,4,4.1);S(E.sl,'transform','translateX('+((1-eio(toSum))*100).toFixed(1)+'%)');C(E.tbT,'on',toSum<.5);C(E.tbS,'on',toSum>=.5);
+  k=seg(t,3.38,3.44)*(1-seg(t,4,4.07));S(E.pTr,'opacity',k);V(E.pTr,k>0);S(E.pTr,'transform','translateX('+(-28*seg(t,4,4.07)).toFixed(1)+'px)');
+  for(i=0;i<3;i++){var a=3.43+i*.135,ln=E.lines[i];S(ln,'opacity',seg(t,a,a+.03));words(ln.querySelector('p'),seg(t,a+.01,a+.125))}
+  var playing=t>=3.9;C(E.l2,'playing',playing&&t<4.2);C(E.player,'playing-on',playing&&t<4.08);T(E.cur,playing?'2:04':'0:00');
+  var pl=playing?Math.round(E.wave.length*.49):0;if(E.__pl!==pl){E.__pl=pl;for(i=0;i<E.wave.length;i++)E.wave[i].classList.toggle('p',i<pl)}
+  S(E.regen,'opacity',seg(t,4.1,4.2));
+  /* summary */
+  k=seg(t,4.05,4.14);S(E.pSum,'opacity',k);V(E.pSum,k>0);
+  var sy=M.s1*eio(seg(t,4.5,4.72))+(M.scroll-M.s1)*eio(seg(t,5,5.26));
+  S(E.pSum,'transform','translate('+((1-eo(k))*28).toFixed(1)+'px,'+(-sy).toFixed(1)+'px)');
+  words(E.sum,seg(t,4.12,4.4));
+  var ra=[4.4,4.44,4.5,4.56,4.6,4.66];for(i=0;i<E.ri.length;i++)rise(E.ri[i],t,ra[i]);
+  k=seg(t,4.84,4.93);S(E.cf,'transform','scale('+(.5+.5*back(k)).toFixed(3)+')');S(E.cf,'opacity',seg(k,0,.3));S(E.cd,'strokeDashoffset',(22*(1-seg(k,.3,1))).toFixed(1));C(E.t1,'done',k>.5);
+  /* dates */
+  rise(E.dhead,t,5.1);S(E.scan,'opacity',t<5.6?1:0);S(E.cnt,'opacity',t>=5.6?1:0);
+  var da=[5.28,5.4,5.52];for(i=0;i<3;i++){k=seg(t,da[i],da[i]+.09);var hl=(E.dr[i]===E.r2)?eio(seg(t,5.72,5.86)):0;
+   S(E.dr[i],'opacity',t>=6&&hl?'':k);S(E.dr[i],'transform','translateY('+((1-eo(k))*14).toFixed(1)+'px) scale('+(1+.03*hl).toFixed(3)+')')}
+  C(E.r2,'hl',t>=5.76&&t<6);C(E.r2,'ghost',t>=6);
+  /* chip flight */
+  var f=seg(t,6,6.32),e=eio(f);V(E.chip,t>=6&&f<1);
+  if(t>=6&&f<1){var sx=M.r2.x,sY=M.r2.y-M.scroll,ox=33,oy=M.r2.h/2,x=lerp(sx+ox,M.c17.cx,e),y=lerp(sY+oy,M.c17.cy+12,e)-Math.sin(Math.PI*e)*60;
+   S(E.chip,'transform','translate('+(x-ox).toFixed(1)+'px,'+(y-oy).toFixed(1)+'px) scale('+lerp(1.03,.13,e).toFixed(3)+')');S(E.chip,'opacity',1-seg(f,.86,1))}
+  /* calendar */
+  k=seg(t,6.04,6.16);V(E.cal,k>0);S(E.cal,'opacity',k);S(E.cal,'transform','scale('+(1.04-.04*eo(k)).toFixed(3)+')');
+  for(i=0;i<E.nd.length;i++){var is17=E.nd[i].getAttribute('data-d')==='17';k=back(seg(t,is17?6.29:6.36,is17?6.4:6.47));S(E.nd[i],'transform','scale('+k.toFixed(3)+')');S(E.nd[i],'display',k>0?'':'none')}
+  k=seg(t,6.29,6.5);S(E.rp,'opacity',k>0&&k<1?(1-k):0);S(E.rp,'transform','scale('+(1+1.6*eo(k)).toFixed(2)+')');
+  var sel=t>=6.36;C(E.n17,'sel',sel);C(E.n11,'sel',!sel);
+  S(E.dayA,'opacity',1-seg(t,6.36,6.41));k=seg(t,6.4,6.47);S(E.dayB,'opacity',k);S(E.dayB,'transform','translateY('+((1-eo(k))*10).toFixed(1)+'px)');
+  /* sheet */
+  k=eo(seg(t,6.58,6.75));V(E.sheet,k>0);V(E.scrim,k>0);S(E.scrim,'opacity',.38*k);S(E.sheet,'transform','translateY('+((1-k)*105).toFixed(2)+'%)');
+  C(E.oNone,'on',t<6.86);C(E.oHour,'on',t>=6.86);
+  var done=t>=7;C(E.add,'done',done);S(E.ok,'strokeDashoffset',(22*(1-seg(t,7.01,7.09))).toFixed(1));
+  k=seg(t,6.96,7)*(1-seg(t,7,7.05));S(E.add,'transform','scale('+(1-.04*k).toFixed(3)+')');
+  /* tap ring */
+  var taps=[[1.42,1.72,M.rec.cx,M.rec.cy],[2.84,2.98,M.fin.cx,M.fin.cy],[3.8,3.92,M.l2.x+150,M.l2.cy+8],[4.74,4.87,M.ck.x+25,M.ck.y+23-M.s1],[6.47,6.6,M.ev17.x+120,M.ev17.cy],[6.76,6.88,M.oh.cx,M.oh.cy],[6.9,7.02,M.add.cx,M.add.cy]],on=0;
+  for(i=0;i<taps.length;i++){var tp=taps[i];if(t>=tp[0]&&t<tp[1]+.04){k=seg(t,tp[0],tp[1]);on=seg(k,0,.3)*(1-seg(t,tp[1],tp[1]+.04));
+   S(E.tap,'transform','translate('+(tp[2]-27).toFixed(1)+'px,'+(tp[3]-27).toFixed(1)+'px) scale('+(1.5-.5*eo(seg(k,0,.5))-.22*seg(k,.78,1)).toFixed(3)+')');break}}
+  S(E.tap,'opacity',on);
+ }
+ return {el:el,measure:measure,render:render};
+}
+
+/* ---------- story driver ---------- */
+var story=$('#story'),stage=$('#stage'),intro=$('#intro'),caps=$('#caps'),capEls=$$('.cap',caps),phoneWrap=$('#phoneWrap'),rail=$('#rail'),railEls=$$('.rs',rail);
+var SEG=[[0,1,.6],[1,2,1],[2,3,1.3],[3,4,1.4],[4,5,1.2],[5,6,1],[6,7.3,1.9]],WSUM=8.4,TMAX=7.3;
+function p2t(p){var x=clamp(p)*WSUM;for(var i=0;i<SEG.length;i++){var s=SEG[i];if(x<=s[2])return s[0]+(s[1]-s[0])*x/s[2];x-=s[2]}return TMAX}
+function t2p(t){var acc=0;for(var i=0;i<SEG.length;i++){var s=SEG[i];if(t<=s[1])return (acc+s[2]*(t-s[0])/(s[1]-s[0]))/WSUM;acc+=s[2]}return 1}
+var main=null,statics=[],cur=0,target=0,raf=0,mobile=false,introShift=0;
+
+function renderStage(t){
+ main.render(t);
+ var iv=1-eio(seg(t,.12,.92)),io=1-seg(t,.25,.8);
+ S(intro,'opacity',io);V(intro,io>0);S(intro,'transform','translateY('+(-(1-io)*(mobile?40:24)).toFixed(1)+'px)');
+ stage.style.setProperty('--intro',iv.toFixed(3));
+ S(phoneWrap,'transform',mobile?'translateY('+(iv*introShift).toFixed(1)+'px)':'translateY('+(iv*14).toFixed(1)+'px)');
+ if(!mobile)S(rail,'opacity',(.35+.65*(1-iv)).toFixed(2));else S(rail,'opacity','');
+ for(var i=0;i<capEls.length;i++){var a=i+1,b=i===5?99:i+2,inn=seg(t,a,a+.08),out=seg(t,b-.05,b),op=inn*(1-out),c=capEls[i];
+  S(c,'opacity',op);V(c,op>0);S(c,'transform','translateY('+(mobile?0:-50)+'%) translateY('+((1-eo(inn))*18-eo(out)*18).toFixed(1)+'px)');
+  var r=railEls[i],act=t>=a&&t<b;C(r,'on',act);C(r,'done',t>=b);r.style.setProperty('--f',seg(t,a,i===5?7.1:b).toFixed(3));
+  if(act)r.setAttribute('aria-current','step');else r.removeAttribute('aria-current')}
+}
+var DBG=null;(function(){var p=qs.get('p'),t=qs.get('t');if(RM||(p===null&&t===null))return;DBG=t!==null?clamp(parseFloat(t),0,TMAX):p2t(parseFloat(p));story.style.height='100vh'})();/* debug hook: ?p=0..1 (story progress) or ?t=0..7.3 (step float) pins the story at that state */
+function readScroll(){if(DBG!==null)return DBG;var total=story.offsetHeight-window.innerHeight;return p2t(total>0?-story.getBoundingClientRect().top/total:0)}
+function tick(){raf=0;var d=target-cur;if(Math.abs(d)<.0008)cur=target;else{cur+=d*.2;raf=requestAnimationFrame(tick)}renderStage(cur)}
+function onScroll(){$('#hdr').classList.toggle('scrolled',window.scrollY>8);if(RM)return;target=readScroll();if(!raf)raf=requestAnimationFrame(tick)}
+function layout(){
+ if(RM){statics.forEach(function(s){var w=Math.min(.66,(window.innerWidth-48)/410);s.ctl.el.parentNode.style.setProperty('--s',w.toFixed(4));s.ctl.measure();s.ctl.render(s.t)});return}
+ mobile=window.innerWidth<=860;var vh=stage.clientHeight,s;
+ if(mobile){var h=0;capEls.forEach(function(c){h=Math.max(h,c.offsetHeight)});h+=14;caps.style.height=h+'px';
+  s=clamp(Math.min((vh-66-16-12-h)/864,(window.innerWidth-40)/410),.36,.9);
+  introShift=Math.max(0,intro.offsetHeight+18-22)}
+ else{caps.style.height='';introShift=0;s=clamp((vh-60-40)/864,.42,.94)}
+ phoneWrap.style.setProperty('--s',s.toFixed(4));
+ main.measure();target=readScroll();cur=target;renderStage(cur);
+}
+function goStep(n){var total=story.offsetHeight-window.innerHeight;window.scrollTo({top:story.offsetTop+t2p(n+.1)*total,behavior:'smooth'})}
+
+/* ---------- init ---------- */
+if(RM){
+ story.classList.add('static');var list=$('#staticList'),SNAP=[1.62,2.3,3.97,4.97,5.9,7.3];
+ capEls.forEach(function(c,i){var row=doc.createElement('article');row.className='st-row';var cc=c.cloneNode(true);var pw=doc.createElement('div');pw.className='phone-wrap';
+  var ph=mainPhone.cloneNode(true);pw.appendChild(ph);row.appendChild(cc);row.appendChild(pw);list.appendChild(row);statics.push({ctl:Phone(ph),t:SNAP[i]})});
+}else main=Phone(mainPhone);
+applyI18n();
+
+$$('[data-lang]').forEach(function(b){b.addEventListener('click',function(){lang=b.getAttribute('data-lang');try{localStorage.setItem('air-lang',lang)}catch(e){}applyI18n();layout()})});
+$('#themeBtn').addEventListener('click',function(){var t=root.getAttribute('data-theme')==='dark'?'light':'dark';root.setAttribute('data-theme',t);try{localStorage.setItem('air-theme',t)}catch(e){}setMeta()});
+function setMeta(){var m=$('meta[name=theme-color]');if(m)m.content=root.getAttribute('data-theme')==='dark'?'#15171B':'#F4F5F7'}
+setMeta();
+try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(e){var s=null;try{s=localStorage.getItem('air-theme')}catch(x){}if(!s&&!qs.get('theme')){root.setAttribute('data-theme',e.matches?'dark':'light');setMeta()}})}catch(e){}
+railEls.forEach(function(r){r.addEventListener('click',function(){goStep(+r.getAttribute('data-go'))})});
+
+layout();
+window.addEventListener('scroll',onScroll,{passive:true});
+var rz=0;window.addEventListener('resize',function(){cancelAnimationFrame(rz);rz=requestAnimationFrame(layout)});
+window.addEventListener('load',layout);
+if(doc.fonts&&doc.fonts.ready)doc.fonts.ready.then(layout);
+
+/* reveal lower sections */
+if(!RM&&'IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{rootMargin:'0px 0px -8% 0px'});$$('.rv').forEach(function(n){io.observe(n)})}
+else $$('.rv').forEach(function(n){n.classList.add('in')});
+onScroll();
+})();
+</script>
+</body>
+</html>
