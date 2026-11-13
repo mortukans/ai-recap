@@ -1,0 +1,43 @@
+# Upload App Store screenshots to a prepared App Store version via fastlane deliver
+# (App Store Connect API). Run this AFTER the version exists in App Store Connect in
+# an editable "Prepare for Submission" state (create it + attach the build in the ASC UI
+# first). Screenshots live in fastlane/screenshots/<locale>/. Needs the same ASC API key
+# secrets as the build workflow: ASC_API_KEY_ID / ASC_API_ISSUER_ID / ASC_API_KEY_BASE64.
+name: iOS screenshots
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: App Store version to upload screenshots to
+        type: string
+        default: "1.1.2"
+
+concurrency:
+  group: ios-screenshots
+  cancel-in-progress: false
+
+jobs:
+  deliver:
+    name: fastlane deliver (screenshots)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install fastlane
+        run: gem install fastlane --no-document
+
+      - name: Upload screenshots
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+          APP_VERSION: ${{ inputs.version }}
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+          FASTLANE_HIDE_CHANGELOG: "1"
+        run: fastlane screenshots
